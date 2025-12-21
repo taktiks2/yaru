@@ -3,17 +3,30 @@ mod error;
 mod json;
 mod todo;
 
-use anyhow::Result;
-
 use chrono::Local;
+use clap::{Parser, error::ErrorKind};
 pub use cli::{Args, Commands};
-use error::YaruError;
+pub use error::YaruError;
 use json::{load_json, save_json};
 use todo::Todo;
 
-const PATH_TO_JSON: &str = "todo.json";
+const PATH_TO_JSON: &str = "todo.jso";
 
-pub fn run(args: Args) -> Result<()> {
+pub fn run() -> Result<(), YaruError> {
+    let args = Args::try_parse().map_err(|e| {
+        // InvalidSubcommandの場合は日本語メッセージに変換
+        if e.kind() == ErrorKind::InvalidSubcommand {
+            YaruError::InvalidSubcommand
+        } else {
+            // その他のエラーはclapのメッセージをそのまま使用
+            YaruError::ClapError(e)
+        }
+    })?;
+
+    handle_command(args)
+}
+
+pub fn handle_command(args: Args) -> Result<(), YaruError> {
     println!("{args:?}");
 
     match args.command {

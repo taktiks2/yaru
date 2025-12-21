@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::error::YaruError;
 use serde::{Deserialize, Serialize};
 
 /// JSONファイルを読み込む関数
@@ -32,22 +32,28 @@ use serde::{Deserialize, Serialize};
 ///
 /// この関数が返す `T` は所有データでなければならない。
 /// `for<'de>` により、一時的な借用からでも所有データを作れることを保証している。
-pub fn load_json<T>(path: &str) -> Result<T>
+pub fn load_json<T>(path: &str) -> Result<T, YaruError>
 where
     T: for<'de> Deserialize<'de>,
 {
-    let content = std::fs::read_to_string(path)?; // ① String を所有（関数内のみ）
+    let content = std::fs::read_to_string(path).map_err(|e| YaruError::FileReadError {
+        path: path.to_string(),
+        source: e,
+    })?; // ① String を所有（関数内のみ）
     let data: T = serde_json::from_str(&content)?; // ② &content から T を作る（所有データ）
     Ok(data) // ③ T を返す（content は破棄されるが、T は独立している）
 }
 
 /// JSONファイルを書き出す関数
-pub fn save_json<T>(path: &str, data: &T) -> Result<()>
+pub fn save_json<T>(path: &str, data: &T) -> Result<(), YaruError>
 where
     T: Serialize,
 {
     let json = serde_json::to_string_pretty(data)?;
-    std::fs::write(path, json)?;
+    std::fs::write(path, json).map_err(|e| YaruError::FileWriteError {
+        path: path.to_string(),
+        source: e,
+    })?;
     Ok(())
 }
 
@@ -113,7 +119,7 @@ mod tests {
         fs::write(&test_file, json).unwrap();
 
         // load_jsonでデータを読み込む
-        let result: Result<Vec<TestData>> = load_json(test_file.to_str().unwrap());
+        let result: Result<Vec<TestData>, YaruError> = load_json(test_file.to_str().unwrap());
         assert!(result.is_ok(), "load_jsonは成功すべき");
 
         let loaded_data = result.unwrap();
@@ -162,7 +168,7 @@ mod tests {
         let test_file = get_test_file_path("nonexistent.json");
         let _ = fs::remove_file(&test_file); // 確実に存在しないようにする
 
-        let result: Result<Vec<TestData>> = load_json(test_file.to_str().unwrap());
+        let result: Result<Vec<TestData>, YaruError> = load_json(test_file.to_str().unwrap());
         assert!(
             result.is_err(),
             "存在しないファイルの読み込みはエラーになるべき"
@@ -176,7 +182,7 @@ mod tests {
         // 不正なJSONを書き込む
         fs::write(&test_file, "{ invalid json }").unwrap();
 
-        let result: Result<Vec<TestData>> = load_json(test_file.to_str().unwrap());
+        let result: Result<Vec<TestData>, YaruError> = load_json(test_file.to_str().unwrap());
         assert!(result.is_err(), "不正なJSONの読み込みはエラーになるべき");
 
         // クリーンアップ
