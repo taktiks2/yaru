@@ -1,4 +1,5 @@
 use chrono::Utc;
+use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -7,7 +8,9 @@ use std::fmt;
 /// # フィールド
 /// - `id`: タスクの一意な識別子
 /// - `title`: タスクのタイトル
-/// - `created_at`: タスクの作成日時（RFC3339形式の文字列）
+/// - `status`: タスクのステータス
+/// - `created_at`: タスクの作成日時
+/// - `updated_at`: タスクの更新日時
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Todo {
     pub id: u64,
@@ -26,18 +29,18 @@ impl Todo {
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTodoインスタンス
-    pub fn new(id: u64, title: &str) -> Self {
+    pub fn new(id: u64, title: &str, status: Status) -> Self {
         Self {
             id,
             title: title.to_string(),
-            status: Status::Pending,
+            status,
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
 pub enum Status {
     Pending,
     Completed,

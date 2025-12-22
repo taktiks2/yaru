@@ -1,3 +1,4 @@
+use crate::todo::Status;
 use clap::{Parser, Subcommand};
 
 /// Todoアプリケーションのコマンドライン引数
@@ -23,6 +24,9 @@ pub enum Commands {
         /// タスクのタイトル
         #[arg(short, long)]
         title: Option<String>,
+        /// タスクの状態
+        #[arg(short, long)]
+        status: Option<Status>,
     },
     /// 指定されたIDのタスクを削除
     Delete {

@@ -11,7 +11,7 @@ use dialoguer::Input;
 use error::YaruError;
 use json::{load_json, save_json};
 use std::path::Path;
-use todo::Todo;
+use todo::{Status, Todo};
 
 const PATH_TO_JSON: &str = "todo.json";
 
@@ -43,7 +43,7 @@ fn ensure_data_file_exists() -> Result<(), YaruError> {
 fn handle_command(args: Args) -> Result<(), YaruError> {
     match args.command {
         Commands::List => list_todos(),
-        Commands::Add { title } => add_todo(title),
+        Commands::Add { title, status } => add_todo(title, status),
         Commands::Delete { id } => delete_todo(id),
     }
 }
@@ -77,7 +77,7 @@ fn list_todos() -> Result<(), YaruError> {
 }
 
 /// 新しいTodoを追加
-fn add_todo(title: Option<String>) -> Result<(), YaruError> {
+fn add_todo(title: Option<String>, status: Option<Status>) -> Result<(), YaruError> {
     let title = match title {
         Some(t) => t,
         None => Input::new()
@@ -86,15 +86,34 @@ fn add_todo(title: Option<String>) -> Result<(), YaruError> {
             .map_err(|e| YaruError::IoError { source: e.into() })?,
     };
 
+    let status = match status {
+        Some(s) => s,
+        None => Status::Pending,
+    };
+
     let mut todos = load_json::<Vec<Todo>>(PATH_TO_JSON)?;
     let new_id = todos.iter().map(|todo| todo.id).max().unwrap_or(0) + 1;
-    let new_todo = Todo::new(new_id, &title);
+    let new_todo = Todo::new(new_id, &title, status);
 
     todos.push(new_todo.clone());
     save_json(PATH_TO_JSON, &todos)?;
 
     println!("タスクを登録しました。");
-    println!("ID: {}, タイトル: {}", new_todo.id, new_todo.title);
+
+    let mut table = Table::new();
+
+    table.set_header(vec!["ID", "タイトル", "ステータス", "作成日", "更新日"]);
+
+    table.add_row(vec![
+        new_todo.id.to_string(),
+        new_todo.title,
+        new_todo.status.to_string(),
+        format_local_time(&new_todo.created_at),
+        format_local_time(&new_todo.updated_at),
+    ]);
+
+    println!("{table}");
+
     Ok(())
 }
 
