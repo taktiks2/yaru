@@ -22,7 +22,7 @@ pub enum Commands {
     Add {
         /// タスクのタイトル
         #[arg(short, long)]
-        title: String,
+        title: Option<String>,
     },
     /// 指定されたIDのタスクを削除
     Delete {

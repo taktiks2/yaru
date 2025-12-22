@@ -3,8 +3,11 @@ mod error;
 mod json;
 mod todo;
 
+use chrono::{DateTime, Local};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands};
+use comfy_table::Table;
+use dialoguer::Input;
 use error::YaruError;
 use json::{load_json, save_json};
 use std::path::Path;
@@ -40,31 +43,52 @@ fn ensure_data_file_exists() -> Result<(), YaruError> {
 fn handle_command(args: Args) -> Result<(), YaruError> {
     match args.command {
         Commands::List => list_todos(),
-        Commands::Add { title } => add_todo(&title),
+        Commands::Add { title } => add_todo(title),
         Commands::Delete { id } => delete_todo(id),
     }
 }
 
 /// 全てのTodoを一覧表示
 fn list_todos() -> Result<(), YaruError> {
-    let todos = load_json::<Vec<Todo>>(PATH_TO_JSON)?;
+    let todos: Vec<Todo> = load_json(PATH_TO_JSON)?;
 
     if todos.is_empty() {
         println!("タスクはありません。");
         return Ok(());
     }
 
+    let mut table = Table::new();
+
+    table.set_header(vec!["ID", "タイトル", "ステータス", "作成日", "更新日"]);
+
     for todo in todos {
-        println!("ID: {}, タイトル: {}", todo.id, todo.title);
+        table.add_row(vec![
+            todo.id.to_string(),
+            todo.title,
+            todo.status.to_string(),
+            format_local_time(&todo.created_at),
+            format_local_time(&todo.updated_at),
+        ]);
     }
+
+    println!("{table}");
+
     Ok(())
 }
 
 /// 新しいTodoを追加
-fn add_todo(title: &str) -> Result<(), YaruError> {
+fn add_todo(title: Option<String>) -> Result<(), YaruError> {
+    let title = match title {
+        Some(t) => t,
+        None => Input::new()
+            .with_prompt("タスクのタイトルを入力してください")
+            .interact_text()
+            .map_err(|e| YaruError::IoError { source: e.into() })?,
+    };
+
     let mut todos = load_json::<Vec<Todo>>(PATH_TO_JSON)?;
     let new_id = todos.iter().map(|todo| todo.id).max().unwrap_or(0) + 1;
-    let new_todo = Todo::new(new_id, title);
+    let new_todo = Todo::new(new_id, &title);
 
     todos.push(new_todo.clone());
     save_json(PATH_TO_JSON, &todos)?;
@@ -88,4 +112,15 @@ fn delete_todo(id: u64) -> Result<(), YaruError> {
     save_json(PATH_TO_JSON, &filtered_todos)?;
     println!("タスクを削除しました。");
     Ok(())
+}
+
+/// UTC時間の文字列を現地時間に変換してフォーマット
+fn format_local_time(utc_time_str: &str) -> String {
+    DateTime::parse_from_rfc3339(utc_time_str)
+        .map(|dt| {
+            dt.with_timezone(&Local)
+                .format("%Y-%m-%d %H:%M")
+                .to_string()
+        })
+        .unwrap_or_else(|_| utc_time_str.to_string())
 }
