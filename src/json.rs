@@ -47,7 +47,7 @@ where
 /// JSONファイルを書き出す関数
 pub fn save_json<T>(path: &str, data: &T) -> Result<(), YaruError>
 where
-    T: Serialize,
+    T: Serialize + ?Sized,
 {
     let json = serde_json::to_string_pretty(data)?;
     std::fs::write(path, json).map_err(|e| YaruError::FileWriteError {
