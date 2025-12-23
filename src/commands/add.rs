@@ -1,7 +1,7 @@
 use crate::{
     display::create_single_todo_table,
     error::YaruError,
-    repository::{find_next_id, load_todos, save_todos},
+    repository::{JsonTodoRepository, TodoRepository},
     todo::{Status, Todo},
 };
 use dialoguer::Input;
@@ -18,12 +18,13 @@ pub fn add_todo(title: Option<String>, status: Option<Status>) -> Result<(), Yar
 
     let status = status.unwrap_or(Status::Pending);
 
-    let mut todos = load_todos()?;
-    let new_id = find_next_id(&todos);
+    let repo = JsonTodoRepository::default();
+    let mut todos = repo.load_todos()?;
+    let new_id = repo.find_next_id(&todos);
     let new_todo = Todo::new(new_id, &title, status);
 
     todos.push(new_todo.clone());
-    save_todos(&todos)?;
+    repo.save_todos(&todos)?;
 
     println!("タスクを登録しました。");
 

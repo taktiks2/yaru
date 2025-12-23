@@ -1,5 +1,6 @@
 use crate::error::YaruError;
 use serde::{Deserialize, Serialize};
+use std::{fs, path::Path};
 
 /// JSONファイルを読み込む関数
 /// 型は使うときに決定できるようにジェネリックで実装
@@ -32,12 +33,13 @@ use serde::{Deserialize, Serialize};
 ///
 /// この関数が返す `T` は所有データでなければならない。
 /// `for<'de>` により、一時的な借用からでも所有データを作れることを保証している。
-pub fn load_json<T>(path: &str) -> Result<T, YaruError>
+pub fn load_json<T>(path: impl AsRef<Path>) -> Result<T, YaruError>
 where
     T: for<'de> Deserialize<'de>,
 {
-    let content = std::fs::read_to_string(path).map_err(|e| YaruError::FileReadError {
-        path: path.to_string(),
+    let path = path.as_ref();
+    let content = fs::read_to_string(path).map_err(|e| YaruError::FileReadError {
+        path: path.display().to_string(),
         source: e,
     })?; // ① String を所有（関数内のみ）
     let data: T = serde_json::from_str(&content)?; // ② &content から T を作る（所有データ）
@@ -45,13 +47,14 @@ where
 }
 
 /// JSONファイルを書き出す関数
-pub fn save_json<T>(path: &str, data: &T) -> Result<(), YaruError>
+pub fn save_json<T>(path: impl AsRef<Path>, data: &T) -> Result<(), YaruError>
 where
     T: Serialize + ?Sized,
 {
+    let path = path.as_ref();
     let json = serde_json::to_string_pretty(data)?;
-    std::fs::write(path, json).map_err(|e| YaruError::FileWriteError {
-        path: path.to_string(),
+    fs::write(path, json).map_err(|e| YaruError::FileWriteError {
+        path: path.display().to_string(),
         source: e,
     })?;
     Ok(())
@@ -92,7 +95,7 @@ mod tests {
             },
         ];
 
-        let result = save_json(test_file.to_str().unwrap(), &data);
+        let result = save_json(&test_file, &data);
         assert!(result.is_ok(), "save_jsonは成功すべき");
         assert!(test_file.exists(), "ファイルが作成されるべき");
 
@@ -115,14 +118,14 @@ mod tests {
                 name: "テスト2".to_string(),
             },
         ];
-        let json = serde_json::to_string_pretty(&data).unwrap();
-        fs::write(&test_file, json).unwrap();
+        let json = serde_json::to_string_pretty(&data).expect("JSONシリアライズは成功すべき");
+        fs::write(&test_file, json).expect("ファイル書き込みは成功すべき");
 
         // load_jsonでデータを読み込む
-        let result: Result<Vec<TestData>, YaruError> = load_json(test_file.to_str().unwrap());
+        let result: Result<Vec<TestData>, YaruError> = load_json(&test_file);
         assert!(result.is_ok(), "load_jsonは成功すべき");
 
-        let loaded_data = result.unwrap();
+        let loaded_data = result.expect("データの読み込みは成功すべき");
         assert_eq!(
             loaded_data, data,
             "読み込んだデータは元のデータと一致すべき"
@@ -149,10 +152,10 @@ mod tests {
         ];
 
         // 保存
-        save_json(test_file.to_str().unwrap(), &original_data).unwrap();
+        save_json(&test_file, &original_data).expect("保存は成功すべき");
 
         // 読み込み
-        let loaded_data: Vec<TestData> = load_json(test_file.to_str().unwrap()).unwrap();
+        let loaded_data: Vec<TestData> = load_json(&test_file).expect("読み込みは成功すべき");
 
         assert_eq!(
             loaded_data, original_data,
@@ -168,7 +171,7 @@ mod tests {
         let test_file = get_test_file_path("nonexistent.json");
         let _ = fs::remove_file(&test_file); // 確実に存在しないようにする
 
-        let result: Result<Vec<TestData>, YaruError> = load_json(test_file.to_str().unwrap());
+        let result: Result<Vec<TestData>, YaruError> = load_json(&test_file);
         assert!(
             result.is_err(),
             "存在しないファイルの読み込みはエラーになるべき"
@@ -180,9 +183,9 @@ mod tests {
         let test_file = get_test_file_path("invalid.json");
 
         // 不正なJSONを書き込む
-        fs::write(&test_file, "{ invalid json }").unwrap();
+        fs::write(&test_file, "{ invalid json }").expect("ファイル書き込みは成功すべき");
 
-        let result: Result<Vec<TestData>, YaruError> = load_json(test_file.to_str().unwrap());
+        let result: Result<Vec<TestData>, YaruError> = load_json(&test_file);
         assert!(result.is_err(), "不正なJSONの読み込みはエラーになるべき");
 
         // クリーンアップ

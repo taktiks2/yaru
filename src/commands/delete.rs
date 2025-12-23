@@ -1,11 +1,12 @@
 use crate::{
     error::YaruError,
-    repository::{load_todos, save_todos},
+    repository::{JsonTodoRepository, TodoRepository},
 };
 
 /// 指定されたIDのTodoを削除
 pub fn delete_todo(id: u64) -> Result<(), YaruError> {
-    let todos = load_todos()?;
+    let repo = JsonTodoRepository::default();
+    let todos = repo.load_todos()?;
     let initial_count = todos.len();
     let filtered_todos: Vec<_> = todos.into_iter().filter(|todo| todo.id != id).collect();
 
@@ -14,7 +15,7 @@ pub fn delete_todo(id: u64) -> Result<(), YaruError> {
         return Ok(());
     }
 
-    save_todos(&filtered_todos)?;
+    repo.save_todos(&filtered_todos)?;
     println!("タスクを削除しました。");
     Ok(())
 }

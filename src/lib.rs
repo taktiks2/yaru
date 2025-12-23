@@ -10,7 +10,7 @@ use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands};
 use commands::{add_todo, delete_todo, list_todos};
 use error::YaruError;
-use repository::ensure_data_file_exists;
+use repository::{JsonTodoRepository, TodoRepository};
 
 /// アプリケーションのエントリーポイント
 ///
@@ -24,7 +24,10 @@ pub fn run() -> Result<(), YaruError> {
         }
     })?;
 
-    ensure_data_file_exists()?;
+    // データファイルが存在することを確認
+    let repo = JsonTodoRepository::default();
+    repo.ensure_data_exists()?;
+
     handle_command(args)
 }
 

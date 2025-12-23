@@ -1,8 +1,13 @@
-use crate::{display::create_todo_table, error::YaruError, repository::load_todos};
+use crate::{
+    display::create_todo_table,
+    error::YaruError,
+    repository::{JsonTodoRepository, TodoRepository},
+};
 
 /// 全てのTodoを一覧表示
 pub fn list_todos() -> Result<(), YaruError> {
-    let todos = load_todos()?;
+    let repo = JsonTodoRepository::default();
+    let todos = repo.load_todos()?;
 
     if todos.is_empty() {
         println!("タスクはありません。");
