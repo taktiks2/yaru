@@ -64,4 +64,49 @@ todo_file = "/custom/path/todo.json"
         assert!(toml_str.contains("todo_file"));
         assert!(toml_str.contains("/test/path/todo.json"));
     }
+
+    #[test]
+    fn test_load_config_from_file_success() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        // 一時ディレクトリを作成
+        let temp_dir = TempDir::new().unwrap();
+        let config_file = temp_dir.path().join("config.toml");
+
+        // テスト用の設定ファイルを作成
+        let config_content = r#"
+[storage]
+todo_file = "/custom/path/todos.json"
+"#;
+        fs::write(&config_file, config_content).unwrap();
+
+        // ファイルから設定を読み込む
+        let config = load_config_from_file(&config_file).unwrap();
+        assert_eq!(
+            config.storage.todo_file,
+            PathBuf::from("/custom/path/todos.json")
+        );
+    }
+
+    #[test]
+    fn test_load_config_from_file_invalid_toml() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        // 一時ディレクトリを作成
+        let temp_dir = TempDir::new().unwrap();
+        let config_file = temp_dir.path().join("config.toml");
+
+        // 不正なTOMLファイルを作成
+        let invalid_content = r#"
+[storage
+todo_file = "/custom/path/todos.json"
+"#;
+        fs::write(&config_file, invalid_content).unwrap();
+
+        // エラーが返されることを確認
+        let result = load_config_from_file(&config_file);
+        assert!(result.is_err());
+    }
 }
