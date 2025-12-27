@@ -47,6 +47,25 @@ pub enum Status {
     InProgress,
 }
 
+impl Status {
+    /// フィルタ値から Status を生成
+    ///
+    /// # 引数
+    /// - `value`: フィルタ値（例: "done", "pending", "in_progress"）
+    ///
+    /// # 戻り値
+    /// - `Ok(Status)`: 変換に成功した場合
+    /// - `Err(String)`: 無効な値の場合
+    pub fn from_filter_value(value: &str) -> Result<Self, String> {
+        match value.to_lowercase().as_str() {
+            "pending" | "todo" => Ok(Status::Pending),
+            "completed" | "done" => Ok(Status::Completed),
+            "inprogress" | "in_progress" | "progress" => Ok(Status::InProgress),
+            _ => Err(format!("Invalid status value: '{}'", value)),
+        }
+    }
+}
+
 impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

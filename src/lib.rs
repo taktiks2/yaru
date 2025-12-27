@@ -34,7 +34,7 @@ pub fn run() -> Result<(), YaruError> {
 /// コマンドを実行
 fn handle_command(args: Args) -> Result<(), YaruError> {
     match args.command {
-        Commands::List => list_todos(),
+        Commands::List { filter } => list_todos(filter),
         Commands::Add { title, status } => add_todo(title, status),
         Commands::Delete { id } => delete_todo(id),
     }

@@ -1,5 +1,43 @@
 use crate::todo::Status;
 use clap::{Parser, Subcommand};
+use std::str::FromStr;
+
+/// フィルタ条件を表す構造体
+#[derive(Debug, Clone)]
+pub struct Filter {
+    pub key: FilterKey,
+    pub value: String,
+}
+
+/// フィルタキーの種類
+#[derive(Debug, Clone, PartialEq)]
+pub enum FilterKey {
+    Status,
+}
+
+impl FromStr for Filter {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.splitn(2, ':').collect();
+        if parts.len() != 2 {
+            return Err(format!(
+                "Invalid filter format: '{}'. Expected 'key:value'",
+                s
+            ));
+        }
+
+        let key = match parts[0].to_lowercase().as_str() {
+            "status" => FilterKey::Status,
+            _ => return Err(format!("Unknown filter key: '{}'", parts[0])),
+        };
+
+        Ok(Filter {
+            key,
+            value: parts[1].to_string(),
+        })
+    }
+}
 
 /// Todoアプリケーションのコマンドライン引数
 #[derive(Parser, Debug)]
@@ -18,7 +56,11 @@ pub struct Args {
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// タスク一覧を表示
-    List,
+    List {
+        /// フィルタ条件（例: status:done, status:pending）
+        #[arg(short, long, value_parser = clap::value_parser!(Filter))]
+        filter: Option<Vec<Filter>>,
+    },
     /// 新しいタスクを追加
     Add {
         /// タスクのタイトル

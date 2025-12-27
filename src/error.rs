@@ -31,6 +31,9 @@ pub enum YaruError {
     #[error("無効なサブコマンドです。使用可能なコマンド: list, add, delete")]
     InvalidSubcommand,
 
+    #[error("無効な入力です: {0}")]
+    InvalidInput(String),
+
     #[error(transparent)]
     ClapError(#[from] clap::Error),
 }
