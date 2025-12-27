@@ -1,5 +1,7 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -25,6 +27,17 @@ impl Default for StorageConfig {
             todo_file: PathBuf::from("todo.json"),
         }
     }
+}
+
+/// 指定されたパスから設定ファイルを読み込む
+pub fn load_config_from_file(path: &Path) -> Result<Config> {
+    let content = fs::read_to_string(path).with_context(|| {
+        format!(
+            "設定ファイルの読み込みに失敗しました: {}",
+            path.display()
+        )
+    })?;
+    toml::from_str(&content).context("設定ファイルのパースに失敗しました")
 }
 
 #[cfg(test)]
