@@ -122,4 +122,52 @@ todo_file = "/custom/path/todos.json"
         let result = load_config_from_file(&config_file);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_get_config_path() {
+        use std::env;
+
+        // HOME環境変数が設定されている場合、正しいパスが返されることを確認
+        let home = env::var("HOME").unwrap();
+        let config_path = get_config_path().unwrap();
+        let expected_path = PathBuf::from(home)
+            .join(".config")
+            .join("yaru")
+            .join("config.toml");
+        assert_eq!(config_path, expected_path);
+    }
+
+    #[test]
+    fn test_load_config_with_existing_file() {
+        use std::fs;
+        use tempfile::TempDir;
+
+        // 一時ディレクトリを作成
+        let temp_dir = TempDir::new().unwrap();
+        let config_dir = temp_dir.path().join(".config").join("yaru");
+        fs::create_dir_all(&config_dir).unwrap();
+        let config_file = config_dir.join("config.toml");
+
+        // テスト用の設定ファイルを作成
+        let config_content = r#"
+[storage]
+todo_file = "/existing/path/todos.json"
+"#;
+        fs::write(&config_file, config_content).unwrap();
+
+        // 設定ファイルが存在する場合、正しく読み込まれることを確認
+        // Note: この関数は実装後にHOME環境変数を設定する必要がある
+        let config = load_config_from_file(&config_file).unwrap();
+        assert_eq!(
+            config.storage.todo_file,
+            PathBuf::from("/existing/path/todos.json")
+        );
+    }
+
+    #[test]
+    fn test_load_config_with_nonexistent_file() {
+        // 設定ファイルが存在しない場合、デフォルト値が返されることを確認
+        let config = load_config().unwrap();
+        assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+    }
 }
