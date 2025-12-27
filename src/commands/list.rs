@@ -41,7 +41,7 @@ fn apply_filter(todos: Vec<Todo>, filter: &Filter) -> Result<Vec<Todo>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
 
     #[test]
     fn test_list_todos_empty() {
