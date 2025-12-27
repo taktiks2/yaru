@@ -1,18 +1,18 @@
 use crate::{
-    error::YaruError,
     json::{load_json, save_json},
     todo::Todo,
 };
+use anyhow::Result;
 use std::path::PathBuf;
 
 /// Todoリポジトリのトレイト
 /// データの永続化方法を抽象化し、異なる実装（JSON、SQLiteなど）を切り替え可能にする
 pub trait TodoRepository {
     /// Todoリストを読み込む
-    fn load_todos(&self) -> Result<Vec<Todo>, YaruError>;
+    fn load_todos(&self) -> Result<Vec<Todo>>;
 
     /// Todoリストを保存する
-    fn save_todos(&self, todos: &[Todo]) -> Result<(), YaruError>;
+    fn save_todos(&self, todos: &[Todo]) -> Result<()>;
 
     /// 次のIDを取得する
     fn find_next_id(&self, todos: &[Todo]) -> u64 {
@@ -20,7 +20,7 @@ pub trait TodoRepository {
     }
 
     /// データファイルが存在することを確認（必要に応じて初期化）
-    fn ensure_data_exists(&self) -> Result<(), YaruError>;
+    fn ensure_data_exists(&self) -> Result<()>;
 }
 
 /// JSON形式でTodoを保存するリポジトリ実装
@@ -43,15 +43,15 @@ impl JsonTodoRepository {
 }
 
 impl TodoRepository for JsonTodoRepository {
-    fn load_todos(&self) -> Result<Vec<Todo>, YaruError> {
+    fn load_todos(&self) -> Result<Vec<Todo>> {
         load_json(&self.file_path)
     }
 
-    fn save_todos(&self, todos: &[Todo]) -> Result<(), YaruError> {
+    fn save_todos(&self, todos: &[Todo]) -> Result<()> {
         save_json(&self.file_path, todos)
     }
 
-    fn ensure_data_exists(&self) -> Result<(), YaruError> {
+    fn ensure_data_exists(&self) -> Result<()> {
         if !self.file_path.exists() {
             save_json(&self.file_path, &Vec::<Todo>::new())?;
         }

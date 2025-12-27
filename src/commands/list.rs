@@ -1,13 +1,13 @@
 use crate::{
     cli::{Filter, FilterKey},
     display::create_todo_table,
-    error::YaruError,
     repository::{JsonTodoRepository, TodoRepository},
     todo::{Status, Todo},
 };
+use anyhow::Result;
 
 /// 全てのTodoを一覧表示
-pub fn list_todos(filters: Option<Vec<Filter>>) -> Result<(), YaruError> {
+pub fn list_todos(filters: Option<Vec<Filter>>) -> Result<()> {
     let repo = JsonTodoRepository::default();
     let mut todos = repo.load_todos()?;
 
@@ -30,11 +30,11 @@ pub fn list_todos(filters: Option<Vec<Filter>>) -> Result<(), YaruError> {
 }
 
 /// フィルタを適用してTodoリストを絞り込む
-fn apply_filter(todos: Vec<Todo>, filter: &Filter) -> Result<Vec<Todo>, YaruError> {
+fn apply_filter(todos: Vec<Todo>, filter: &Filter) -> Result<Vec<Todo>> {
     match filter.key {
         FilterKey::Status => {
             let status = Status::from_filter_value(&filter.value)
-                .map_err(|e| YaruError::InvalidInput(e))?;
+                .map_err(|_| anyhow::anyhow!("無効なステータス値です: {}", &filter.value))?;
             Ok(todos.into_iter().filter(|todo| todo.status == status).collect())
         }
     }

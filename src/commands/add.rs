@@ -1,19 +1,19 @@
 use crate::{
     display::create_single_todo_table,
-    error::YaruError,
     repository::{JsonTodoRepository, TodoRepository},
     todo::{Status, Todo},
 };
+use anyhow::{Context, Result};
 use dialoguer::Input;
 
 /// 新しいTodoを追加
-pub fn add_todo(title: Option<String>, status: Option<Status>) -> Result<(), YaruError> {
+pub fn add_todo(title: Option<String>, status: Option<Status>) -> Result<()> {
     let title = match title {
         Some(t) => t,
         None => Input::new()
             .with_prompt("タスクのタイトルを入力してください")
             .interact_text()
-            .map_err(|e| YaruError::IoError { source: e.into() })?,
+            .context("タスクのタイトルの入力に失敗しました")?,
     };
 
     let status = status.unwrap_or(Status::Pending);

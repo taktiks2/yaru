@@ -1,10 +1,10 @@
 use crate::{
-    error::YaruError,
     repository::{JsonTodoRepository, TodoRepository},
 };
+use anyhow::Result;
 
 /// 指定されたIDのTodoを削除
-pub fn delete_todo(id: u64) -> Result<(), YaruError> {
+pub fn delete_todo(id: u64) -> Result<()> {
     let repo = JsonTodoRepository::default();
     let todos = repo.load_todos()?;
     let initial_count = todos.len();
