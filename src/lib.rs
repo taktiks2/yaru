@@ -10,6 +10,7 @@ use anyhow::{anyhow, Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands};
 use commands::{add_todo, delete_todo, list_todos};
+use config::load_config;
 use repository::{JsonTodoRepository, TodoRepository};
 
 /// アプリケーションのエントリーポイント
@@ -24,19 +25,22 @@ pub fn run() -> Result<()> {
         }
     })?;
 
+    // 設定を読み込む
+    let config = load_config()?;
+
     // データファイルが存在することを確認
-    let repo = JsonTodoRepository::default();
+    let repo = JsonTodoRepository::new(&config.storage.todo_file);
     repo.ensure_data_exists()
         .context("データファイルの初期化に失敗しました")?;
 
-    handle_command(args)
+    handle_command(args, repo)
 }
 
 /// コマンドを実行
-fn handle_command(args: Args) -> Result<()> {
+fn handle_command(args: Args, repo: JsonTodoRepository) -> Result<()> {
     match args.command {
-        Commands::List { filter } => list_todos(filter),
-        Commands::Add { title, status } => add_todo(title, status),
-        Commands::Delete { id } => delete_todo(id),
+        Commands::List { filter } => list_todos(&repo, filter),
+        Commands::Add { title, status } => add_todo(&repo, title, status),
+        Commands::Delete { id } => delete_todo(&repo, id),
     }
 }
