@@ -42,7 +42,7 @@ use std::{fs, path::Path};
 ///
 /// そのため、`T` には暗黙的に `Sized` 制約が必要で、`?Sized` は使えません。
 ///
-/// ```rust
+/// ```rust,ignore
 /// // これはできない
 /// let x: [i32] = load_json(...);  // ❌ [i32] はサイズ不定
 ///
@@ -81,7 +81,7 @@ where
 ///
 /// `?Sized` により、以下のような呼び出しが可能になります：
 ///
-/// ```rust
+/// ```rust,ignore
 /// // Vec<i32> は構造体自体が固定サイズ（24バイト）
 /// let vec = vec![1, 2, 3];
 /// save_json("path.json", &vec);  // T = Vec<i32> ✓
