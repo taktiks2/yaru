@@ -1,11 +1,8 @@
-use crate::{
-    repository::{JsonTodoRepository, TodoRepository},
-};
+use crate::repository::TodoRepository;
 use anyhow::Result;
 
 /// 指定されたIDのTodoを削除
-pub fn delete_todo(id: u64) -> Result<()> {
-    let repo = JsonTodoRepository::default();
+pub fn delete_todo(repo: &impl TodoRepository, id: u64) -> Result<()> {
     let todos = repo.load_todos()?;
     let initial_count = todos.len();
     let filtered_todos: Vec<_> = todos.into_iter().filter(|todo| todo.id != id).collect();

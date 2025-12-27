@@ -1,13 +1,17 @@
 use crate::{
     display::create_single_todo_table,
-    repository::{JsonTodoRepository, TodoRepository},
+    repository::TodoRepository,
     todo::{Status, Todo},
 };
 use anyhow::{Context, Result};
 use dialoguer::Input;
 
 /// 新しいTodoを追加
-pub fn add_todo(title: Option<String>, status: Option<Status>) -> Result<()> {
+pub fn add_todo(
+    repo: &impl TodoRepository,
+    title: Option<String>,
+    status: Option<Status>,
+) -> Result<()> {
     let title = match title {
         Some(t) => t,
         None => Input::new()
@@ -18,7 +22,6 @@ pub fn add_todo(title: Option<String>, status: Option<Status>) -> Result<()> {
 
     let status = status.unwrap_or(Status::Pending);
 
-    let repo = JsonTodoRepository::default();
     let mut todos = repo.load_todos()?;
     let new_id = repo.find_next_id(&todos);
     let new_todo = Todo::new(new_id, &title, status);

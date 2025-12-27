@@ -1,14 +1,13 @@
 use crate::{
     cli::{Filter, FilterKey},
     display::create_todo_table,
-    repository::{JsonTodoRepository, TodoRepository},
+    repository::TodoRepository,
     todo::{Status, Todo},
 };
 use anyhow::Result;
 
 /// 全てのTodoを一覧表示
-pub fn list_todos(filters: Option<Vec<Filter>>) -> Result<()> {
-    let repo = JsonTodoRepository::default();
+pub fn list_todos(repo: &impl TodoRepository, filters: Option<Vec<Filter>>) -> Result<()> {
     let mut todos = repo.load_todos()?;
 
     // フィルタリングを適用
