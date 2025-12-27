@@ -4,7 +4,7 @@ use crate::{
     todo::{Status, Todo},
 };
 use anyhow::{Context, Result};
-use dialoguer::Input;
+use inquire::Text;
 
 /// 新しいTodoを追加
 pub fn add_todo(
@@ -14,9 +14,8 @@ pub fn add_todo(
 ) -> Result<()> {
     let title = match title {
         Some(t) => t,
-        None => Input::new()
-            .with_prompt("タスクのタイトルを入力してください")
-            .interact_text()
+        None => Text::new("タスクのタイトルを入力してください")
+            .prompt()
             .context("タスクのタイトルの入力に失敗しました")?,
     };
 
