@@ -4,7 +4,7 @@ use crate::{
     todo::{Status, Todo},
 };
 use anyhow::{Context, Result};
-use inquire::Text;
+use inquire::{Text, validator};
 
 /// 新しいTodoを追加
 pub fn add_todo(
@@ -15,6 +15,7 @@ pub fn add_todo(
     let title = match title {
         Some(t) => t,
         None => Text::new("タスクのタイトルを入力してください")
+            .with_validator(validator::MinLengthValidator::new(1))
             .prompt()
             .context("タスクのタイトルの入力に失敗しました")?,
     };
