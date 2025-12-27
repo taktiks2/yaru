@@ -29,6 +29,28 @@ impl Default for StorageConfig {
     }
 }
 
+/// 設定ファイルのパスを取得
+fn get_config_path() -> Result<PathBuf> {
+    let home = std::env::var("HOME").context("HOME環境変数が設定されていません")?;
+    Ok(PathBuf::from(home)
+        .join(".config")
+        .join("yaru")
+        .join("config.toml"))
+}
+
+/// 設定を読み込む
+///
+/// 設定ファイルが存在する場合はそれを読み込み、存在しない場合はデフォルト設定を返す
+pub fn load_config() -> Result<Config> {
+    let config_path = get_config_path()?;
+
+    if config_path.exists() {
+        load_config_from_file(&config_path)
+    } else {
+        Ok(Config::default())
+    }
+}
+
 /// 指定されたパスから設定ファイルを読み込む
 pub fn load_config_from_file(path: &Path) -> Result<Config> {
     let content = fs::read_to_string(path).with_context(|| {
