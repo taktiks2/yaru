@@ -16,18 +16,25 @@ pub struct StorageConfig {
 impl Default for StorageConfig {
     fn default() -> Self {
         Self {
-            todo_file: PathBuf::from("todo.json"),
+            todo_file: get_default_todo_path().unwrap_or_else(|_| PathBuf::from("todo.json")),
         }
     }
 }
 
+/// yaruの設定ディレクトリパスを取得
+fn get_yaru_dir() -> Result<PathBuf> {
+    let home = std::env::var("HOME").context("HOME環境変数が設定されていません")?;
+    Ok(PathBuf::from(home).join(".config").join("yaru"))
+}
+
 /// 設定ファイルのパスを取得
 fn get_config_path() -> Result<PathBuf> {
-    let home = std::env::var("HOME").context("HOME環境変数が設定されていません")?;
-    Ok(PathBuf::from(home)
-        .join(".config")
-        .join("yaru")
-        .join("config.toml"))
+    Ok(get_yaru_dir()?.join("config.toml"))
+}
+
+/// デフォルトのtodoファイルパスを取得
+fn get_default_todo_path() -> Result<PathBuf> {
+    Ok(get_yaru_dir()?.join("todo.json"))
 }
 
 /// 設定を読み込む
@@ -56,9 +63,22 @@ mod tests {
 
     #[test]
     fn test_config_default() {
-        // デフォルト設定が "todo.json" を使用することを確認
+        use std::env;
+
+        // デフォルト設定が ~/.config/yaru/todo.json を使用することを確認
         let config = Config::default();
-        assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+
+        // HOME環境変数が設定されている場合は絶対パスを確認
+        if let Ok(home) = env::var("HOME") {
+            let expected_path = PathBuf::from(home)
+                .join(".config")
+                .join("yaru")
+                .join("todo.json");
+            assert_eq!(config.storage.todo_file, expected_path);
+        } else {
+            // HOME環境変数がない場合はフォールバック値を確認
+            assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+        }
     }
 
     #[test]
@@ -176,8 +196,21 @@ todo_file = "/existing/path/todos.json"
 
     #[test]
     fn test_load_config_with_nonexistent_file() {
+        use std::env;
+
         // 設定ファイルが存在しない場合、デフォルト値が返されることを確認
         let config = load_config().unwrap();
-        assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+
+        // HOME環境変数が設定されている場合は絶対パスを確認
+        if let Ok(home) = env::var("HOME") {
+            let expected_path = PathBuf::from(home)
+                .join(".config")
+                .join("yaru")
+                .join("todo.json");
+            assert_eq!(config.storage.todo_file, expected_path);
+        } else {
+            // HOME環境変数がない場合はフォールバック値を確認
+            assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+        }
     }
 }

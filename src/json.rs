@@ -33,6 +33,25 @@ use std::{fs, path::Path};
 ///
 /// この関数が返す `T` は所有データでなければならない。
 /// `for<'de>` により、一時的な借用からでも所有データを作れることを保証している。
+///
+/// # `?Sized` が不要な理由
+///
+/// この関数は `T` を値として返します（`-> Result<T>`）。
+/// 値として返す場合、その値をスタックに配置する必要があるため、
+/// コンパイル時にサイズが分かっていなければなりません。
+///
+/// そのため、`T` には暗黙的に `Sized` 制約が必要で、`?Sized` は使えません。
+///
+/// ```rust
+/// // これはできない
+/// let x: [i32] = load_json(...);  // ❌ [i32] はサイズ不定
+///
+/// // これならOK
+/// let x: Vec<i32> = load_json(...);  // ✓ Vec<i32> は固定サイズ（24バイト）
+/// ```
+///
+/// 一方、`save_json` は `&T` を受け取るため、参照自体のサイズが固定なので
+/// `?Sized` を付けてサイズ不定の型も受け入れられます。
 pub fn load_json<T>(path: impl AsRef<Path>) -> Result<T>
 where
     T: for<'de> Deserialize<'de>,
@@ -45,11 +64,48 @@ where
 }
 
 /// JSONファイルを書き出す関数
+///
+/// # `?Sized` について
+///
+/// Rust では、デフォルトで全てのジェネリック型パラメータに暗黙的に `Sized` 制約が付きます。
+/// つまり、コンパイル時にサイズが既知の型のみ受け入れます。
+///
+/// `?Sized` を付けることで、「Sized でなくてもよい」= サイズが不定の型も受け入れられるようになります。
+///
+/// ## なぜ安全か
+///
+/// この関数は `data: &T` という参照を受け取ります。参照自体のサイズは常に固定（ポインタサイズ）なので、
+/// `T` 自体のサイズが不定でも問題ありません。
+///
+/// ## 具体的な利点
+///
+/// `?Sized` により、以下のような呼び出しが可能になります：
+///
+/// ```rust
+/// // Vec<i32> は構造体自体が固定サイズ（24バイト）
+/// let vec = vec![1, 2, 3];
+/// save_json("path.json", &vec);  // T = Vec<i32> ✓
+///
+/// // [i32] はサイズ不定（要素数が実行時に決まる）
+/// let slice: &[i32] = &[1, 2, 3];
+/// save_json("path.json", slice);  // T = [i32] ✓ (?Sized がないとエラー)
+///
+/// // str も サイズ不定
+/// let s: &str = "hello";
+/// save_json("path.json", s);  // T = str ✓ (?Sized がないとエラー)
+/// ```
 pub fn save_json<T>(path: impl AsRef<Path>, data: &T) -> Result<()>
 where
     T: Serialize + ?Sized,
 {
     let path = path.as_ref();
+
+    // 親ディレクトリを作成（存在しない場合）
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("ディレクトリの作成に失敗しました: {}", parent.display()))?;
+    }
+
     let json = serde_json::to_string_pretty(data).context("JSONのシリアライズに失敗しました")?;
     fs::write(path, json)
         .with_context(|| format!("ファイルの書き込みに失敗しました: {}", path.display()))?;
