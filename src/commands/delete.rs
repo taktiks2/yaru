@@ -19,7 +19,6 @@ pub fn delete_todo(repo: &impl TodoRepository, id: u64) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    
 
     #[test]
     fn test_delete_todo_existing_id() {

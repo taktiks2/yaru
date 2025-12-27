@@ -3,17 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     pub storage: StorageConfig,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            storage: StorageConfig::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,12 +45,8 @@ pub fn load_config() -> Result<Config> {
 
 /// 指定されたパスから設定ファイルを読み込む
 pub fn load_config_from_file(path: &Path) -> Result<Config> {
-    let content = fs::read_to_string(path).with_context(|| {
-        format!(
-            "設定ファイルの読み込みに失敗しました: {}",
-            path.display()
-        )
-    })?;
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("設定ファイルの読み込みに失敗しました: {}", path.display()))?;
     toml::from_str(&content).context("設定ファイルのパースに失敗しました")
 }
 

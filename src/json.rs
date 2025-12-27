@@ -40,8 +40,7 @@ where
     let path = path.as_ref();
     let content = fs::read_to_string(path)
         .with_context(|| format!("ファイルの読み込みに失敗しました: {}", path.display()))?; // ① String を所有（関数内のみ）
-    let data: T = serde_json::from_str(&content)
-        .context("JSONの解析に失敗しました")?; // ② &content から T を作る（所有データ）
+    let data: T = serde_json::from_str(&content).context("JSONの解析に失敗しました")?; // ② &content から T を作る（所有データ）
     Ok(data) // ③ T を返す（content は破棄されるが、T は独立している）
 }
 
@@ -51,8 +50,7 @@ where
     T: Serialize + ?Sized,
 {
     let path = path.as_ref();
-    let json = serde_json::to_string_pretty(data)
-        .context("JSONのシリアライズに失敗しました")?;
+    let json = serde_json::to_string_pretty(data).context("JSONのシリアライズに失敗しました")?;
     fs::write(path, json)
         .with_context(|| format!("ファイルの書き込みに失敗しました: {}", path.display()))?;
     Ok(())

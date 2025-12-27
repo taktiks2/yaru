@@ -34,14 +34,16 @@ fn apply_filter(todos: Vec<Todo>, filter: &Filter) -> Result<Vec<Todo>> {
         FilterKey::Status => {
             let status = Status::from_filter_value(&filter.value)
                 .map_err(|_| anyhow::anyhow!("無効なステータス値です: {}", &filter.value))?;
-            Ok(todos.into_iter().filter(|todo| todo.status == status).collect())
+            Ok(todos
+                .into_iter()
+                .filter(|todo| todo.status == status)
+                .collect())
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    
 
     #[test]
     fn test_list_todos_empty() {

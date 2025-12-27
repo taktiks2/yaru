@@ -6,7 +6,7 @@ mod json;
 mod repository;
 mod todo;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands};
 use commands::{add_todo, delete_todo, list_todos};

@@ -35,11 +35,6 @@ impl JsonTodoRepository {
             file_path: file_path.into(),
         }
     }
-
-    /// デフォルトのファイルパス("todo.json")を使用してインスタンスを作成
-    pub fn default() -> Self {
-        Self::new("todo.json")
-    }
 }
 
 impl TodoRepository for JsonTodoRepository {
