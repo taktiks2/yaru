@@ -1,7 +1,7 @@
 use crate::{
     display::create_single_todo_table,
     repository::TodoRepository,
-    todo::{Status, Todo},
+    todo::{Priority, Status, Todo},
 };
 use anyhow::{Context, Result};
 use inquire::{Editor, Text, validator};
@@ -12,6 +12,7 @@ pub fn add_todo(
     title: Option<String>,
     description: Option<String>,
     status: Option<Status>,
+    priority: Option<Priority>,
 ) -> Result<()> {
     let title = match title {
         Some(t) => t,
@@ -29,10 +30,11 @@ pub fn add_todo(
     };
 
     let status = status.unwrap_or(Status::Pending);
+    let priority = priority.unwrap_or(Priority::Medium);
 
     let mut todos = repo.load_todos()?;
     let new_id = repo.find_next_id(&todos);
-    let new_todo = Todo::new(new_id, &title, &description, status);
+    let new_todo = Todo::new(new_id, &title, &description, status, priority);
 
     todos.push(new_todo.clone());
     repo.save_todos(&todos)?;
