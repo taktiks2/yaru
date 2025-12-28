@@ -161,7 +161,13 @@ mod tests {
         let test_file = test_dir.path().join("todo.json");
         let repo = JsonTodoRepository::new(&test_file);
 
-        let todos = vec![Todo::new(5, "タスク", "", Status::Pending, Priority::Medium)];
+        let todos = vec![Todo::new(
+            5,
+            "タスク",
+            "",
+            Status::Pending,
+            Priority::Medium,
+        )];
         let next_id = repo.find_next_id(&todos);
         assert_eq!(next_id, 6);
     }
@@ -179,7 +185,13 @@ mod tests {
         assert!(test_file.exists());
 
         // Todoを保存
-        let todos = vec![Todo::new(1, "カスタムパステスト", "", Status::Pending, Priority::Medium)];
+        let todos = vec![Todo::new(
+            1,
+            "カスタムパステスト",
+            "",
+            Status::Pending,
+            Priority::Medium,
+        )];
         repo.save_todos(&todos).unwrap();
 
         // Todoを読み込み

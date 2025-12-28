@@ -119,7 +119,13 @@ mod tests {
     #[test]
     fn test_create_todo_table_includes_description() {
         // テーブルにdescription列が含まれていることを確認
-        let todos = vec![Todo::new(1, "タスク1", "これは説明文です", Status::Pending, Priority::Medium)];
+        let todos = vec![Todo::new(
+            1,
+            "タスク1",
+            "これは説明文です",
+            Status::Pending,
+            Priority::Medium,
+        )];
         let table = create_todo_table(&todos);
 
         let table_str = table.to_string();
@@ -131,7 +137,13 @@ mod tests {
     fn test_create_todo_table_truncates_long_description() {
         // 長い説明文が切り詰められることを確認
         let long_desc = "これは非常に長い説明文です。この説明文は30文字を超えているため切り詰められるはずです。さらに長くしています。";
-        let todos = vec![Todo::new(1, "タスク", long_desc, Status::Pending, Priority::Medium)];
+        let todos = vec![Todo::new(
+            1,
+            "タスク",
+            long_desc,
+            Status::Pending,
+            Priority::Medium,
+        )];
         let table = create_todo_table(&todos);
 
         let table_str = table.to_string();
