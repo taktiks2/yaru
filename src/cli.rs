@@ -1,4 +1,4 @@
-use crate::todo::Status;
+use crate::todo::{Priority, Status};
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 
@@ -72,6 +72,9 @@ pub enum Commands {
         /// タスクの状態
         #[arg(short, long)]
         status: Option<Status>,
+        /// タスクの優先度
+        #[arg(short, long)]
+        priority: Option<Priority>,
     },
     /// 指定されたIDのタスクを削除
     Delete {

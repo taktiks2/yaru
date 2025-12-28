@@ -44,7 +44,8 @@ fn handle_command(args: Args, repo: JsonTodoRepository) -> Result<()> {
             title,
             description,
             status,
-        } => add_todo(&repo, title, description, status),
+            priority,
+        } => add_todo(&repo, title, description, status, priority),
         Commands::Delete { id } => delete_todo(&repo, id),
     }
 }
