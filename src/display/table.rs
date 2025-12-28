@@ -1,33 +1,26 @@
-use crate::{display::format::format_local_time, todo::Todo};
+use crate::{
+    display::format::{format_local_time, truncate_text},
+    todo::Todo,
+};
 use comfy_table::Table;
-
-/// 説明文を指定された最大長に切り詰める
-///
-/// # 引数
-/// - `desc`: 切り詰める説明文
-/// - `max_len`: 最大文字数
-///
-/// # 戻り値
-/// 切り詰められた文字列。元の文字列が最大長以下の場合はそのまま返す。
-/// 切り詰めた場合は末尾に "..." を追加する。
-fn truncate_description(desc: &str, max_len: usize) -> String {
-    if desc.chars().count() > max_len {
-        format!("{}...", desc.chars().take(max_len).collect::<String>())
-    } else {
-        desc.to_string()
-    }
-}
 
 /// Todoのテーブルを作成
 pub fn create_todo_table(todos: &[Todo]) -> Table {
     let mut table = Table::new();
-    table.set_header(vec!["ID", "タイトル", "説明", "ステータス", "作成日", "更新日"]);
+    table.set_header(vec![
+        "ID",
+        "タイトル",
+        "説明",
+        "ステータス",
+        "作成日",
+        "更新日",
+    ]);
 
     for todo in todos {
         table.add_row(vec![
             todo.id.to_string(),
-            todo.title.clone(),
-            truncate_description(&todo.description, 30),
+            truncate_text(&todo.title, 20),
+            truncate_text(&todo.description, 20),
             todo.status.to_string(),
             format_local_time(&todo.created_at),
             format_local_time(&todo.updated_at),
@@ -40,12 +33,19 @@ pub fn create_todo_table(todos: &[Todo]) -> Table {
 /// 単一のTodoをテーブルとして表示
 pub fn create_single_todo_table(todo: &Todo) -> Table {
     let mut table = Table::new();
-    table.set_header(vec!["ID", "タイトル", "説明", "ステータス", "作成日", "更新日"]);
+    table.set_header(vec![
+        "ID",
+        "タイトル",
+        "説明",
+        "ステータス",
+        "作成日",
+        "更新日",
+    ]);
 
     table.add_row(vec![
         todo.id.to_string(),
         todo.title.clone(),
-        truncate_description(&todo.description, 30),
+        truncate_text(&todo.description, 30),
         todo.status.to_string(),
         format_local_time(&todo.created_at),
         format_local_time(&todo.updated_at),
@@ -113,37 +113,9 @@ mod tests {
     }
 
     #[test]
-    fn test_truncate_description_short() {
-        // 短い説明文はそのまま返される
-        let desc = "短い説明";
-        let result = truncate_description(desc, 30);
-        assert_eq!(result, "短い説明");
-    }
-
-    #[test]
-    fn test_truncate_description_long() {
-        // 長い説明文は切り詰められる
-        let desc = "これは非常に長い説明文です。この説明文は30文字を超えているため切り詰められるはずです。";
-        let result = truncate_description(desc, 30);
-        assert_eq!(result.chars().count(), 33); // 30文字 + "..."
-        assert!(result.ends_with("..."));
-        assert!(result.starts_with("これは非常に長い説明文です。"));
-    }
-
-    #[test]
-    fn test_truncate_description_exactly_max() {
-        // ちょうど最大長の説明文
-        let desc = "1234567890123456789012345678901234567890"; // 40文字
-        let result = truncate_description(desc, 40);
-        assert_eq!(result, desc);
-    }
-
-    #[test]
     fn test_create_todo_table_includes_description() {
         // テーブルにdescription列が含まれていることを確認
-        let todos = vec![
-            Todo::new(1, "タスク1", "これは説明文です", Status::Pending),
-        ];
+        let todos = vec![Todo::new(1, "タスク1", "これは説明文です", Status::Pending)];
         let table = create_todo_table(&todos);
 
         let table_str = table.to_string();
@@ -155,9 +127,7 @@ mod tests {
     fn test_create_todo_table_truncates_long_description() {
         // 長い説明文が切り詰められることを確認
         let long_desc = "これは非常に長い説明文です。この説明文は30文字を超えているため切り詰められるはずです。さらに長くしています。";
-        let todos = vec![
-            Todo::new(1, "タスク", long_desc, Status::Pending),
-        ];
+        let todos = vec![Todo::new(1, "タスク", long_desc, Status::Pending)];
         let table = create_todo_table(&todos);
 
         let table_str = table.to_string();
