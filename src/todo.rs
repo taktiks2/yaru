@@ -17,6 +17,7 @@ pub struct Todo {
     pub title: String,
     pub description: String,
     pub status: Status,
+    pub priority: Priority,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -30,12 +31,19 @@ impl Todo {
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTodoインスタンス
-    pub fn new(id: u64, title: &str, description: &str, status: Status) -> Self {
+    pub fn new(
+        id: u64,
+        title: &str,
+        description: &str,
+        status: Status,
+        priority: Priority,
+    ) -> Self {
         Self {
             id,
             title: title.to_string(),
             description: description.to_string(),
             status,
+            priority,
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         }
@@ -74,6 +82,25 @@ impl fmt::Display for Status {
             Status::Pending => write!(f, "保留中"),
             Status::Completed => write!(f, "完了"),
             Status::InProgress => write!(f, "進行中"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
+pub enum Priority {
+    Critical,
+    High,
+    Medium,
+    Low,
+}
+
+impl fmt::Display for Priority {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Priority::Critical => write!(f, "重大"),
+            Priority::High => write!(f, "高"),
+            Priority::Medium => write!(f, "中"),
+            Priority::Low => write!(f, "低"),
         }
     }
 }
