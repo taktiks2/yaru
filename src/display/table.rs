@@ -44,8 +44,8 @@ pub fn create_single_todo_table(todo: &Todo) -> Table {
 
     table.add_row(vec![
         todo.id.to_string(),
-        todo.title.clone(),
-        truncate_text(&todo.description, 30),
+        truncate_text(&todo.title, 20),
+        truncate_text(&todo.description, 20),
         todo.status.to_string(),
         format_local_time(&todo.created_at),
         format_local_time(&todo.updated_at),

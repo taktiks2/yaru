@@ -22,14 +22,8 @@ pub fn format_local_time(utc_time_str: &str) -> String {
 /// 切り詰めた場合は末尾に "..." を追加する。
 /// 改行はスペースに置き換えられ、複数の連続するスペースは1つにまとめられる。
 pub fn truncate_text(desc: &str, max_len: usize) -> String {
-    // 改行をスペースに置き換える
-    let normalized = desc.replace('\n', " ");
-
-    // 複数の連続するスペースを1つにまとめる
-    let normalized = normalized
-        .split_whitespace()
-        .collect::<Vec<&str>>()
-        .join(" ");
+    // 複数の連続するスペースを1つにまとめる(改行も含めて)
+    let normalized = desc.split_whitespace().collect::<Vec<&str>>().join(" ");
 
     // 文字数を確認して切り詰める
     if normalized.chars().count() > max_len {
