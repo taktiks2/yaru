@@ -88,19 +88,19 @@ impl fmt::Display for Status {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
 pub enum Priority {
-    Critical,
-    High,
-    Medium,
     Low,
+    Medium,
+    High,
+    Critical,
 }
 
 impl fmt::Display for Priority {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Priority::Critical => write!(f, "重大"),
-            Priority::High => write!(f, "高"),
-            Priority::Medium => write!(f, "中"),
             Priority::Low => write!(f, "低"),
+            Priority::Medium => write!(f, "中"),
+            Priority::High => write!(f, "高"),
+            Priority::Critical => write!(f, "重大"),
         }
     }
 }
