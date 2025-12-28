@@ -1,15 +1,26 @@
-use crate::{display::format::format_local_time, todo::Todo};
+use crate::{
+    display::format::{format_local_time, truncate_text},
+    todo::Todo,
+};
 use comfy_table::Table;
 
 /// Todoのテーブルを作成
 pub fn create_todo_table(todos: &[Todo]) -> Table {
     let mut table = Table::new();
-    table.set_header(vec!["ID", "タイトル", "ステータス", "作成日", "更新日"]);
+    table.set_header(vec![
+        "ID",
+        "タイトル",
+        "説明",
+        "ステータス",
+        "作成日",
+        "更新日",
+    ]);
 
     for todo in todos {
         table.add_row(vec![
             todo.id.to_string(),
-            todo.title.clone(),
+            truncate_text(&todo.title, 20),
+            truncate_text(&todo.description, 20),
             todo.status.to_string(),
             format_local_time(&todo.created_at),
             format_local_time(&todo.updated_at),
@@ -22,11 +33,19 @@ pub fn create_todo_table(todos: &[Todo]) -> Table {
 /// 単一のTodoをテーブルとして表示
 pub fn create_single_todo_table(todo: &Todo) -> Table {
     let mut table = Table::new();
-    table.set_header(vec!["ID", "タイトル", "ステータス", "作成日", "更新日"]);
+    table.set_header(vec![
+        "ID",
+        "タイトル",
+        "説明",
+        "ステータス",
+        "作成日",
+        "更新日",
+    ]);
 
     table.add_row(vec![
         todo.id.to_string(),
-        todo.title.clone(),
+        truncate_text(&todo.title, 20),
+        truncate_text(&todo.description, 20),
         todo.status.to_string(),
         format_local_time(&todo.created_at),
         format_local_time(&todo.updated_at),
@@ -55,8 +74,8 @@ mod tests {
     #[test]
     fn test_create_todo_table_with_todos() {
         let todos = vec![
-            Todo::new(1, "テストタスク1", Status::Pending),
-            Todo::new(2, "テストタスク2", Status::Completed),
+            Todo::new(1, "テストタスク1", "", Status::Pending),
+            Todo::new(2, "テストタスク2", "", Status::Completed),
         ];
         let table = create_todo_table(&todos);
 
@@ -69,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_create_single_todo_table() {
-        let todo = Todo::new(1, "新しいタスク", Status::InProgress);
+        let todo = Todo::new(1, "新しいタスク", "", Status::InProgress);
         let table = create_single_todo_table(&todo);
 
         let table_str = table.to_string();
@@ -81,9 +100,9 @@ mod tests {
     #[test]
     fn test_create_todo_table_with_different_statuses() {
         let todos = vec![
-            Todo::new(1, "保留中タスク", Status::Pending),
-            Todo::new(2, "進行中タスク", Status::InProgress),
-            Todo::new(3, "完了タスク", Status::Completed),
+            Todo::new(1, "保留中タスク", "", Status::Pending),
+            Todo::new(2, "進行中タスク", "", Status::InProgress),
+            Todo::new(3, "完了タスク", "", Status::Completed),
         ];
         let table = create_todo_table(&todos);
 
@@ -91,5 +110,30 @@ mod tests {
         assert!(table_str.contains("保留中"));
         assert!(table_str.contains("進行中"));
         assert!(table_str.contains("完了"));
+    }
+
+    #[test]
+    fn test_create_todo_table_includes_description() {
+        // テーブルにdescription列が含まれていることを確認
+        let todos = vec![Todo::new(1, "タスク1", "これは説明文です", Status::Pending)];
+        let table = create_todo_table(&todos);
+
+        let table_str = table.to_string();
+        assert!(table_str.contains("説明"));
+        assert!(table_str.contains("これは説明文です"));
+    }
+
+    #[test]
+    fn test_create_todo_table_truncates_long_description() {
+        // 長い説明文が切り詰められることを確認
+        let long_desc = "これは非常に長い説明文です。この説明文は30文字を超えているため切り詰められるはずです。さらに長くしています。";
+        let todos = vec![Todo::new(1, "タスク", long_desc, Status::Pending)];
+        let table = create_todo_table(&todos);
+
+        let table_str = table.to_string();
+        // 切り詰められた説明文が含まれている
+        assert!(table_str.contains("..."));
+        // 元の長い説明文がそのまま含まれていないことを確認
+        assert!(!table_str.contains(long_desc));
     }
 }
