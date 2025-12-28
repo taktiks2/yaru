@@ -40,7 +40,11 @@ pub fn run() -> Result<()> {
 fn handle_command(args: Args, repo: JsonTodoRepository) -> Result<()> {
     match args.command {
         Commands::List { filter } => list_todos(&repo, filter),
-        Commands::Add { title, status } => add_todo(&repo, title, status),
+        Commands::Add {
+            title,
+            description,
+            status,
+        } => add_todo(&repo, title, description, status),
         Commands::Delete { id } => delete_todo(&repo, id),
     }
 }

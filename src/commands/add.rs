@@ -4,12 +4,13 @@ use crate::{
     todo::{Status, Todo},
 };
 use anyhow::{Context, Result};
-use inquire::{Text, validator};
+use inquire::{Editor, Text, validator};
 
 /// 新しいTodoを追加
 pub fn add_todo(
     repo: &impl TodoRepository,
     title: Option<String>,
+    description: Option<String>,
     status: Option<Status>,
 ) -> Result<()> {
     let title = match title {
@@ -20,11 +21,18 @@ pub fn add_todo(
             .context("タスクのタイトルの入力に失敗しました")?,
     };
 
+    let description = match description {
+        Some(d) => d,
+        None => Editor::new("タスクの説明を入力してください")
+            .prompt()
+            .context("タスクの説明の入力に失敗しました")?,
+    };
+
     let status = status.unwrap_or(Status::Pending);
 
     let mut todos = repo.load_todos()?;
     let new_id = repo.find_next_id(&todos);
-    let new_todo = Todo::new(new_id, &title, status);
+    let new_todo = Todo::new(new_id, &title, &description, status);
 
     todos.push(new_todo.clone());
     repo.save_todos(&todos)?;

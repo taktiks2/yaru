@@ -66,6 +66,9 @@ pub enum Commands {
         /// タスクのタイトル
         #[arg(short, long)]
         title: Option<String>,
+        /// タスクの説明
+        #[arg(short, long)]
+        description: Option<String>,
         /// タスクの状態
         #[arg(short, long)]
         status: Option<Status>,

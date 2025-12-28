@@ -15,6 +15,7 @@ use std::fmt;
 pub struct Todo {
     pub id: u64,
     pub title: String,
+    pub description: String,
     pub status: Status,
     pub created_at: String,
     pub updated_at: String,
@@ -29,10 +30,11 @@ impl Todo {
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTodoインスタンス
-    pub fn new(id: u64, title: &str, status: Status) -> Self {
+    pub fn new(id: u64, title: &str, description: &str, status: Status) -> Self {
         Self {
             id,
             title: title.to_string(),
+            description: description.to_string(),
             status,
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
