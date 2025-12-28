@@ -1,15 +1,33 @@
 use crate::{display::format::format_local_time, todo::Todo};
 use comfy_table::Table;
 
+/// 説明文を指定された最大長に切り詰める
+///
+/// # 引数
+/// - `desc`: 切り詰める説明文
+/// - `max_len`: 最大文字数
+///
+/// # 戻り値
+/// 切り詰められた文字列。元の文字列が最大長以下の場合はそのまま返す。
+/// 切り詰めた場合は末尾に "..." を追加する。
+fn truncate_description(desc: &str, max_len: usize) -> String {
+    if desc.chars().count() > max_len {
+        format!("{}...", desc.chars().take(max_len).collect::<String>())
+    } else {
+        desc.to_string()
+    }
+}
+
 /// Todoのテーブルを作成
 pub fn create_todo_table(todos: &[Todo]) -> Table {
     let mut table = Table::new();
-    table.set_header(vec!["ID", "タイトル", "ステータス", "作成日", "更新日"]);
+    table.set_header(vec!["ID", "タイトル", "説明", "ステータス", "作成日", "更新日"]);
 
     for todo in todos {
         table.add_row(vec![
             todo.id.to_string(),
             todo.title.clone(),
+            truncate_description(&todo.description, 30),
             todo.status.to_string(),
             format_local_time(&todo.created_at),
             format_local_time(&todo.updated_at),
@@ -22,11 +40,12 @@ pub fn create_todo_table(todos: &[Todo]) -> Table {
 /// 単一のTodoをテーブルとして表示
 pub fn create_single_todo_table(todo: &Todo) -> Table {
     let mut table = Table::new();
-    table.set_header(vec!["ID", "タイトル", "ステータス", "作成日", "更新日"]);
+    table.set_header(vec!["ID", "タイトル", "説明", "ステータス", "作成日", "更新日"]);
 
     table.add_row(vec![
         todo.id.to_string(),
         todo.title.clone(),
+        truncate_description(&todo.description, 30),
         todo.status.to_string(),
         format_local_time(&todo.created_at),
         format_local_time(&todo.updated_at),
