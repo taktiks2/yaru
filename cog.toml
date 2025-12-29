@@ -47,6 +47,12 @@ chore = { changelog_title = "Miscellaneous Chores" }
 ci = { changelog_title = "Continuous Integration" }
 build = { changelog_title = "Build System" }
 
+# バンプ設定
+# デフォルトでは feat: → MINOR、fix: → PATCH のみがバンプ対象
+# パフォーマンス改善はユーザーに価値を提供するため PATCH バンプする
+[bump_profiles]
+perf = "patch"
+
 # CHANGELOG生成の設定
 [changelog]
 path = "CHANGELOG.md"
