@@ -4,16 +4,13 @@
 show-data:
     @if [ -f ~/.config/yaru/tasks.json ]; then \
         jq '.' ~/.config/yaru/tasks.json; \
-    elif [ -f ~/.config/yaru/todo.json ]; then \
-        echo "旧ファイル(todo.json)を表示:"; \
-        jq '.' ~/.config/yaru/todo.json; \
     else \
         echo "データファイルが存在しません"; \
     fi
 
-# tasks.jsonファイルを削除（旧todo.jsonも削除）
+# tasks.jsonファイルを削除
 clean-data:
-    rm -f ~/.config/yaru/tasks.json ~/.config/yaru/todo.json
+    rm -f ~/.config/yaru/tasks.json
     @echo "データファイルを削除しました"
 
 # tasks.jsonとconfig.tomlの両方を削除

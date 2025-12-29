@@ -81,7 +81,7 @@ cargo run -- delete --id 1
   - `load_tasks()`: JSONファイルからタスクリストを読み込み
   - `save_tasks()`: タスクリストをJSONファイルに保存
   - `find_next_id()`: 次のIDを生成
-  - `ensure_data_exists()`: データファイルの初期化と旧ファイルからの移行
+  - `ensure_data_exists()`: データファイルの初期化
 
 #### ユーティリティ層
 - `json.rs`: JSONファイル操作の汎用関数
@@ -110,11 +110,6 @@ pub fn add_task(repo: &impl TaskRepository, ...) -> Result<()>
 pub fn list_tasks(repo: &impl TaskRepository, ...) -> Result<()>
 pub fn delete_task(repo: &impl TaskRepository, ...) -> Result<()>
 ```
-
-#### データファイル移行
-- `ensure_data_exists()`メソッドで旧ファイルの存在を確認
-- 旧ファイルが存在し、新ファイルが存在しない場合は自動的にコピー
-- 旧ファイルは削除せず、ユーザーが手動で削除できるように保持
 
 ### エラーハンドリング
 
