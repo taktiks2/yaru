@@ -1,9 +1,9 @@
-use crate::repository::TaskRepository;
+use crate::{repository::Repository, task::Task};
 use anyhow::Result;
 
 /// 指定されたIDのタスクを削除
-pub fn delete_task(repo: &impl TaskRepository, id: u64) -> Result<()> {
-    let mut tasks = repo.load_tasks()?;
+pub fn delete_task(repo: &impl Repository<Task>, id: u64) -> Result<()> {
+    let mut tasks = repo.load()?;
     let initial_count = tasks.len();
     tasks.retain(|task| task.id != id);
 
@@ -12,7 +12,7 @@ pub fn delete_task(repo: &impl TaskRepository, id: u64) -> Result<()> {
         return Ok(());
     }
 
-    repo.save_tasks(&tasks)?;
+    repo.save(&tasks)?;
     println!("タスクを削除しました。");
     Ok(())
 }

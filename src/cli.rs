@@ -75,10 +75,40 @@ pub enum Commands {
         /// タスクの優先度
         #[arg(short, long)]
         priority: Option<Priority>,
+        /// タスクに紐づけるタグのID（カンマ区切り）
+        #[arg(long, value_delimiter = ',')]
+        tags: Option<Vec<u64>>,
     },
     /// 指定されたIDのタスクを削除
     Delete {
         /// 削除するタスクのID
+        #[arg(short, long)]
+        id: u64,
+    },
+    /// タグ管理コマンド
+    Tag {
+        #[command(subcommand)]
+        command: TagCommands,
+    },
+}
+
+/// タグ管理用のサブコマンド
+#[derive(Subcommand, Debug)]
+pub enum TagCommands {
+    /// 新しいタグを追加
+    Add {
+        /// タグの名前
+        #[arg(short, long)]
+        name: Option<String>,
+        /// タグの説明
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+    /// タグ一覧を表示
+    List,
+    /// 指定されたIDのタグを削除
+    Delete {
+        /// 削除するタグのID
         #[arg(short, long)]
         id: u64,
     },

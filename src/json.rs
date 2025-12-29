@@ -1,13 +1,14 @@
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::{fs, path::Path};
 
 /// JSONファイルを読み込む関数
 /// 型は使うときに決定できるようにジェネリックで実装
 ///
-/// # 高階トレイト境界（HRTB: Higher-Rank Trait Bounds）について
+/// # `DeserializeOwned` について
 ///
-/// `T: for<'de> Deserialize<'de>` は「任意のライフタイム 'de に対して Deserialize できる型」を意味する。
+/// `DeserializeOwned` は「所有権を持つデータとしてデシリアライズできる型」を表すトレイト。
+/// `for<'de> Deserialize<'de>` の別名で、より読みやすく意図が明確。
 ///
 /// ## なぜ必要なのか
 ///
@@ -17,22 +18,15 @@ use std::{fs, path::Path};
 /// 3. デシリアライズ結果 `T` を返す（所有データとして）
 /// 4. `content` は関数終了時に破棄される
 ///
-/// もし `T: Deserialize<'a>` と書くと、`'a` は関数シグネチャで定義された
-/// 特定のライフタイムになり、関数内で作られる `content` のライフタイムを
-/// 表現できない（`content` は関数の外から来るものではないため）。
-///
-/// `for<'de>` を使うことで、「どんなライフタイムのデータからでも
-/// デシリアライズして所有データを作れる型」という柔軟性を持たせている。
+/// 関数から返す `T` は所有データでなければならない（借用では元データが消える）。
+/// `DeserializeOwned` により、一時的な借用からでも所有データを作れることを保証している。
 ///
 /// ## 所有データ vs 借用データ
 ///
 /// - 所有データ: `String`, `Vec<T>` など、実際のデータを所有している
-///   → 関数から返すことができる
+///   → 関数から返すことができる（`Task`, `Tag` など）
 /// - 借用データ: `&str`, `&T` など、他のデータへの参照
 ///   → 元のデータが破棄されると使えなくなるため、関数から返せない
-///
-/// この関数が返す `T` は所有データでなければならない。
-/// `for<'de>` により、一時的な借用からでも所有データを作れることを保証している。
 ///
 /// # `?Sized` が不要な理由
 ///
@@ -54,7 +48,7 @@ use std::{fs, path::Path};
 /// `?Sized` を付けてサイズ不定の型も受け入れられます。
 pub fn load_json<T>(path: impl AsRef<Path>) -> Result<T>
 where
-    T: for<'de> Deserialize<'de>,
+    T: DeserializeOwned,
 {
     let path = path.as_ref();
     let content = fs::read_to_string(path)

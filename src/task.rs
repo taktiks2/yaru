@@ -1,3 +1,4 @@
+use crate::repository::HasId;
 use chrono::Utc;
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
@@ -11,6 +12,7 @@ use std::fmt;
 /// - `status`: タスクのステータス
 /// - `created_at`: タスクの作成日時
 /// - `updated_at`: タスクの更新日時
+/// - `tags`: タスクに紐づくタグのIDリスト
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Task {
     pub id: u64,
@@ -18,6 +20,8 @@ pub struct Task {
     pub description: String,
     pub status: Status,
     pub priority: Priority,
+    #[serde(default)]
+    pub tags: Vec<u64>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -28,6 +32,10 @@ impl Task {
     /// # 引数
     /// - `id`: タスクのID
     /// - `title`: タスクのタイトル
+    /// - `description`: タスクの説明
+    /// - `status`: タスクの状態
+    /// - `priority`: タスクの優先度
+    /// - `tags`: タスクに紐づくタグのIDリスト
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTaskインスタンス
@@ -37,6 +45,7 @@ impl Task {
         description: &str,
         status: Status,
         priority: Priority,
+        tags: Vec<u64>,
     ) -> Self {
         Self {
             id,
@@ -44,9 +53,16 @@ impl Task {
             description: description.to_string(),
             status,
             priority,
+            tags,
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         }
+    }
+}
+
+impl HasId for Task {
+    fn id(&self) -> u64 {
+        self.id
     }
 }
 

@@ -11,12 +11,14 @@ pub struct Config {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
     pub task_file: PathBuf,
+    pub tag_file: PathBuf,
 }
 
 impl Default for StorageConfig {
     fn default() -> Self {
         Self {
             task_file: get_default_task_path().unwrap_or_else(|_| PathBuf::from("tasks.json")),
+            tag_file: get_default_tag_path().unwrap_or_else(|_| PathBuf::from("tags.json")),
         }
     }
 }
@@ -35,6 +37,11 @@ fn get_config_path() -> Result<PathBuf> {
 /// デフォルトのタスクファイルパスを取得
 fn get_default_task_path() -> Result<PathBuf> {
     Ok(get_yaru_dir()?.join("tasks.json"))
+}
+
+/// デフォルトのタグファイルパスを取得
+fn get_default_tag_path() -> Result<PathBuf> {
+    Ok(get_yaru_dir()?.join("tags.json"))
 }
 
 /// 設定を読み込む
@@ -87,11 +94,16 @@ mod tests {
         let toml_str = r#"
 [storage]
 task_file = "/custom/path/tasks.json"
+tag_file = "/custom/path/tags.json"
 "#;
         let config: Config = toml::from_str(toml_str).unwrap();
         assert_eq!(
             config.storage.task_file,
             PathBuf::from("/custom/path/tasks.json")
+        );
+        assert_eq!(
+            config.storage.tag_file,
+            PathBuf::from("/custom/path/tags.json")
         );
     }
 
@@ -101,6 +113,7 @@ task_file = "/custom/path/tasks.json"
         let config = Config {
             storage: StorageConfig {
                 task_file: PathBuf::from("/test/path/tasks.json"),
+                tag_file: PathBuf::from("/test/path/tags.json"),
             },
         };
         let toml_str = toml::to_string(&config).unwrap();
@@ -121,6 +134,7 @@ task_file = "/custom/path/tasks.json"
         let config_content = r#"
 [storage]
 task_file = "/custom/path/tasks.json"
+tag_file = "/custom/path/tags.json"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
@@ -129,6 +143,10 @@ task_file = "/custom/path/tasks.json"
         assert_eq!(
             config.storage.task_file,
             PathBuf::from("/custom/path/tasks.json")
+        );
+        assert_eq!(
+            config.storage.tag_file,
+            PathBuf::from("/custom/path/tags.json")
         );
     }
 
@@ -182,6 +200,7 @@ task_file = "/custom/path/tasks.json"
         let config_content = r#"
 [storage]
 task_file = "/existing/path/tasks.json"
+tag_file = "/existing/path/tags.json"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
@@ -191,6 +210,10 @@ task_file = "/existing/path/tasks.json"
         assert_eq!(
             config.storage.task_file,
             PathBuf::from("/existing/path/tasks.json")
+        );
+        assert_eq!(
+            config.storage.tag_file,
+            PathBuf::from("/existing/path/tags.json")
         );
     }
 
