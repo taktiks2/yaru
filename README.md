@@ -10,6 +10,7 @@
 - **JSONベース**: 人間が読めるJSON形式でデータを保存
 - **フィルタ機能**: ステータスでタスクをフィルタリング
 - **対話モード**: タイトルや状態を対話的に入力可能
+- **タグ機能**: タスクにタグを付けて整理
 
 ## インストール
 
@@ -30,14 +31,19 @@ cargo install --path .
 
 ## 使い方
 
-### タスクの追加
+### タスク管理
+
+#### タスクの追加
 
 ```bash
 # コマンドラインオプションで追加
-yaru add --title "買い物に行く" --status pending
+yaru task add --title "買い物に行く" --status pending
 
 # 対話モードで追加（オプション省略時）
-yaru add
+yaru task add
+
+# タグを指定して追加
+yaru task add --title "タスク名" --tags 1,2
 ```
 
 利用可能なステータス:
@@ -45,30 +51,58 @@ yaru add
 - `in-progress`: 進行中
 - `completed`: 完了
 
-### タスクの一覧表示
+#### タスクの一覧表示
 
 ```bash
 # 全てのタスクを表示
-yaru list
+yaru task list
 
 # ステータスでフィルタリング
-yaru list --filter status:pending
-yaru list --filter status:completed
-yaru list --filter status:in-progress
+yaru task list --filter status:pending
+yaru task list --filter status:completed
+yaru task list --filter status:in-progress
 
 # エイリアスも使用可能
-yaru list --filter status:todo      # pending と同じ
-yaru list --filter status:done      # completed と同じ
-yaru list --filter status:progress  # in-progress と同じ
+yaru task list --filter status:todo      # pending と同じ
+yaru task list --filter status:done      # completed と同じ
+yaru task list --filter status:progress  # in-progress と同じ
 ```
 
-### タスクの削除
+#### タスクの削除
 
 ```bash
 # IDを指定して削除
-yaru delete --id 1
+yaru task delete --id 1
 
 # 確認ダイアログが表示されます
+```
+
+### タグ管理
+
+#### タグの追加
+
+```bash
+# コマンドラインオプションで追加
+yaru tag add --name "重要" --description "重要なタスク"
+
+# 対話モードで追加（オプション省略時）
+yaru tag add
+```
+
+#### タグの一覧表示
+
+```bash
+# 全てのタグを表示
+yaru tag list
+```
+
+#### タグの削除
+
+```bash
+# IDを指定して削除
+yaru tag delete --id 1
+
+# タグを使用しているタスクがある場合は警告が表示されます
 ```
 
 ### ヘルプ
@@ -78,9 +112,14 @@ yaru delete --id 1
 yaru --help
 
 # サブコマンドのヘルプ
-yaru list --help
-yaru add --help
-yaru delete --help
+yaru task --help
+yaru task list --help
+yaru task add --help
+yaru task delete --help
+yaru tag --help
+yaru tag list --help
+yaru tag add --help
+yaru tag delete --help
 ```
 
 ## 設定
@@ -91,21 +130,45 @@ yaru delete --help
 
 ```toml
 [storage]
-todo_file = "/path/to/your/todo.json"
+task_file = "/path/to/your/tasks.json"
+tag_file = "/path/to/your/tags.json"
 ```
 
-設定ファイルが存在しない場合、デフォルトで `~/.config/yaru/todo.json` が使用されます。
+設定ファイルが存在しない場合、デフォルトで以下のパスが使用されます:
+- タスク: `~/.config/yaru/tasks.json`
+- タグ: `~/.config/yaru/tags.json`
 
 ### データファイル
 
-Todoデータは以下の形式でJSON形式で保存されます:
+#### タスクデータ
+
+タスクデータは以下の形式でJSON形式で保存されます:
 
 ```json
 [
   {
     "id": 1,
     "title": "買い物に行く",
+    "description": "スーパーで食材を購入",
     "status": "Pending",
+    "priority": "Medium",
+    "tags": [1, 2],
+    "created_at": "2025-12-27T10:00:00+00:00",
+    "updated_at": "2025-12-27T10:00:00+00:00"
+  }
+]
+```
+
+#### タグデータ
+
+タグデータは以下の形式でJSON形式で保存されます:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "重要",
+    "description": "重要なタスク",
     "created_at": "2025-12-27T10:00:00+00:00",
     "updated_at": "2025-12-27T10:00:00+00:00"
   }

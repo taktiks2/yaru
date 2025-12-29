@@ -44,9 +44,12 @@ cargo install --path .
 cargo run -- <subcommand>
 
 # 例:
-cargo run -- list
-cargo run -- add --title "タスク" --status pending
-cargo run -- delete --id 1
+cargo run -- task list
+cargo run -- task add --title "タスク" --status pending
+cargo run -- task delete --id 1
+cargo run -- tag list
+cargo run -- tag add --name "重要"
+cargo run -- tag delete --id 1
 ```
 
 ## Architecture
@@ -60,28 +63,43 @@ cargo run -- delete --id 1
 
 #### CLI層 (`cli.rs`)
 - `Args`: CLIの引数をパース
-- `Commands`: サブコマンド（List, Add, Delete）を定義
+- `Commands`: トップレベルコマンド（Task, Tag）を定義
+- `TaskCommands`: タスク管理サブコマンド（List, Add, Delete）を定義
+- `TagCommands`: タグ管理サブコマンド（List, Add, Delete）を定義
 - `Filter`: フィルタ機能（例: `status:done`）のパース
 
 #### コマンド層 (`commands/`)
 各サブコマンドの実装。リポジトリを受け取り、ビジネスロジックを実行:
-- `add.rs`: タスクの追加（対話モード対応）
+
+タスク管理:
+- `add.rs`: タスクの追加（対話モード対応、タグ存在確認）
 - `list.rs`: タスクの一覧表示（フィルタ機能付き）
 - `delete.rs`: タスクの削除（確認ダイアログ付き）
 
-#### ドメイン層 (`task.rs`)
-- `Task`: タスクの構造体（id, title, status, created_at, updated_at）
+タグ管理:
+- `tag_add.rs`: タグの追加（対話モード対応）
+- `tag_list.rs`: タグの一覧表示
+- `tag_delete.rs`: タグの削除（参照整合性チェック付き）
+
+#### ドメイン層
+`task.rs`:
+- `Task`: タスクの構造体（id, title, description, status, priority, tags, created_at, updated_at）
 - `Status`: タスクのステータス（Pending, Completed, InProgress）
   - `from_filter_value()`: フィルタ文字列からStatusへの変換
+- `Priority`: タスクの優先度（Low, Medium, High）
+
+`tag.rs`:
+- `Tag`: タグの構造体（id, name, description, created_at, updated_at）
 
 #### データアクセス層 (`repository/`)
 リポジトリパターンを採用:
-- `TaskRepository` トレイト: データ永続化の抽象インターフェース
-- `JsonTaskRepository`: JSON形式の実装
-  - `load_tasks()`: JSONファイルからタスクリストを読み込み
-  - `save_tasks()`: タスクリストをJSONファイルに保存
+- `Repository<T>` トレイト: データ永続化の抽象インターフェース（ジェネリック）
+- `JsonRepository<T>`: JSON形式の汎用実装
+  - `load()`: JSONファイルからデータを読み込み
+  - `save()`: データをJSONファイルに保存
   - `find_next_id()`: 次のIDを生成
   - `ensure_data_exists()`: データファイルの初期化
+  - `Task` と `Tag` の両方に使用可能
 
 #### ユーティリティ層
 - `json.rs`: JSONファイル操作の汎用関数
@@ -97,18 +115,29 @@ cargo run -- delete --id 1
 #### リポジトリパターン
 データアクセスをトレイトで抽象化し、将来的にSQLiteなど別の実装に切り替え可能:
 ```rust
-pub trait TaskRepository {
-    fn load_tasks(&self) -> Result<Vec<Task>>;
-    fn save_tasks(&self, tasks: &[Task]) -> Result<()>;
+pub trait Repository<T> {
+    fn load(&self) -> Result<Vec<T>>;
+    fn save(&self, items: &[T]) -> Result<()>;
+    fn find_next_id(&self) -> Result<u64>;
+    fn ensure_data_exists(&self) -> Result<()>;
 }
 ```
 
 #### コマンド関数の統一インターフェース
 全てのコマンド関数はリポジトリを引数として受け取る:
+
+タスク管理:
 ```rust
-pub fn add_task(repo: &impl TaskRepository, ...) -> Result<()>
-pub fn list_tasks(repo: &impl TaskRepository, ...) -> Result<()>
-pub fn delete_task(repo: &impl TaskRepository, ...) -> Result<()>
+pub fn add_task(task_repo: &impl Repository<Task>, tag_repo: &impl Repository<Tag>, ...) -> Result<()>
+pub fn list_tasks(repo: &impl Repository<Task>, ...) -> Result<()>
+pub fn delete_task(repo: &impl Repository<Task>, ...) -> Result<()>
+```
+
+タグ管理:
+```rust
+pub fn add_tag(repo: &impl Repository<Tag>, ...) -> Result<()>
+pub fn list_tags(repo: &impl Repository<Tag>) -> Result<()>
+pub fn delete_tag(tag_repo: &impl Repository<Tag>, task_repo: &impl Repository<Task>, ...) -> Result<()>
 ```
 
 ### エラーハンドリング
@@ -127,10 +156,24 @@ pub fn delete_task(repo: &impl TaskRepository, ...) -> Result<()>
 
 ### 新しいコマンドの追加手順
 
-1. `cli.rs` の `Commands` enum に新しいバリアントを追加
+#### タスクサブコマンドの追加
+1. `cli.rs` の `TaskCommands` enum に新しいバリアントを追加
 2. `commands/` に新しいモジュールファイルを作成
 3. `commands.rs` でエクスポート
-4. `lib.rs` の `handle_command()` で新しいコマンドを処理
+4. `lib.rs` の `handle_task_command()` で新しいコマンドを処理
+
+#### タグサブコマンドの追加
+1. `cli.rs` の `TagCommands` enum に新しいバリアントを追加
+2. `commands/` に新しいモジュールファイルを作成（例: `tag_xxx.rs`）
+3. `commands.rs` でエクスポート
+4. `lib.rs` の `handle_tag_command()` で新しいコマンドを処理
+
+#### 新しいトップレベルコマンドの追加
+1. `cli.rs` の `Commands` enum に新しいバリアントを追加
+2. 対応する `XxxCommands` enum を作成
+3. `commands/` に関連するモジュールを作成
+4. `lib.rs` に `handle_xxx_command()` 関数を追加
+5. `lib.rs` の `handle_command()` で新しいコマンドを処理
 
 ### JSON形式の特殊なトレイト境界
 
