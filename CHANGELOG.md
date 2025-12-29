@@ -2,6 +2,27 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.0](https://github.com/taktiks2/yaru/compare/47cbb907c11f6d7d69b2cd9ab12f793ecc0af420..0.3.0) - 2025-12-29
+#### Features
+- タスク用のサブコマンド追加 - ([b7fe183](https://github.com/taktiks2/yaru/commit/b7fe18389968c6892c4b45d1c8889c0e5adb3758)) - taktiks2
+#### Documentation
+- CLAUDEとREADMEの更新 - ([af46173](https://github.com/taktiks2/yaru/commit/af461736ef63140d6f9c80df2f363a21250c43b9)) - taktiks2
+#### Tests
+- タスクコマンドの包括的なテストを追加 - ([4cdfca1](https://github.com/taktiks2/yaru/commit/4cdfca11fea7afb13d2ed4bf7dec3be911d56b54)) - taktiks2
+#### Continuous Integration
+- bump actions/checkout from 4 to 6 - ([47cbb90](https://github.com/taktiks2/yaru/commit/47cbb907c11f6d7d69b2cd9ab12f793ecc0af420)) - dependabot[bot]
+#### Refactoring
+- add_rowsメソッドの適用 - ([f14dcb8](https://github.com/taktiks2/yaru/commit/f14dcb83d114c47c5f0d8919e89722e4b11f8b51)) - taktiks2
+- テーブル表示の空白フィールドを統一 - ([0512b89](https://github.com/taktiks2/yaru/commit/0512b896e65fde49fc5f2541af66f66c61eab54f)) - taktiks2
+- テーブル表示処理を抽象化し、スタイルを統一 - ([9643c4d](https://github.com/taktiks2/yaru/commit/9643c4d6d244248c2da5510e37d9a7497e3793d8)) - taktiks2
+- commandsモジュールをtaskとtagのサブモジュールに再構成 - ([2b3ee5a](https://github.com/taktiks2/yaru/commit/2b3ee5af568b18c734b90ccb6a0060ff1fd56f5f)) - taktiks2
+#### Miscellaneous Chores
+- (**deps**) bump tempfile from 3.23.0 to 3.24.0 - ([0ba29c5](https://github.com/taktiks2/yaru/commit/0ba29c58470870647307ef52aff4d41949f0ab48)) - dependabot[bot]
+- (**deps**) bump toml from 0.8.23 to 0.9.10+spec-1.1.0 - ([d2a384c](https://github.com/taktiks2/yaru/commit/d2a384ce9c846610c72ac3270e9331c25ae57c07)) - dependabot[bot]
+- (**deps**) bump serde_json from 1.0.145 to 1.0.148 - ([faf8f6f](https://github.com/taktiks2/yaru/commit/faf8f6f4e8c4208f396743b8cee5e75eb7c3e24f)) - dependabot[bot]
+
+- - -
+
 ## [0.2.0](https://github.com/taktiks2/yaru/compare/d04330ef9ad5d17f6df35e95f6a59cd52c0f7bce..0.2.0) - 2025-12-29
 #### Features
 - (**cli**) タグ管理コマンドを追加 - ([cb0a8cb](https://github.com/taktiks2/yaru/commit/cb0a8cb53e260f3407a63ed9bcffe9a2f8b667c7)) - taktiks2
