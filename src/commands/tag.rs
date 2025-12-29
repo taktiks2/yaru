@@ -1,12 +1,12 @@
 use crate::display::format_local_time;
-use crate::{repository::TagRepository, tag::Tag};
+use crate::{repository::Repository, tag::Tag};
 use anyhow::{Context, Result};
 use comfy_table::{Table, presets::UTF8_FULL};
 use inquire::{Editor, Text, validator};
 
 /// 新しいタグを追加
 pub fn add_tag(
-    repo: &impl TagRepository,
+    repo: &impl Repository<Tag>,
     name: Option<String>,
     description: Option<String>,
 ) -> Result<()> {
@@ -25,12 +25,12 @@ pub fn add_tag(
             .context("タグの説明の入力に失敗しました")?,
     };
 
-    let mut tags = repo.load_tags()?;
+    let mut tags = repo.load()?;
     let new_id = repo.find_next_id(&tags);
     let new_tag = Tag::new(new_id, &name, &description);
 
     tags.push(new_tag.clone());
-    repo.save_tags(&tags)?;
+    repo.save(&tags)?;
 
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
@@ -49,8 +49,8 @@ pub fn add_tag(
 }
 
 /// タグ一覧を表示
-pub fn list_tags(repo: &impl TagRepository) -> Result<()> {
-    let tags = repo.load_tags()?;
+pub fn list_tags(repo: &impl Repository<Tag>) -> Result<()> {
+    let tags = repo.load()?;
 
     if tags.is_empty() {
         println!("登録されているタグはありません");
@@ -75,8 +75,8 @@ pub fn list_tags(repo: &impl TagRepository) -> Result<()> {
 }
 
 /// 指定されたIDのタグを削除
-pub fn delete_tag(repo: &impl TagRepository, id: u64) -> Result<()> {
-    let mut tags = repo.load_tags()?;
+pub fn delete_tag(repo: &impl Repository<Tag>, id: u64) -> Result<()> {
+    let mut tags = repo.load()?;
     let original_len = tags.len();
 
     tags.retain(|tag| tag.id != id);
@@ -85,7 +85,7 @@ pub fn delete_tag(repo: &impl TagRepository, id: u64) -> Result<()> {
         anyhow::bail!("ID {} のタグが見つかりません", id);
     }
 
-    repo.save_tags(&tags)?;
+    repo.save(&tags)?;
     println!("ID {} のタグを削除しました", id);
 
     Ok(())
@@ -94,13 +94,13 @@ pub fn delete_tag(repo: &impl TagRepository, id: u64) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::repository::JsonTagRepository;
+    use crate::repository::JsonRepository;
     use tempfile::TempDir;
 
-    fn setup_test_repo() -> (TempDir, JsonTagRepository) {
+    fn setup_test_repo() -> (TempDir, JsonRepository<Tag>) {
         let temp_dir = tempfile::tempdir().unwrap();
         let tag_file = temp_dir.path().join("tags.json");
-        let repo = JsonTagRepository::new(&tag_file);
+        let repo = JsonRepository::new(&tag_file);
         repo.ensure_data_exists().unwrap();
         (temp_dir, repo)
     }
@@ -118,7 +118,7 @@ mod tests {
         .unwrap();
 
         // 追加されたタグを確認
-        let tags = repo.load_tags().unwrap();
+        let tags = repo.load().unwrap();
         assert_eq!(tags.len(), 1);
         assert_eq!(tags[0].name, "重要");
         assert_eq!(tags[0].description, "重要なタスク用");
@@ -144,7 +144,7 @@ mod tests {
         .unwrap();
 
         // タグを確認
-        let tags = repo.load_tags().unwrap();
+        let tags = repo.load().unwrap();
         assert_eq!(tags.len(), 2);
         assert_eq!(tags[0].id, 1);
         assert_eq!(tags[1].id, 2);
@@ -198,7 +198,7 @@ mod tests {
         delete_tag(&repo, 1).unwrap();
 
         // 削除されたことを確認
-        let tags = repo.load_tags().unwrap();
+        let tags = repo.load().unwrap();
         assert_eq!(tags.len(), 1);
         assert_eq!(tags[0].id, 2);
     }

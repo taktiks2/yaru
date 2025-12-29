@@ -1,14 +1,14 @@
 use crate::{
     cli::{Filter, FilterKey},
     display::create_task_table,
-    repository::TaskRepository,
+    repository::Repository,
     task::{Status, Task},
 };
 use anyhow::Result;
 
 /// 全てのタスクを一覧表示
-pub fn list_tasks(repo: &impl TaskRepository, filters: Option<Vec<Filter>>) -> Result<()> {
-    let mut tasks = repo.load_tasks()?;
+pub fn list_tasks(repo: &impl Repository<Task>, filters: Option<Vec<Filter>>) -> Result<()> {
+    let mut tasks = repo.load()?;
 
     // フィルタリングを適用
     if let Some(filters) = filters {

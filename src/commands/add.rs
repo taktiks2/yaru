@@ -1,6 +1,6 @@
 use crate::{
     display::create_single_task_table,
-    repository::TaskRepository,
+    repository::Repository,
     task::{Priority, Status, Task},
 };
 use anyhow::{Context, Result};
@@ -8,7 +8,7 @@ use inquire::{Editor, Text, validator};
 
 /// 新しいタスクを追加
 pub fn add_task(
-    repo: &impl TaskRepository,
+    repo: &impl Repository<Task>,
     title: Option<String>,
     description: Option<String>,
     status: Option<Status>,
@@ -34,12 +34,12 @@ pub fn add_task(
     let priority = priority.unwrap_or(Priority::Medium);
     let tags = tags.unwrap_or_default();
 
-    let mut tasks = repo.load_tasks()?;
+    let mut tasks = repo.load()?;
     let new_id = repo.find_next_id(&tasks);
     let new_task = Task::new(new_id, &title, &description, status, priority, tags);
 
     tasks.push(new_task.clone());
-    repo.save_tasks(&tasks)?;
+    repo.save(&tasks)?;
 
     println!("タスクを登録しました。");
 
