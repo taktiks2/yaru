@@ -114,6 +114,42 @@ Todoデータは以下の形式でJSON形式で保存されます:
 
 ## 開発
 
+### 前提条件
+
+このプロジェクトではConventional Commitsを採用しています。
+コミットメッセージの検証にcocogittoを使用します。
+
+```bash
+# cocogittoのインストール
+cargo install --locked cocogitto
+
+# Git Hooksのインストール（コミット時の自動検証）
+# プロジェクトルートで実行
+cog install-hook commit-msg
+```
+
+### コミットメッセージのルール
+
+以下のprefixを使用してください：
+
+- `feat:` - 新機能の追加
+- `fix:` - バグ修正
+- `docs:` - ドキュメントの変更
+- `style:` - コードの意味に影響しない変更（フォーマットなど）
+- `refactor:` - リファクタリング
+- `perf:` - パフォーマンス改善
+- `test:` - テストの追加・修正
+- `chore:` - ビルドプロセスやツールの変更
+- `ci:` - CI設定の変更
+- `build:` - ビルドシステムの変更
+
+例:
+```bash
+git commit -m "feat: タスクの優先度機能を追加"
+git commit -m "fix: リスト表示時のソート順を修正"
+git commit -m "docs: READMEにインストール手順を追加"
+```
+
 ### テストの実行
 
 ```bash

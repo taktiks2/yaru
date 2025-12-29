@@ -1,0 +1,81 @@
+# Cocogitto configuration
+# Conventional Commits の検証とCHANGELOG生成を行う
+#
+# ## Git Hooksによるコミットメッセージ制限の仕組み
+#
+# 1. `cog install-hook commit-msg` を実行すると、
+#    このファイルの [git_hooks.commit-msg] セクションで定義されたスクリプトが
+#    `.git/hooks/commit-msg` ファイルとして作成される
+#
+# 2. `git commit -m "..."` を実行すると、
+#    Git が自動的に `.git/hooks/commit-msg` スクリプトを実行する
+#
+# 3. スクリプト内の `cog verify` がコミットメッセージを検証
+#    - [commit_types] で定義された形式（feat:, fix: など）に従っているかチェック
+#    - 検証成功 → コミット完了
+#    - 検証失敗 → exit 1 でコミット中止
+#
+# つまり：
+# - cog.toml = 設定のテンプレート（検証ルールとフックスクリプトの定義）
+# - .git/hooks/commit-msg = 実際に動作するスクリプト
+# - Git Hooks = Gitが特定のタイミングで自動実行する仕組み
+
+# 最新のタグ以降のコミットのみを対象にする
+from_latest_tag = true
+
+# バージョンバンプ前に実行するフック（テストやビルドなど）
+pre_bump_hooks = [
+  "cargo test",   # テストを実行
+  "cargo clippy", # Lintチェック
+]
+
+# バージョンバンプ後に実行するフック（ビルドやリリースなど）
+post_bump_hooks = [
+  "cargo build --release", # リリースビルド
+]
+
+# コミットタイプの定義
+[commit_types]
+feat = { changelog_title = "Features" }
+fix = { changelog_title = "Bug Fixes" }
+docs = { changelog_title = "Documentation" }
+style = { changelog_title = "Styling" }
+refactor = { changelog_title = "Refactoring" }
+perf = { changelog_title = "Performance" }
+test = { changelog_title = "Tests" }
+chore = { changelog_title = "Miscellaneous Chores" }
+ci = { changelog_title = "Continuous Integration" }
+build = { changelog_title = "Build System" }
+
+# CHANGELOG生成の設定
+[changelog]
+path = "CHANGELOG.md"
+template = "remote"
+remote = "github.com"
+repository = "yaru"
+owner = "taktiks2"
+
+# Git Hooks設定
+[git_hooks.commit-msg]
+script = """#!/bin/sh
+if ! cog verify --file $1 2>/dev/null; then
+    echo ""
+    echo "❌ コミットメッセージがConventional Commitsの形式に従っていません。"
+    echo ""
+    echo "以下のいずれかのprefixで始める必要があります："
+    echo "  feat:     新機能の追加"
+    echo "  fix:      バグ修正"
+    echo "  docs:     ドキュメントの変更"
+    echo "  style:    コードの意味に影響しない変更（フォーマットなど）"
+    echo "  refactor: リファクタリング"
+    echo "  perf:     パフォーマンス改善"
+    echo "  test:     テストの追加・修正"
+    echo "  chore:    ビルドプロセスやツールの変更"
+    echo "  ci:       CI設定の変更"
+    echo "  build:    ビルドシステムの変更"
+    echo ""
+    echo "例: git commit -m \\"feat: 新機能を追加\\""
+    echo ""
+    exit 1
+fi
+"""
