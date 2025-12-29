@@ -1,5 +1,17 @@
 # yaruプロジェクトのタスクランナー
 
+# コードのフォーマットを実行
+fmt:
+    cargo fmt
+
+# コードのリントを実行
+lint:
+    cargo clippy
+
+# フォーマットとリントを順番に実行
+check: fmt lint
+    @echo "フォーマットとリントが完了しました"
+
 # tasks.jsonとtags.jsonの両方を整形して出力
 show-all:
     @echo "=== Tasks ==="
