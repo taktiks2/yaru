@@ -55,6 +55,21 @@ pub struct Args {
 /// 実行可能なコマンド
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// タスク管理コマンド
+    Task {
+        #[command(subcommand)]
+        command: TaskCommands,
+    },
+    /// タグ管理コマンド
+    Tag {
+        #[command(subcommand)]
+        command: TagCommands,
+    },
+}
+
+/// タスク管理用のサブコマンド
+#[derive(Subcommand, Debug)]
+pub enum TaskCommands {
     /// タスク一覧を表示
     List {
         /// フィルタ条件（例: status:done, status:pending）
@@ -84,11 +99,6 @@ pub enum Commands {
         /// 削除するタスクのID
         #[arg(short, long)]
         id: u64,
-    },
-    /// タグ管理コマンド
-    Tag {
-        #[command(subcommand)]
-        command: TagCommands,
     },
 }
 

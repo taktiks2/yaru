@@ -9,8 +9,11 @@ mod task;
 
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, error::ErrorKind};
-use cli::{Args, Commands, TagCommands};
-use commands::{add_tag, add_task, delete_tag, delete_task, list_tags, list_tasks};
+use cli::{Args, Commands, TagCommands, TaskCommands};
+use commands::{
+    tag::{add_tag, delete_tag, list_tags},
+    task::{add_task, delete_task, list_tasks},
+};
 use config::load_config;
 use repository::{JsonRepository, Repository};
 
@@ -20,7 +23,7 @@ use repository::{JsonRepository, Repository};
 pub fn run() -> Result<()> {
     let args = Args::try_parse().map_err(|e| {
         if e.kind() == ErrorKind::InvalidSubcommand {
-            anyhow!("無効なサブコマンドです。使用可能なコマンド: list, add, delete")
+            anyhow!("無効なサブコマンドです。使用可能なコマンド: task, tag")
         } else {
             e.into()
         }
@@ -50,8 +53,20 @@ fn handle_command(
     tag_repo: JsonRepository<tag::Tag>,
 ) -> Result<()> {
     match args.command {
-        Commands::List { filter } => list_tasks(&task_repo, filter),
-        Commands::Add {
+        Commands::Task { command } => handle_task_command(command, task_repo, tag_repo),
+        Commands::Tag { command } => handle_tag_command(command, tag_repo, task_repo),
+    }
+}
+
+/// タスクコマンドを実行
+fn handle_task_command(
+    command: TaskCommands,
+    task_repo: JsonRepository<task::Task>,
+    tag_repo: JsonRepository<tag::Tag>,
+) -> Result<()> {
+    match command {
+        TaskCommands::List { filter } => list_tasks(&task_repo, filter),
+        TaskCommands::Add {
             title,
             description,
             status,
@@ -66,8 +81,7 @@ fn handle_command(
             priority,
             tags,
         ),
-        Commands::Delete { id } => delete_task(&task_repo, id),
-        Commands::Tag { command } => handle_tag_command(command, tag_repo, task_repo),
+        TaskCommands::Delete { id } => delete_task(&task_repo, id),
     }
 }
 
