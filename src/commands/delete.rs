@@ -3,16 +3,16 @@ use anyhow::Result;
 
 /// 指定されたIDのタスクを削除
 pub fn delete_task(repo: &impl TaskRepository, id: u64) -> Result<()> {
-    let tasks = repo.load_tasks()?;
+    let mut tasks = repo.load_tasks()?;
     let initial_count = tasks.len();
-    let filtered_tasks: Vec<_> = tasks.into_iter().filter(|task| task.id != id).collect();
+    tasks.retain(|task| task.id != id);
 
-    if initial_count == filtered_tasks.len() {
+    if initial_count == tasks.len() {
         println!("ID {} のタスクが見つかりませんでした。", id);
         return Ok(());
     }
 
-    repo.save_tasks(&filtered_tasks)?;
+    repo.save_tasks(&tasks)?;
     println!("タスクを削除しました。");
     Ok(())
 }
