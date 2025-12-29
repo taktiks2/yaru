@@ -1,3 +1,4 @@
+use crate::repository::HasId;
 use chrono::Utc;
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
@@ -56,6 +57,12 @@ impl Task {
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         }
+    }
+}
+
+impl HasId for Task {
+    fn id(&self) -> u64 {
+        self.id
     }
 }
 
