@@ -1,4 +1,4 @@
-use crate::todo::{Priority, Status};
+use crate::task::{Priority, Status};
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 
@@ -39,13 +39,13 @@ impl FromStr for Filter {
     }
 }
 
-/// Todoアプリケーションのコマンドライン引数
+/// タスク管理アプリケーションのコマンドライン引数
 #[derive(Parser, Debug)]
 #[command(
     name = "yaru",
     version,
-    about = "シンプルなTodoタスク管理CLI",
-    long_about = "yaru は軽量で使いやすいコマンドラインTodo管理ツールです。\nタスクの追加、一覧表示、削除が簡単に行えます。"
+    about = "シンプルなタスク管理CLI",
+    long_about = "yaru は軽量で使いやすいコマンドラインタスク管理ツールです。\nタスクの追加、一覧表示、削除が簡単に行えます。"
 )]
 pub struct Args {
     #[command(subcommand)]

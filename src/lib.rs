@@ -4,14 +4,14 @@ mod config;
 mod display;
 mod json;
 mod repository;
-mod todo;
+mod task;
 
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands};
-use commands::{add_todo, delete_todo, list_todos};
+use commands::{add_task, delete_task, list_tasks};
 use config::load_config;
-use repository::{JsonTodoRepository, TodoRepository};
+use repository::{JsonTaskRepository, TaskRepository};
 
 /// アプリケーションのエントリーポイント
 ///
@@ -29,7 +29,7 @@ pub fn run() -> Result<()> {
     let config = load_config()?;
 
     // データファイルが存在することを確認
-    let repo = JsonTodoRepository::new(&config.storage.todo_file);
+    let repo = JsonTaskRepository::new(&config.storage.task_file);
     repo.ensure_data_exists()
         .context("データファイルの初期化に失敗しました")?;
 
@@ -37,15 +37,15 @@ pub fn run() -> Result<()> {
 }
 
 /// コマンドを実行
-fn handle_command(args: Args, repo: JsonTodoRepository) -> Result<()> {
+fn handle_command(args: Args, repo: JsonTaskRepository) -> Result<()> {
     match args.command {
-        Commands::List { filter } => list_todos(&repo, filter),
+        Commands::List { filter } => list_tasks(&repo, filter),
         Commands::Add {
             title,
             description,
             status,
             priority,
-        } => add_todo(&repo, title, description, status, priority),
-        Commands::Delete { id } => delete_todo(&repo, id),
+        } => add_task(&repo, title, description, status, priority),
+        Commands::Delete { id } => delete_task(&repo, id),
     }
 }
