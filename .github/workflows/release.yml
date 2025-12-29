@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'バージョンタイプ'
+        required: true
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+        default: 'auto'
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 自動バージョンバンプ
+    runs-on: ubuntu-latest
+    # バージョンバンプコミット自体では実行しない（無限ループ防止）
+    if: "!contains(github.event.head_commit.message, 'chore(version):')"
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 全履歴を取得（cogが履歴を解析するため）
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rust ツールチェーンのセットアップ
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Cocogitto のインストール
+        run: cargo install cocogitto
+
+      - name: Git 設定
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: バージョンバンプ
+        id: bump
+        run: |
+          # バージョンタイプの決定
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION_TYPE="${{ inputs.version_type }}"
+          else
+            VERSION_TYPE="auto"
+          fi
+
+          echo "バージョンタイプ: $VERSION_TYPE"
+
+          # バージョンをバンプ
+          if [ "$VERSION_TYPE" = "auto" ]; then
+            BUMP_CMD="cog bump --auto"
+          else
+            BUMP_CMD="cog bump --$VERSION_TYPE"
+          fi
+
+          if $BUMP_CMD 2>&1 | tee bump_output.txt; then
+            echo "バージョンバンプ成功"
+            echo "bumped=true" >> $GITHUB_OUTPUT
+          else
+            if grep -q "No conventional commits for your repository that required a bump" bump_output.txt; then
+              echo "バンプが必要なコミットがありません"
+              echo "bumped=false" >> $GITHUB_OUTPUT
+            else
+              echo "バージョンバンプ失敗"
+              cat bump_output.txt
+              exit 1
+            fi
+          fi
+
+      - name: 変更をプッシュ
+        if: steps.bump.outputs.bumped == 'true'
+        run: |
+          git push origin main
+          git push --tags
