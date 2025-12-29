@@ -23,6 +23,9 @@
 # 最新のタグ以降のコミットのみを対象にする
 from_latest_tag = true
 
+# PRのマージコミットを無視する（GitHubのマージコミットはConventional Commitsに従わないため）
+ignore_merge_commits = true
+
 # バージョンバンプ前に実行するフック（テストやビルドなど）
 pre_bump_hooks = [
   "cargo test",   # テストを実行
