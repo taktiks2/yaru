@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`yaru` は日本語対応のシンプルなCLI Todoアプリケーションです。Rustで実装されており、JSONファイルにデータを永続化します。
+`yaru` は日本語対応のシンプルなCLIタスク管理アプリケーションです。Rustで実装されており、JSONファイルにデータを永続化します。
 
 ## Common Commands
 
@@ -65,23 +65,23 @@ cargo run -- delete --id 1
 
 #### コマンド層 (`commands/`)
 各サブコマンドの実装。リポジトリを受け取り、ビジネスロジックを実行:
-- `add.rs`: Todoの追加（対話モード対応）
-- `list.rs`: Todoの一覧表示（フィルタ機能付き）
-- `delete.rs`: Todoの削除（確認ダイアログ付き）
+- `add.rs`: タスクの追加（対話モード対応）
+- `list.rs`: タスクの一覧表示（フィルタ機能付き）
+- `delete.rs`: タスクの削除（確認ダイアログ付き）
 
-#### ドメイン層 (`todo.rs`)
-- `Todo`: Todoタスクの構造体（id, title, status, created_at, updated_at）
+#### ドメイン層 (`task.rs`)
+- `Task`: タスクの構造体（id, title, status, created_at, updated_at）
 - `Status`: タスクのステータス（Pending, Completed, InProgress）
   - `from_filter_value()`: フィルタ文字列からStatusへの変換
 
 #### データアクセス層 (`repository/`)
 リポジトリパターンを採用:
-- `TodoRepository` トレイト: データ永続化の抽象インターフェース
-- `JsonTodoRepository`: JSON形式の実装
-  - `load_todos()`: JSONファイルからTodoリストを読み込み
-  - `save_todos()`: TodoリストをJSONファイルに保存
+- `TaskRepository` トレイト: データ永続化の抽象インターフェース
+- `JsonTaskRepository`: JSON形式の実装
+  - `load_tasks()`: JSONファイルからタスクリストを読み込み
+  - `save_tasks()`: タスクリストをJSONファイルに保存
   - `find_next_id()`: 次のIDを生成
-  - `ensure_data_exists()`: データファイルの初期化
+  - `ensure_data_exists()`: データファイルの初期化と旧ファイルからの移行
 
 #### ユーティリティ層
 - `json.rs`: JSONファイル操作の汎用関数
@@ -89,7 +89,7 @@ cargo run -- delete --id 1
   - `save_json<T>()`: `?Sized` トレイト境界でサイズ不定型に対応
 - `config.rs`: TOML形式の設定ファイル管理
   - デフォルトパス: `~/.config/yaru/config.toml`
-  - データファイル: `~/.config/yaru/todo.json`
+  - データファイル: `~/.config/yaru/tasks.json`
 - `display/`: テーブル表示（comfy-tableを使用）
 
 ### 設計パターン
@@ -97,19 +97,24 @@ cargo run -- delete --id 1
 #### リポジトリパターン
 データアクセスをトレイトで抽象化し、将来的にSQLiteなど別の実装に切り替え可能:
 ```rust
-pub trait TodoRepository {
-    fn load_todos(&self) -> Result<Vec<Todo>>;
-    fn save_todos(&self, todos: &[Todo]) -> Result<()>;
+pub trait TaskRepository {
+    fn load_tasks(&self) -> Result<Vec<Task>>;
+    fn save_tasks(&self, tasks: &[Task]) -> Result<()>;
 }
 ```
 
 #### コマンド関数の統一インターフェース
 全てのコマンド関数はリポジトリを引数として受け取る:
 ```rust
-pub fn add_todo(repo: &impl TodoRepository, ...) -> Result<()>
-pub fn list_todos(repo: &impl TodoRepository, ...) -> Result<()>
-pub fn delete_todo(repo: &impl TodoRepository, ...) -> Result<()>
+pub fn add_task(repo: &impl TaskRepository, ...) -> Result<()>
+pub fn list_tasks(repo: &impl TaskRepository, ...) -> Result<()>
+pub fn delete_task(repo: &impl TaskRepository, ...) -> Result<()>
 ```
+
+#### データファイル移行
+- `ensure_data_exists()`メソッドで旧ファイルの存在を確認
+- 旧ファイルが存在し、新ファイルが存在しない場合は自動的にコピー
+- 旧ファイルは削除せず、ユーザーが手動で削除できるように保持
 
 ### エラーハンドリング
 
