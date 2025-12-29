@@ -1,18 +1,18 @@
-use crate::repository::TodoRepository;
+use crate::repository::TaskRepository;
 use anyhow::Result;
 
-/// 指定されたIDのTodoを削除
-pub fn delete_todo(repo: &impl TodoRepository, id: u64) -> Result<()> {
-    let todos = repo.load_todos()?;
-    let initial_count = todos.len();
-    let filtered_todos: Vec<_> = todos.into_iter().filter(|todo| todo.id != id).collect();
+/// 指定されたIDのタスクを削除
+pub fn delete_task(repo: &impl TaskRepository, id: u64) -> Result<()> {
+    let tasks = repo.load_tasks()?;
+    let initial_count = tasks.len();
+    let filtered_tasks: Vec<_> = tasks.into_iter().filter(|task| task.id != id).collect();
 
-    if initial_count == filtered_todos.len() {
+    if initial_count == filtered_tasks.len() {
         println!("ID {} のタスクが見つかりませんでした。", id);
         return Ok(());
     }
 
-    repo.save_todos(&filtered_todos)?;
+    repo.save_tasks(&filtered_tasks)?;
     println!("タスクを削除しました。");
     Ok(())
 }
@@ -21,19 +21,19 @@ pub fn delete_todo(repo: &impl TodoRepository, id: u64) -> Result<()> {
 mod tests {
 
     #[test]
-    fn test_delete_todo_existing_id() {
-        // 存在するIDのTodoを削除する場合のテスト
+    fn test_delete_task_existing_id() {
+        // 存在するIDのタスクを削除する場合のテスト
         // Note: このテストは実装後に適切な形に修正する必要がある
     }
 
     #[test]
-    fn test_delete_todo_non_existing_id() {
+    fn test_delete_task_non_existing_id() {
         // 存在しないIDを指定した場合のテスト
         // エラーメッセージが表示されることを確認
     }
 
     #[test]
-    fn test_delete_todo_empty_list() {
-        // 空のリストからTodoを削除しようとする場合のテスト
+    fn test_delete_task_empty_list() {
+        // 空のリストからタスクを削除しようとする場合のテスト
     }
 }
