@@ -47,23 +47,8 @@ impl TaskRepository for JsonTaskRepository {
     }
 
     fn ensure_data_exists(&self) -> Result<()> {
-        // 旧データファイル（todo.json）からの移行処理
         if !self.file_path.exists() {
-            // 旧ファイル名（todo.json）のパスを構築
-            if let Some(parent) = self.file_path.parent() {
-                let old_file_path = parent.join("todo.json");
-
-                // 旧ファイルが存在する場合は新ファイルにコピー
-                if old_file_path.exists() {
-                    std::fs::copy(&old_file_path, &self.file_path)?;
-                    // 注: 旧ファイルは削除せず、ユーザーが手動で削除できるように残す
-                } else {
-                    // どちらも存在しない場合は新規作成
-                    save_json(&self.file_path, &Vec::<Task>::new())?;
-                }
-            } else {
-                save_json(&self.file_path, &Vec::<Task>::new())?;
-            }
+            save_json(&self.file_path, &Vec::<Task>::new())?;
         }
         Ok(())
     }
