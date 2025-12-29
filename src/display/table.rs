@@ -1,13 +1,13 @@
 use crate::{
     display::format::{format_local_time, truncate_text},
+    tag::Tag,
     task::Task,
 };
-use comfy_table::Table;
+use comfy_table::{Table, presets::UTF8_FULL};
 
 /// タスクのテーブルを作成
 pub fn create_task_table(tasks: &[Task]) -> Table {
-    let mut table = Table::new();
-    table.set_header(vec![
+    let headers = vec![
         "ID",
         "タイトル",
         "説明",
@@ -16,48 +16,59 @@ pub fn create_task_table(tasks: &[Task]) -> Table {
         "タグ",
         "作成日",
         "更新日",
-    ]);
+    ];
 
-    for task in tasks {
-        let tags_str = if task.tags.is_empty() {
-            "-".to_string()
-        } else {
-            task.tags
-                .iter()
-                .map(|id| id.to_string())
-                .collect::<Vec<_>>()
-                .join(",")
-        };
+    let rows: Vec<Vec<String>> = tasks.iter().map(create_task_row).collect();
 
-        table.add_row(vec![
-            task.id.to_string(),
-            truncate_text(&task.title, 20),
-            truncate_text(&task.description, 20),
-            task.status.to_string(),
-            task.priority.to_string(),
-            tags_str,
-            format_local_time(&task.created_at),
-            format_local_time(&task.updated_at),
-        ]);
+    build_table_with_preset(headers, rows)
+}
+
+/// 単一のタスクをテーブルとして表示
+pub fn create_single_task_table(task: &Task) -> Table {
+    let headers = vec![
+        "ID",
+        "タイトル",
+        "説明",
+        "ステータス",
+        "優先度",
+        "タグ",
+        "作成日",
+        "更新日",
+    ];
+
+    let rows = vec![create_task_row(task)];
+
+    build_table_with_preset(headers, rows)
+}
+
+/// テーブルの基本構造を作成し、行データを追加
+///
+/// # 引数
+/// - `headers`: テーブルのヘッダー
+/// - `rows`: テーブルの行データ
+///
+/// # 戻り値
+/// UTF8_FULLプリセットが適用されたテーブル
+fn build_table_with_preset(headers: Vec<&str>, rows: Vec<Vec<String>>) -> Table {
+    let mut table = Table::new();
+    table.load_preset(UTF8_FULL);
+    table.set_header(headers);
+
+    for row in rows {
+        table.add_row(row);
     }
 
     table
 }
 
-/// 単一のタスクをテーブルとして表示
-pub fn create_single_task_table(task: &Task) -> Table {
-    let mut table = Table::new();
-    table.set_header(vec![
-        "ID",
-        "タイトル",
-        "説明",
-        "ステータス",
-        "優先度",
-        "タグ",
-        "作成日",
-        "更新日",
-    ]);
-
+/// タスクの1行分のデータを作成
+///
+/// # 引数
+/// - `task`: タスク
+///
+/// # 戻り値
+/// タスクの1行分のデータ（文字列のベクタ）
+fn create_task_row(task: &Task) -> Vec<String> {
     let tags_str = if task.tags.is_empty() {
         "-".to_string()
     } else {
@@ -68,7 +79,7 @@ pub fn create_single_task_table(task: &Task) -> Table {
             .join(",")
     };
 
-    table.add_row(vec![
+    vec![
         task.id.to_string(),
         truncate_text(&task.title, 20),
         truncate_text(&task.description, 20),
@@ -77,9 +88,54 @@ pub fn create_single_task_table(task: &Task) -> Table {
         tags_str,
         format_local_time(&task.created_at),
         format_local_time(&task.updated_at),
-    ]);
+    ]
+}
 
-    table
+/// タグの1行分のデータを作成
+///
+/// # 引数
+/// - `tag`: タグ
+///
+/// # 戻り値
+/// タグの1行分のデータ（文字列のベクタ）
+fn create_tag_row(tag: &Tag) -> Vec<String> {
+    vec![
+        tag.id.to_string(),
+        tag.name.to_string(),
+        tag.description.to_string(),
+        format_local_time(&tag.created_at),
+        format_local_time(&tag.updated_at),
+    ]
+}
+
+/// タグのテーブルを作成
+///
+/// # 引数
+/// - `tags`: 表示するタグのスライス
+///
+/// # 戻り値
+/// UTF8_FULLプリセットが適用されたタグのテーブル
+pub fn create_tag_table(tags: &[Tag]) -> Table {
+    let headers = vec!["ID", "名前", "説明", "作成日", "更新日"];
+
+    let rows: Vec<Vec<String>> = tags.iter().map(create_tag_row).collect();
+
+    build_table_with_preset(headers, rows)
+}
+
+/// 単一のタグをテーブルとして表示
+///
+/// # 引数
+/// - `tag`: 表示するタグ
+///
+/// # 戻り値
+/// UTF8_FULLプリセットが適用されたタグのテーブル
+pub fn create_single_tag_table(tag: &Tag) -> Table {
+    let headers = vec!["ID", "名前", "説明", "作成日", "更新日"];
+
+    let rows = vec![create_tag_row(tag)];
+
+    build_table_with_preset(headers, rows)
 }
 
 #[cfg(test)]
@@ -219,5 +275,106 @@ mod tests {
         assert!(table_str.contains("..."));
         // 元の長い説明文がそのまま含まれていないことを確認
         assert!(!table_str.contains(long_desc));
+    }
+
+    #[test]
+    fn test_task_table_uses_utf8_full_preset() {
+        // タスクテーブルにもUTF8_FULLが適用されることを確認
+        let tasks = vec![Task::new(
+            1,
+            "テストタスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+        )];
+        let table = create_task_table(&tasks);
+
+        let table_str = table.to_string();
+        // UTF8_FULLプリセットの特徴的な罫線文字が含まれることを確認
+        assert!(table_str.contains("─") || table_str.contains("│"));
+    }
+}
+
+#[cfg(test)]
+mod tests_tag {
+    use super::*;
+    use crate::tag::Tag;
+
+    #[test]
+    fn test_create_tag_table_empty() {
+        let tags: Vec<Tag> = vec![];
+        let table = create_tag_table(&tags);
+
+        // ヘッダーのみ存在することを確認
+        let table_str = table.to_string();
+        assert!(table_str.contains("ID"));
+        assert!(table_str.contains("名前"));
+        assert!(table_str.contains("説明"));
+    }
+
+    #[test]
+    fn test_create_tag_table_with_tags() {
+        let tags = vec![
+            Tag::new(1, "重要", "重要なタスク"),
+            Tag::new(2, "作業中", "現在作業中"),
+        ];
+        let table = create_tag_table(&tags);
+
+        let table_str = table.to_string();
+        assert!(table_str.contains("1"));
+        assert!(table_str.contains("重要"));
+        assert!(table_str.contains("2"));
+        assert!(table_str.contains("作業中"));
+    }
+
+    #[test]
+    fn test_create_single_tag_table() {
+        let tag = Tag::new(1, "新しいタグ", "新規タグの説明");
+        let table = create_single_tag_table(&tag);
+
+        let table_str = table.to_string();
+        assert!(table_str.contains("1"));
+        assert!(table_str.contains("新しいタグ"));
+        assert!(table_str.contains("新規タグの説明"));
+    }
+
+    #[test]
+    fn test_create_tag_table_includes_all_columns() {
+        let tags = vec![Tag::new(1, "テスト", "テスト説明")];
+        let table = create_tag_table(&tags);
+
+        let table_str = table.to_string();
+        // すべての列が含まれることを確認
+        assert!(table_str.contains("ID"));
+        assert!(table_str.contains("名前"));
+        assert!(table_str.contains("説明"));
+        assert!(table_str.contains("作成日"));
+        assert!(table_str.contains("更新日"));
+    }
+
+    #[test]
+    fn test_create_tag_table_preserves_long_description() {
+        // 長い説明がそのまま表示されること（切り詰めなし）を確認
+        let long_desc =
+            "これは非常に長い説明文です。タグの説明は切り詰められずに全文表示されるべきです。";
+        let tags = vec![Tag::new(1, "タグ", long_desc)];
+        let table = create_tag_table(&tags);
+
+        let table_str = table.to_string();
+        // 長い説明文がそのまま含まれている
+        assert!(table_str.contains(long_desc));
+    }
+
+    #[test]
+    fn test_tag_table_uses_utf8_full_preset() {
+        // UTF8_FULLプリセットが適用されていることを確認（外観テスト）
+        let tags = vec![Tag::new(1, "テスト", "説明")];
+        let table = create_tag_table(&tags);
+
+        let table_str = table.to_string();
+        // UTF8_FULLプリセットの特徴的な文字が含まれることを確認
+        // UTF8_FULLは罫線文字を使用する
+        assert!(table_str.contains("─") || table_str.contains("│"));
     }
 }

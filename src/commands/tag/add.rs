@@ -1,8 +1,7 @@
-use crate::display::format_local_time;
+use crate::display::create_single_tag_table;
 use crate::{repository::Repository, tag::Tag};
 use anyhow::{Context, Result};
-use comfy_table::{presets::UTF8_FULL, Table};
-use inquire::{validator, Editor, Text};
+use inquire::{Editor, Text, validator};
 
 /// 新しいタグを追加
 pub fn add_tag(
@@ -32,17 +31,7 @@ pub fn add_tag(
     tags.push(new_tag.clone());
     repo.save(&tags)?;
 
-    let mut table = Table::new();
-    table.load_preset(UTF8_FULL);
-    table.set_header(vec!["ID", "名前", "説明", "作成日", "更新日"]);
-    table.add_row(vec![
-        new_tag.id.to_string(),
-        new_tag.name.to_string(),
-        new_tag.description.to_string(),
-        format_local_time(&new_tag.created_at),
-        format_local_time(&new_tag.updated_at),
-    ]);
-
+    let table = create_single_tag_table(&new_tag);
     println!("{table}");
 
     Ok(())
