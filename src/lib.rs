@@ -57,17 +57,21 @@ fn handle_command(
             status,
             priority,
             tags,
-        } => add_task(&task_repo, title, description, status, priority, tags),
+        } => add_task(&task_repo, &tag_repo, title, description, status, priority, tags),
         Commands::Delete { id } => delete_task(&task_repo, id),
-        Commands::Tag { command } => handle_tag_command(command, tag_repo),
+        Commands::Tag { command } => handle_tag_command(command, tag_repo, task_repo),
     }
 }
 
 /// タグコマンドを実行
-fn handle_tag_command(command: TagCommands, tag_repo: JsonRepository<tag::Tag>) -> Result<()> {
+fn handle_tag_command(
+    command: TagCommands,
+    tag_repo: JsonRepository<tag::Tag>,
+    task_repo: JsonRepository<task::Task>,
+) -> Result<()> {
     match command {
         TagCommands::Add { name, description } => add_tag(&tag_repo, name, description),
         TagCommands::List => list_tags(&tag_repo),
-        TagCommands::Delete { id } => delete_tag(&tag_repo, id),
+        TagCommands::Delete { id } => delete_tag(&tag_repo, &task_repo, id),
     }
 }
