@@ -20,7 +20,6 @@ pub trait Repository<T: HasId> {
     fn save(&self, items: &[T]) -> Result<()>;
 
     /// 次のIDを取得する
-    #[allow(dead_code)]
     fn find_next_id(&self, items: &[T]) -> u64 {
         items.iter().map(|item| item.id()).max().unwrap_or(0) + 1
     }
