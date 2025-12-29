@@ -79,10 +79,16 @@ fn create_task_row(task: &Task) -> Vec<String> {
             .join(",")
     };
 
+    let description = if task.description.is_empty() {
+        "-".to_string()
+    } else {
+        truncate_text(&task.description, 20)
+    };
+
     vec![
         task.id.to_string(),
         truncate_text(&task.title, 20),
-        truncate_text(&task.description, 20),
+        description,
         task.status.to_string(),
         task.priority.to_string(),
         tags_str,
@@ -99,10 +105,16 @@ fn create_task_row(task: &Task) -> Vec<String> {
 /// # 戻り値
 /// タグの1行分のデータ（文字列のベクタ）
 fn create_tag_row(tag: &Tag) -> Vec<String> {
+    let description = if tag.description.is_empty() {
+        "-".to_string()
+    } else {
+        truncate_text(&tag.description, 20)
+    };
+
     vec![
         tag.id.to_string(),
-        tag.name.to_string(),
-        tag.description.to_string(),
+        truncate_text(&tag.name, 20),
+        description,
         format_local_time(&tag.created_at),
         format_local_time(&tag.updated_at),
     ]
@@ -294,6 +306,45 @@ mod tests {
         // UTF8_FULLプリセットの特徴的な罫線文字が含まれることを確認
         assert!(table_str.contains("─") || table_str.contains("│"));
     }
+
+    #[test]
+    fn test_create_task_table_empty_description_shows_dash() {
+        // 空の説明は"-"と表示されることを確認
+        let tasks = vec![Task::new(
+            1,
+            "タスク",
+            "",
+            Status::Pending,
+            Priority::Medium,
+            vec![1], // タグありにして、空文字列の"-"と区別
+        )];
+        let _table = create_task_table(&tasks);
+
+        // create_task_rowの動作を直接確認
+        let row = create_task_row(&tasks[0]);
+        // description列（インデックス2）が"-"であることを確認
+        assert_eq!(row[2], "-");
+    }
+
+    #[test]
+    fn test_create_task_table_empty_tags_shows_dash() {
+        // 空のタグリストは"-"と表示されることを確認
+        let tasks = vec![Task::new(
+            1,
+            "タスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+        )];
+        let table = create_task_table(&tasks);
+
+        let table_str = table.to_string();
+        // タグが空の場合"-"として表示される
+        let rows: Vec<&str> = table_str.lines().collect();
+        let data_row = rows.iter().find(|line| line.contains("タスク")).unwrap();
+        assert!(data_row.contains("-"));
+    }
 }
 
 #[cfg(test)]
@@ -354,16 +405,18 @@ mod tests_tag {
     }
 
     #[test]
-    fn test_create_tag_table_preserves_long_description() {
-        // 長い説明がそのまま表示されること（切り詰めなし）を確認
+    fn test_create_tag_table_truncates_long_description() {
+        // 長い説明が切り詰められることを確認
         let long_desc =
             "これは非常に長い説明文です。タグの説明は切り詰められずに全文表示されるべきです。";
         let tags = vec![Tag::new(1, "タグ", long_desc)];
         let table = create_tag_table(&tags);
 
         let table_str = table.to_string();
-        // 長い説明文がそのまま含まれている
-        assert!(table_str.contains(long_desc));
+        // 切り詰められた説明文が含まれている
+        assert!(table_str.contains("..."));
+        // 元の長い説明文がそのまま含まれていないことを確認
+        assert!(!table_str.contains(long_desc));
     }
 
     #[test]
@@ -376,5 +429,17 @@ mod tests_tag {
         // UTF8_FULLプリセットの特徴的な文字が含まれることを確認
         // UTF8_FULLは罫線文字を使用する
         assert!(table_str.contains("─") || table_str.contains("│"));
+    }
+
+    #[test]
+    fn test_create_tag_table_empty_description_shows_dash() {
+        // 空の説明は"-"と表示されることを確認
+        let tags = vec![Tag::new(1, "タグ", "")];
+        let _table = create_tag_table(&tags);
+
+        // create_tag_rowの動作を直接確認
+        let row = create_tag_row(&tags[0]);
+        // description列（インデックス2）が"-"であることを確認
+        assert_eq!(row[2], "-");
     }
 }

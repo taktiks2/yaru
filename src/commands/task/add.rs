@@ -216,13 +216,6 @@ mod tests {
     }
 
     #[test]
-    fn test_add_task_without_title() {
-        // タイトルなしで追加する場合のテスト
-        // 対話的入力が必要になるため、統合テストで実装する
-        // このテストはスキップ
-    }
-
-    #[test]
     fn test_add_task_with_custom_priority() {
         let (_temp_dir, task_repo, tag_repo) = setup_test_repos();
 
