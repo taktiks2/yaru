@@ -10,13 +10,13 @@ pub struct Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
-    pub todo_file: PathBuf,
+    pub task_file: PathBuf,
 }
 
 impl Default for StorageConfig {
     fn default() -> Self {
         Self {
-            todo_file: get_default_todo_path().unwrap_or_else(|_| PathBuf::from("todo.json")),
+            task_file: get_default_task_path().unwrap_or_else(|_| PathBuf::from("tasks.json")),
         }
     }
 }
@@ -32,9 +32,9 @@ fn get_config_path() -> Result<PathBuf> {
     Ok(get_yaru_dir()?.join("config.toml"))
 }
 
-/// デフォルトのtodoファイルパスを取得
-fn get_default_todo_path() -> Result<PathBuf> {
-    Ok(get_yaru_dir()?.join("todo.json"))
+/// デフォルトのタスクファイルパスを取得
+fn get_default_task_path() -> Result<PathBuf> {
+    Ok(get_yaru_dir()?.join("tasks.json"))
 }
 
 /// 設定を読み込む
@@ -65,7 +65,7 @@ mod tests {
     fn test_config_default() {
         use std::env;
 
-        // デフォルト設定が ~/.config/yaru/todo.json を使用することを確認
+        // デフォルト設定が ~/.config/yaru/tasks.json を使用することを確認
         let config = Config::default();
 
         // HOME環境変数が設定されている場合は絶対パスを確認
@@ -73,11 +73,11 @@ mod tests {
             let expected_path = PathBuf::from(home)
                 .join(".config")
                 .join("yaru")
-                .join("todo.json");
-            assert_eq!(config.storage.todo_file, expected_path);
+                .join("tasks.json");
+            assert_eq!(config.storage.task_file, expected_path);
         } else {
             // HOME環境変数がない場合はフォールバック値を確認
-            assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+            assert_eq!(config.storage.task_file, PathBuf::from("tasks.json"));
         }
     }
 
@@ -86,12 +86,12 @@ mod tests {
         // TOML文字列からConfigをデシリアライズできることを確認
         let toml_str = r#"
 [storage]
-todo_file = "/custom/path/todo.json"
+task_file = "/custom/path/tasks.json"
 "#;
         let config: Config = toml::from_str(toml_str).unwrap();
         assert_eq!(
-            config.storage.todo_file,
-            PathBuf::from("/custom/path/todo.json")
+            config.storage.task_file,
+            PathBuf::from("/custom/path/tasks.json")
         );
     }
 
@@ -100,12 +100,12 @@ todo_file = "/custom/path/todo.json"
         // ConfigをTOML文字列にシリアライズできることを確認
         let config = Config {
             storage: StorageConfig {
-                todo_file: PathBuf::from("/test/path/todo.json"),
+                task_file: PathBuf::from("/test/path/tasks.json"),
             },
         };
         let toml_str = toml::to_string(&config).unwrap();
-        assert!(toml_str.contains("todo_file"));
-        assert!(toml_str.contains("/test/path/todo.json"));
+        assert!(toml_str.contains("task_file"));
+        assert!(toml_str.contains("/test/path/tasks.json"));
     }
 
     #[test]
@@ -120,15 +120,15 @@ todo_file = "/custom/path/todo.json"
         // テスト用の設定ファイルを作成
         let config_content = r#"
 [storage]
-todo_file = "/custom/path/todos.json"
+task_file = "/custom/path/tasks.json"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
         // ファイルから設定を読み込む
         let config = load_config_from_file(&config_file).unwrap();
         assert_eq!(
-            config.storage.todo_file,
-            PathBuf::from("/custom/path/todos.json")
+            config.storage.task_file,
+            PathBuf::from("/custom/path/tasks.json")
         );
     }
 
@@ -144,7 +144,7 @@ todo_file = "/custom/path/todos.json"
         // 不正なTOMLファイルを作成
         let invalid_content = r#"
 [storage
-todo_file = "/custom/path/todos.json"
+task_file = "/custom/path/tasks.json"
 "#;
         fs::write(&config_file, invalid_content).unwrap();
 
@@ -181,7 +181,7 @@ todo_file = "/custom/path/todos.json"
         // テスト用の設定ファイルを作成
         let config_content = r#"
 [storage]
-todo_file = "/existing/path/todos.json"
+task_file = "/existing/path/tasks.json"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
@@ -189,8 +189,8 @@ todo_file = "/existing/path/todos.json"
         // Note: この関数は実装後にHOME環境変数を設定する必要がある
         let config = load_config_from_file(&config_file).unwrap();
         assert_eq!(
-            config.storage.todo_file,
-            PathBuf::from("/existing/path/todos.json")
+            config.storage.task_file,
+            PathBuf::from("/existing/path/tasks.json")
         );
     }
 
@@ -206,11 +206,11 @@ todo_file = "/existing/path/todos.json"
             let expected_path = PathBuf::from(home)
                 .join(".config")
                 .join("yaru")
-                .join("todo.json");
-            assert_eq!(config.storage.todo_file, expected_path);
+                .join("tasks.json");
+            assert_eq!(config.storage.task_file, expected_path);
         } else {
             // HOME環境変数がない場合はフォールバック値を確認
-            assert_eq!(config.storage.todo_file, PathBuf::from("todo.json"));
+            assert_eq!(config.storage.task_file, PathBuf::from("tasks.json"));
         }
     }
 }
