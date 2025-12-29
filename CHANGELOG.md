@@ -2,6 +2,31 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.0](https://github.com/taktiks2/yaru/compare/d04330ef9ad5d17f6df35e95f6a59cd52c0f7bce..0.2.0) - 2025-12-29
+#### Features
+- (**cli**) タグ管理コマンドを追加 - ([cb0a8cb](https://github.com/taktiks2/yaru/commit/cb0a8cb53e260f3407a63ed9bcffe9a2f8b667c7)) - taktiks2
+- (**commands**) タグ削除時の参照整合性チェックを追加 - ([2ac251c](https://github.com/taktiks2/yaru/commit/2ac251cca1936273fbd9171ee9bcd032adfee00a)) - taktiks2
+- (**commands**) タスク追加時のタグ存在確認機能を追加 - ([3d154c9](https://github.com/taktiks2/yaru/commit/3d154c903bc6d8814738e5b65fda12d17441c1a1)) - taktiks2
+- (**config**) タグファイルパスの設定を追加 - ([93c6212](https://github.com/taktiks2/yaru/commit/93c6212ad172129c85e621a449718aa9c1afb559)) - taktiks2
+- (**display**) format_local_timeを公開 - ([3c05ff2](https://github.com/taktiks2/yaru/commit/3c05ff24587342080fca091fee9f04a948492b01)) - taktiks2
+- (**repository**) TagRepositoryを追加 - ([b1b938d](https://github.com/taktiks2/yaru/commit/b1b938d51987fab6a3c8906a75213a48f11d605d)) - taktiks2
+- (**tag**) Tag構造体を追加 - ([d04330e](https://github.com/taktiks2/yaru/commit/d04330ef9ad5d17f6df35e95f6a59cd52c0f7bce)) - taktiks2
+- (**task**) タスクにtagsフィールドを追加 - ([f082c4a](https://github.com/taktiks2/yaru/commit/f082c4aed056c0ad9cfd6419c9542fce2d652bbd)) - taktiks2
+#### Documentation
+- (**json**) DeserializeOwnedを使用してドキュメントを改善 - ([9abf0f7](https://github.com/taktiks2/yaru/commit/9abf0f7f447134a020b25da9ccc79041a4a62c9e)) - taktiks2
+#### Refactoring
+- (**commands**) ジェネリックリポジトリに対応 - ([622cd96](https://github.com/taktiks2/yaru/commit/622cd9683f0f9e5b9c40e65c64d7006cdfe266f7)) - taktiks2
+- (**lib**) タグ機能の統合に伴いリポジトリ連携を追加 - ([b9e0fc4](https://github.com/taktiks2/yaru/commit/b9e0fc41738648823e7843782bcfcdd506cd0e55)) - taktiks2
+- (**repository**) 不要なallow(dead_code)属性を削除 - ([78c992c](https://github.com/taktiks2/yaru/commit/78c992c9f93cf1cf37aecc3ed17ca3d163ad6972)) - taktiks2
+- (**repository**) リポジトリパターンをジェネリック化 - ([59524d6](https://github.com/taktiks2/yaru/commit/59524d6005a674fabd591e252722cf8baf3eaf0d)) - taktiks2
+#### Miscellaneous Chores
+- (**justfile**) タグ関連コマンドを追加 - ([f0c15be](https://github.com/taktiks2/yaru/commit/f0c15be4ac3e753e1d49617eb7ef15e4591860b0)) - taktiks2
+- リントとフォーマットコマンドを追加、コードスタイルを統一 - ([050cc09](https://github.com/taktiks2/yaru/commit/050cc09220feba295b649d7a34c66377930d01b0)) - taktiks2
+#### Styling
+- (**display**) テストコードのフォーマットを統一 - ([ecfbbf6](https://github.com/taktiks2/yaru/commit/ecfbbf6286ccca941bc1843dfbfabd52beb62be4)) - taktiks2
+
+- - -
+
 ## [0.1.1](https://github.com/taktiks2/yaru/compare/31131dfac130ec90c2c83b18750548e807444309..0.1.1) - 2025-12-29
 #### Performance
 - delete_taskのパフォーマンス改善 - ([15828e7](https://github.com/taktiks2/yaru/commit/15828e7d200d8b0af4d91722bfb4d64e2c3b1afa)) - taktiks2
