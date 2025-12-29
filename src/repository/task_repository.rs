@@ -107,8 +107,8 @@ mod tests {
         let test_file = test_dir.path().join("tasks.json");
 
         let tasks = vec![
-            Task::new(1, "テストタスク1", "", Status::Pending, Priority::Medium),
-            Task::new(2, "テストタスク2", "", Status::Completed, Priority::Medium),
+            Task::new(1, "テストタスク1", "", Status::Pending, Priority::Medium, vec![]),
+            Task::new(2, "テストタスク2", "", Status::Completed, Priority::Medium, vec![]),
         ];
 
         // リポジトリを使って保存
@@ -147,9 +147,9 @@ mod tests {
         let repo = JsonTaskRepository::new(&test_file);
 
         let tasks = vec![
-            Task::new(1, "タスク1", "", Status::Pending, Priority::Medium),
-            Task::new(3, "タスク3", "", Status::Pending, Priority::Medium),
-            Task::new(2, "タスク2", "", Status::Pending, Priority::Medium),
+            Task::new(1, "タスク1", "", Status::Pending, Priority::Medium, vec![]),
+            Task::new(3, "タスク3", "", Status::Pending, Priority::Medium, vec![]),
+            Task::new(2, "タスク2", "", Status::Pending, Priority::Medium, vec![]),
         ];
         let next_id = repo.find_next_id(&tasks);
         assert_eq!(next_id, 4);
@@ -167,6 +167,7 @@ mod tests {
             "",
             Status::Pending,
             Priority::Medium,
+            vec![],
         )];
         let next_id = repo.find_next_id(&tasks);
         assert_eq!(next_id, 6);
@@ -191,6 +192,7 @@ mod tests {
             "",
             Status::Pending,
             Priority::Medium,
+            vec![],
         )];
         repo.save_tasks(&tasks).unwrap();
 

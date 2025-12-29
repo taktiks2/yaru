@@ -13,17 +13,29 @@ pub fn create_task_table(tasks: &[Task]) -> Table {
         "説明",
         "ステータス",
         "優先度",
+        "タグ",
         "作成日",
         "更新日",
     ]);
 
     for task in tasks {
+        let tags_str = if task.tags.is_empty() {
+            "-".to_string()
+        } else {
+            task.tags
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        };
+
         table.add_row(vec![
             task.id.to_string(),
             truncate_text(&task.title, 20),
             truncate_text(&task.description, 20),
             task.status.to_string(),
             task.priority.to_string(),
+            tags_str,
             format_local_time(&task.created_at),
             format_local_time(&task.updated_at),
         ]);
@@ -41,9 +53,20 @@ pub fn create_single_task_table(task: &Task) -> Table {
         "説明",
         "ステータス",
         "優先度",
+        "タグ",
         "作成日",
         "更新日",
     ]);
+
+    let tags_str = if task.tags.is_empty() {
+        "-".to_string()
+    } else {
+        task.tags
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<Vec<_>>()
+            .join(",")
+    };
 
     table.add_row(vec![
         task.id.to_string(),
@@ -51,6 +74,7 @@ pub fn create_single_task_table(task: &Task) -> Table {
         truncate_text(&task.description, 20),
         task.status.to_string(),
         task.priority.to_string(),
+        tags_str,
         format_local_time(&task.created_at),
         format_local_time(&task.updated_at),
     ]);
@@ -78,8 +102,8 @@ mod tests {
     #[test]
     fn test_create_task_table_with_tasks() {
         let tasks = vec![
-            Task::new(1, "テストタスク1", "", Status::Pending, Priority::Medium),
-            Task::new(2, "テストタスク2", "", Status::Completed, Priority::Medium),
+            Task::new(1, "テストタスク1", "", Status::Pending, Priority::Medium, vec![]),
+            Task::new(2, "テストタスク2", "", Status::Completed, Priority::Medium, vec![]),
         ];
         let table = create_task_table(&tasks);
 
@@ -92,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_create_single_task_table() {
-        let task = Task::new(1, "新しいタスク", "", Status::InProgress, Priority::Medium);
+        let task = Task::new(1, "新しいタスク", "", Status::InProgress, Priority::Medium, vec![]);
         let table = create_single_task_table(&task);
 
         let table_str = table.to_string();
@@ -104,9 +128,9 @@ mod tests {
     #[test]
     fn test_create_task_table_with_different_statuses() {
         let tasks = vec![
-            Task::new(1, "保留中タスク", "", Status::Pending, Priority::Medium),
-            Task::new(2, "進行中タスク", "", Status::InProgress, Priority::Medium),
-            Task::new(3, "完了タスク", "", Status::Completed, Priority::Medium),
+            Task::new(1, "保留中タスク", "", Status::Pending, Priority::Medium, vec![]),
+            Task::new(2, "進行中タスク", "", Status::InProgress, Priority::Medium, vec![]),
+            Task::new(3, "完了タスク", "", Status::Completed, Priority::Medium, vec![]),
         ];
         let table = create_task_table(&tasks);
 
@@ -125,6 +149,7 @@ mod tests {
             "これは説明文です",
             Status::Pending,
             Priority::Medium,
+            vec![],
         )];
         let table = create_task_table(&tasks);
 
@@ -143,6 +168,7 @@ mod tests {
             long_desc,
             Status::Pending,
             Priority::Medium,
+            vec![],
         )];
         let table = create_task_table(&tasks);
 

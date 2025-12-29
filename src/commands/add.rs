@@ -13,6 +13,7 @@ pub fn add_task(
     description: Option<String>,
     status: Option<Status>,
     priority: Option<Priority>,
+    tags: Option<Vec<u64>>,
 ) -> Result<()> {
     let title = match title {
         Some(t) => t,
@@ -31,10 +32,11 @@ pub fn add_task(
 
     let status = status.unwrap_or(Status::Pending);
     let priority = priority.unwrap_or(Priority::Medium);
+    let tags = tags.unwrap_or_default();
 
     let mut tasks = repo.load_tasks()?;
     let new_id = repo.find_next_id(&tasks);
-    let new_task = Task::new(new_id, &title, &description, status, priority);
+    let new_task = Task::new(new_id, &title, &description, status, priority, tags);
 
     tasks.push(new_task.clone());
     repo.save_tasks(&tasks)?;
