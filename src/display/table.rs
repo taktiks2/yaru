@@ -102,8 +102,22 @@ mod tests {
     #[test]
     fn test_create_task_table_with_tasks() {
         let tasks = vec![
-            Task::new(1, "テストタスク1", "", Status::Pending, Priority::Medium, vec![]),
-            Task::new(2, "テストタスク2", "", Status::Completed, Priority::Medium, vec![]),
+            Task::new(
+                1,
+                "テストタスク1",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+            ),
+            Task::new(
+                2,
+                "テストタスク2",
+                "",
+                Status::Completed,
+                Priority::Medium,
+                vec![],
+            ),
         ];
         let table = create_task_table(&tasks);
 
@@ -116,7 +130,14 @@ mod tests {
 
     #[test]
     fn test_create_single_task_table() {
-        let task = Task::new(1, "新しいタスク", "", Status::InProgress, Priority::Medium, vec![]);
+        let task = Task::new(
+            1,
+            "新しいタスク",
+            "",
+            Status::InProgress,
+            Priority::Medium,
+            vec![],
+        );
         let table = create_single_task_table(&task);
 
         let table_str = table.to_string();
@@ -128,9 +149,30 @@ mod tests {
     #[test]
     fn test_create_task_table_with_different_statuses() {
         let tasks = vec![
-            Task::new(1, "保留中タスク", "", Status::Pending, Priority::Medium, vec![]),
-            Task::new(2, "進行中タスク", "", Status::InProgress, Priority::Medium, vec![]),
-            Task::new(3, "完了タスク", "", Status::Completed, Priority::Medium, vec![]),
+            Task::new(
+                1,
+                "保留中タスク",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+            ),
+            Task::new(
+                2,
+                "進行中タスク",
+                "",
+                Status::InProgress,
+                Priority::Medium,
+                vec![],
+            ),
+            Task::new(
+                3,
+                "完了タスク",
+                "",
+                Status::Completed,
+                Priority::Medium,
+                vec![],
+            ),
         ];
         let table = create_task_table(&tasks);
 
