@@ -2,6 +2,27 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.1.1](https://github.com/taktiks2/yaru/compare/31131dfac130ec90c2c83b18750548e807444309..0.1.1) - 2025-12-29
+#### Performance
+- delete_taskのパフォーマンス改善 - ([15828e7](https://github.com/taktiks2/yaru/commit/15828e7d200d8b0af4d91722bfb4d64e2c3b1afa)) - taktiks2
+#### Documentation
+- 移行処理削除に合わせてドキュメントを更新 - ([ad04393](https://github.com/taktiks2/yaru/commit/ad04393c64506ea56df10dcc6b11e0a28765382f)) - taktiks2
+- リファクタリングに合わせてドキュメントを更新 - ([bed81d6](https://github.com/taktiks2/yaru/commit/bed81d66eee06a842b49802af5478d1ffdcc2932)) - taktiks2
+#### Refactoring
+- todo.jsonからの移行処理を削除 - ([6c98461](https://github.com/taktiks2/yaru/commit/6c9846196aca3bc368b458d619c21520f555c69b)) - taktiks2
+- エントリーポイントの型名・関数名を更新 - ([71c1f45](https://github.com/taktiks2/yaru/commit/71c1f455c0425e90d4836e0142974f9694e920c5)) - taktiks2
+- 設定層のフィールド名を更新 - ([099ebdf](https://github.com/taktiks2/yaru/commit/099ebdf71827d145f214e4c88dfc4b0bfafeac8f)) - taktiks2
+- 表示層の型名・関数名を更新 - ([aac4669](https://github.com/taktiks2/yaru/commit/aac466988d8de892ec926e072c439f8e08e06bb8)) - taktiks2
+- コマンド層の型名・関数名を更新 - ([1b3689a](https://github.com/taktiks2/yaru/commit/1b3689ada790960e5746c70057b4e400655bd737)) - taktiks2
+- Todo型をTask型に名称変更（コア型定義） - ([31131df](https://github.com/taktiks2/yaru/commit/31131dfac130ec90c2c83b18750548e807444309)) - taktiks2
+#### Miscellaneous Chores
+- PRマージコミットを無視する設定を追加 - ([1debcd4](https://github.com/taktiks2/yaru/commit/1debcd40a2d71de63541fc3a94b1e7ffacc9bd24)) - taktiks2
+- perfコミットでパッチバンプするよう設定を追加 - ([d0eaae4](https://github.com/taktiks2/yaru/commit/d0eaae4f2073211d386d7b2ab0f371835d59e5e6)) - taktiks2
+- バンプの設定追加 - ([17b6c07](https://github.com/taktiks2/yaru/commit/17b6c07cb838c29ae79cf092737c7aeb97e59909)) - taktiks2
+- justfileをtasks.jsonに対応 - ([2426e94](https://github.com/taktiks2/yaru/commit/2426e94deecf9a4fcfe2ca23607e7350e9ab2562)) - taktiks2
+
+- - -
+
 ## [0.1.0](https://github.com/taktiks2/yaru/compare/db57cadbcaf6d8a756451a58b304dbc628c0c266..0.1.0) - 2025-12-29
 #### Features
 - 設定ファイル読み込み機能の実装 - ([65e1bfb](https://github.com/taktiks2/yaru/commit/65e1bfb05012759661589f10ec223da8dcf791c3)) - taktiks2
