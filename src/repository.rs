@@ -1,4 +1,4 @@
-mod todo_repository;
+mod task_repository;
 
 // トレイトベースの実装をエクスポート
-pub use todo_repository::{JsonTodoRepository, TodoRepository};
+pub use task_repository::{JsonTaskRepository, TaskRepository};

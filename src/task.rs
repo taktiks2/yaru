@@ -3,7 +3,7 @@ use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Todoタスクを表す構造体
+/// タスクを表す構造体
 ///
 /// # フィールド
 /// - `id`: タスクの一意な識別子
@@ -12,7 +12,7 @@ use std::fmt;
 /// - `created_at`: タスクの作成日時
 /// - `updated_at`: タスクの更新日時
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Todo {
+pub struct Task {
     pub id: u64,
     pub title: String,
     pub description: String,
@@ -22,15 +22,15 @@ pub struct Todo {
     pub updated_at: String,
 }
 
-impl Todo {
-    /// 新しいTodoを作成
+impl Task {
+    /// 新しいTaskを作成
     ///
     /// # 引数
     /// - `id`: タスクのID
     /// - `title`: タスクのタイトル
     ///
     /// # 戻り値
-    /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTodoインスタンス
+    /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTaskインスタンス
     pub fn new(
         id: u64,
         title: &str,
