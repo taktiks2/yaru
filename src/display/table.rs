@@ -54,9 +54,7 @@ fn build_table_with_preset(headers: Vec<&str>, rows: Vec<Vec<String>>) -> Table 
     table.load_preset(UTF8_FULL);
     table.set_header(headers);
 
-    for row in rows {
-        table.add_row(row);
-    }
+    table.add_rows(rows);
 
     table
 }
