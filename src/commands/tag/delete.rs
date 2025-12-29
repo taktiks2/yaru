@@ -1,80 +1,6 @@
-use crate::display::format_local_time;
 use crate::task::Task;
 use crate::{repository::Repository, tag::Tag};
-use anyhow::{Context, Result};
-use comfy_table::{Table, presets::UTF8_FULL};
-use inquire::{Editor, Text, validator};
-
-/// 新しいタグを追加
-pub fn add_tag(
-    repo: &impl Repository<Tag>,
-    name: Option<String>,
-    description: Option<String>,
-) -> Result<()> {
-    let name = match name {
-        Some(n) => n,
-        None => Text::new("タグの名前を入力してください")
-            .with_validator(validator::MinLengthValidator::new(1))
-            .prompt()
-            .context("タグの名前の入力に失敗しました")?,
-    };
-
-    let description = match description {
-        Some(d) => d,
-        None => Editor::new("タグの説明を入力してください")
-            .prompt()
-            .context("タグの説明の入力に失敗しました")?,
-    };
-
-    let mut tags = repo.load()?;
-    let new_id = repo.find_next_id(&tags);
-    let new_tag = Tag::new(new_id, &name, &description);
-
-    tags.push(new_tag.clone());
-    repo.save(&tags)?;
-
-    let mut table = Table::new();
-    table.load_preset(UTF8_FULL);
-    table.set_header(vec!["ID", "名前", "説明", "作成日", "更新日"]);
-    table.add_row(vec![
-        new_tag.id.to_string(),
-        new_tag.name.to_string(),
-        new_tag.description.to_string(),
-        format_local_time(&new_tag.created_at),
-        format_local_time(&new_tag.updated_at),
-    ]);
-
-    println!("{table}");
-
-    Ok(())
-}
-
-/// タグ一覧を表示
-pub fn list_tags(repo: &impl Repository<Tag>) -> Result<()> {
-    let tags = repo.load()?;
-
-    if tags.is_empty() {
-        println!("登録されているタグはありません");
-        return Ok(());
-    }
-
-    let mut table = Table::new();
-    table.load_preset(UTF8_FULL);
-    table.set_header(vec!["ID", "名前", "説明", "作成日", "更新日"]);
-
-    for tag in tags {
-        table.add_row(vec![
-            tag.id.to_string(),
-            tag.name.to_string(),
-            tag.description.to_string(),
-            format_local_time(&tag.created_at),
-            format_local_time(&tag.updated_at),
-        ]);
-    }
-
-    println!("{table}");
-    Ok(())
-}
+use anyhow::Result;
 
 /// 指定されたIDのタグを削除
 pub fn delete_tag(
@@ -120,16 +46,8 @@ pub fn delete_tag(
 mod tests {
     use super::*;
     use crate::repository::JsonRepository;
-    use crate::task::{Priority, Status, Task};
+    use crate::task::{Priority, Status};
     use tempfile::TempDir;
-
-    fn setup_test_repo() -> (TempDir, JsonRepository<Tag>) {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let tag_file = temp_dir.path().join("tags.json");
-        let repo = JsonRepository::new(&tag_file);
-        repo.ensure_data_exists().unwrap();
-        (temp_dir, repo)
-    }
 
     fn setup_test_repos() -> (TempDir, JsonRepository<Tag>, JsonRepository<Task>) {
         let temp_dir = tempfile::tempdir().unwrap();
@@ -146,93 +64,15 @@ mod tests {
     }
 
     #[test]
-    fn test_add_tag_with_name_and_description() {
-        let (_temp_dir, repo) = setup_test_repo();
-
-        // タグを追加
-        add_tag(
-            &repo,
-            Some("重要".to_string()),
-            Some("重要なタスク用".to_string()),
-        )
-        .unwrap();
-
-        // 追加されたタグを確認
-        let tags = repo.load().unwrap();
-        assert_eq!(tags.len(), 1);
-        assert_eq!(tags[0].name, "重要");
-        assert_eq!(tags[0].description, "重要なタスク用");
-        assert_eq!(tags[0].id, 1);
-    }
-
-    #[test]
-    fn test_add_multiple_tags() {
-        let (_temp_dir, repo) = setup_test_repo();
-
-        // 複数のタグを追加
-        add_tag(
-            &repo,
-            Some("重要".to_string()),
-            Some("重要なタスク用".to_string()),
-        )
-        .unwrap();
-        add_tag(
-            &repo,
-            Some("作業中".to_string()),
-            Some("現在作業中".to_string()),
-        )
-        .unwrap();
-
-        // タグを確認
-        let tags = repo.load().unwrap();
-        assert_eq!(tags.len(), 2);
-        assert_eq!(tags[0].id, 1);
-        assert_eq!(tags[1].id, 2);
-    }
-
-    #[test]
-    fn test_list_tags_empty() {
-        let (_temp_dir, repo) = setup_test_repo();
-
-        // 空の状態でリストを表示
-        let result = list_tags(&repo);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_list_tags_with_data() {
-        let (_temp_dir, repo) = setup_test_repo();
-
-        // タグを追加
-        add_tag(
-            &repo,
-            Some("重要".to_string()),
-            Some("重要なタスク用".to_string()),
-        )
-        .unwrap();
-
-        // リストを表示
-        let result = list_tags(&repo);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn test_delete_tag() {
         let (_temp_dir, tag_repo, task_repo) = setup_test_repos();
 
         // タグを追加
-        add_tag(
-            &tag_repo,
-            Some("重要".to_string()),
-            Some("重要なタスク用".to_string()),
-        )
-        .unwrap();
-        add_tag(
-            &tag_repo,
-            Some("作業中".to_string()),
-            Some("現在作業中".to_string()),
-        )
-        .unwrap();
+        let tags = vec![
+            Tag::new(1, "重要", "重要なタスク用"),
+            Tag::new(2, "作業中", "現在作業中"),
+        ];
+        tag_repo.save(&tags).unwrap();
 
         // タグを削除
         delete_tag(&tag_repo, &task_repo, 1).unwrap();

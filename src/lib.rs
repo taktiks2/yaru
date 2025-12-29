@@ -10,7 +10,10 @@ mod task;
 use anyhow::{Context, Result, anyhow};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
-use commands::{add_tag, add_task, delete_tag, delete_task, list_tags, list_tasks};
+use commands::{
+    tag::{add_tag, delete_tag, list_tags},
+    task::{add_task, delete_task, list_tasks},
+};
 use config::load_config;
 use repository::{JsonRepository, Repository};
 
