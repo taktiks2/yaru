@@ -2,6 +2,28 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.4.0](https://github.com/taktiks2/yaru/compare/fd8fe75aff051229705923d22cc33c08a5084180..0.4.0) - 2025-12-30
+#### Features
+- showコマンドの実装を追加 - ([312f261](https://github.com/taktiks2/yaru/commit/312f2617c19e430732030a9c38d682c421f56538)) - taktiks2
+- CLI定義にshowサブコマンドを追加 - ([7cae69c](https://github.com/taktiks2/yaru/commit/7cae69cc816c8268a69b682ce31b4d9f8594ec8b)) - taktiks2
+- displayモジュールに詳細表示用の関数を追加 - ([fd8fe75](https://github.com/taktiks2/yaru/commit/fd8fe75aff051229705923d22cc33c08a5084180)) - taktiks2
+#### Documentation
+- Showサブコマンドのコメントを正確な説明に修正 - ([c3da28c](https://github.com/taktiks2/yaru/commit/c3da28c3e68eef78d07fc6e043b4301d04ff6b61)) - taktiks2
+- smart-commitコマンドのユーザー確認項目を明記 - ([42c1202](https://github.com/taktiks2/yaru/commit/42c12029c08863db48094a2d4deba6dda24635b4)) - taktiks2
+- smart-commitコマンドのユーザー確認手順を明確化 - ([dc2d7b8](https://github.com/taktiks2/yaru/commit/dc2d7b83468633d3b311e3d8b2a85f54e4ac796c)) - taktiks2
+- smart-commitコマンドの説明文を簡潔化 - ([66c084d](https://github.com/taktiks2/yaru/commit/66c084da20c1064f84e00ca2c02986951e369868)) - taktiks2
+- smart-commitコマンドの手順を簡素化 - ([1678cb7](https://github.com/taktiks2/yaru/commit/1678cb711c8cf9e8788ad23269cab79ca2f93c6f)) - taktiks2
+#### Continuous Integration
+- リリースワークフローに並行実行制御を追加 - ([9bb26c6](https://github.com/taktiks2/yaru/commit/9bb26c61c4fde38551f925e2def1479d4ec81026)) - taktiks2
+- Claude Codeワークフローをコメントイベントのみに限定 - ([79389ed](https://github.com/taktiks2/yaru/commit/79389ed4a5d8aec7b9fbe3f7ee8bcfb20d6872bc)) - taktiks2
+#### Refactoring
+- create_single_*_table関数をcreate_*_detail_table関数に統一 - ([8d2eb0b](https://github.com/taktiks2/yaru/commit/8d2eb0bcf8d123f63a80c06342bf6e272bc7da59)) - taktiks2
+- anyhow::anyhow!をanyhow::bail!に統一 - ([6e5f726](https://github.com/taktiks2/yaru/commit/6e5f726a2b3be54a1ddf64aec9a762a000087a4b)) - taktiks2
+#### Miscellaneous Chores
+- smart-commitコマンドの定義を追加 - ([1c3f4bf](https://github.com/taktiks2/yaru/commit/1c3f4bf0ca95ff29f1bb3919926098be42efd908)) - taktiks2
+
+- - -
+
 ## [0.3.0](https://github.com/taktiks2/yaru/compare/47cbb907c11f6d7d69b2cd9ab12f793ecc0af420..0.3.0) - 2025-12-29
 #### Features
 - タスク用のサブコマンド追加 - ([b7fe183](https://github.com/taktiks2/yaru/commit/b7fe18389968c6892c4b45d1c8889c0e5adb3758)) - taktiks2
