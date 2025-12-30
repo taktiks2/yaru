@@ -1,4 +1,4 @@
-use crate::display::create_single_tag_table;
+use crate::display::create_tag_detail_table;
 use crate::{repository::Repository, tag::Tag};
 use anyhow::{Context, Result};
 use inquire::{Editor, Text, validator};
@@ -31,7 +31,7 @@ pub fn add_tag(
     tags.push(new_tag.clone());
     repo.save(&tags)?;
 
-    let table = create_single_tag_table(&new_tag);
+    let table = create_tag_detail_table(&new_tag);
     println!("{table}");
 
     Ok(())
