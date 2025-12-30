@@ -78,7 +78,7 @@ pub enum TaskCommands {
     },
     /// タスクの詳細を表示
     Show {
-        /// 削除するタスクのID
+        /// 詳細表示するタスクのID
         id: u64,
     },
     /// 新しいタスクを追加
@@ -114,7 +114,7 @@ pub enum TagCommands {
     List,
     /// タグの詳細を表示
     Show {
-        /// 削除するタグのID
+        /// 詳細表示するタグのID
         id: u64,
     },
     /// 新しいタグを追加
