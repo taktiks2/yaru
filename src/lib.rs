@@ -11,8 +11,8 @@ use anyhow::{Context, Result, anyhow};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use commands::{
-    tag::{add_tag, delete_tag, list_tags},
-    task::{add_task, delete_task, list_tasks},
+    tag::{add_tag, delete_tag, list_tags, show_tag},
+    task::{add_task, delete_task, list_tasks, show_task},
 };
 use config::load_config;
 use repository::{JsonRepository, Repository};
@@ -66,6 +66,7 @@ fn handle_task_command(
 ) -> Result<()> {
     match command {
         TaskCommands::List { filter } => list_tasks(&task_repo, filter),
+        TaskCommands::Show { id } => show_task(&task_repo, &tag_repo, id),
         TaskCommands::Add {
             title,
             description,
@@ -93,6 +94,7 @@ fn handle_tag_command(
 ) -> Result<()> {
     match command {
         TagCommands::Add { name, description } => add_tag(&tag_repo, name, description),
+        TagCommands::Show { id } => show_tag(&tag_repo, id),
         TagCommands::List => list_tags(&tag_repo),
         TagCommands::Delete { id } => delete_tag(&tag_repo, &task_repo, id),
     }
