@@ -72,7 +72,7 @@ git diff
 
 ### 4. コミットの実行
 
-Claude Code標準の`PermissionRequest`を使ってユーザーから以下の確認を取得：
+Claude Code標準の`PermissionRequest`を使って以下を実行する承認を得ること:
 
 ```bash
 # 対象ファイルをステージング
