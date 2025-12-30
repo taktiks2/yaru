@@ -23,24 +23,6 @@ pub fn create_task_table(tasks: &[Task]) -> Table {
     build_table_with_preset(headers, rows)
 }
 
-/// 単一のタスクをテーブルとして表示
-pub fn create_single_task_table(task: &Task) -> Table {
-    let headers = vec![
-        "ID",
-        "タイトル",
-        "説明",
-        "ステータス",
-        "優先度",
-        "タグ",
-        "作成日",
-        "更新日",
-    ];
-
-    let rows = vec![create_task_row(task)];
-
-    build_table_with_preset(headers, rows)
-}
-
 /// テーブルの基本構造を作成し、行データを追加
 ///
 /// # 引数
@@ -133,19 +115,76 @@ pub fn create_tag_table(tags: &[Tag]) -> Table {
     build_table_with_preset(headers, rows)
 }
 
-/// 単一のタグをテーブルとして表示
+/// タグの詳細をキー・バリュー形式で表示
 ///
 /// # 引数
 /// - `tag`: 表示するタグ
 ///
 /// # 戻り値
-/// UTF8_FULLプリセットが適用されたタグのテーブル
-pub fn create_single_tag_table(tag: &Tag) -> Table {
-    let headers = vec!["ID", "名前", "説明", "作成日", "更新日"];
+/// 2列のキー・バリュー形式テーブル
+pub fn create_tag_detail_table(tag: &Tag) -> Table {
+    let mut table = Table::new();
+    table.load_preset(UTF8_FULL);
 
-    let rows = vec![create_tag_row(tag)];
+    let description = if tag.description.is_empty() {
+        "-".to_string()
+    } else {
+        tag.description.clone()
+    };
 
-    build_table_with_preset(headers, rows)
+    table.add_row(vec!["ID", &tag.id.to_string()]);
+    table.add_row(vec!["名前", &tag.name]);
+    table.add_row(vec!["説明", &description]);
+    table.add_row(vec!["作成日", &format_local_time(&tag.created_at)]);
+    table.add_row(vec!["更新日", &format_local_time(&tag.updated_at)]);
+
+    table
+}
+
+/// タスクの詳細をキー・バリュー形式で表示（タグ名付き）
+///
+/// # 引数
+/// - `task`: 表示するタスク
+/// - `all_tags`: すべてのタグのリスト（タグID解決用）
+///
+/// # 戻り値
+/// 2列のキー・バリュー形式テーブル
+pub fn create_task_detail_table(task: &Task, all_tags: &[Tag]) -> Table {
+    let mut table = Table::new();
+    table.load_preset(UTF8_FULL);
+
+    let description = if task.description.is_empty() {
+        "-".to_string()
+    } else {
+        task.description.clone()
+    };
+
+    let tags_str = if task.tags.is_empty() {
+        "-".to_string()
+    } else {
+        task.tags
+            .iter()
+            .map(|tag_id| {
+                all_tags
+                    .iter()
+                    .find(|tag| tag.id == *tag_id)
+                    .map(|tag| tag.name.clone())
+                    .unwrap_or_else(|| format!("ID:{}", tag_id))
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+
+    table.add_row(vec!["ID", &task.id.to_string()]);
+    table.add_row(vec!["タイトル", &task.title]);
+    table.add_row(vec!["説明", &description]);
+    table.add_row(vec!["ステータス", &task.status.to_string()]);
+    table.add_row(vec!["優先度", &task.priority.to_string()]);
+    table.add_row(vec!["タグ", &tags_str]);
+    table.add_row(vec!["作成日", &format_local_time(&task.created_at)]);
+    table.add_row(vec!["更新日", &format_local_time(&task.updated_at)]);
+
+    table
 }
 
 #[cfg(test)]
@@ -192,24 +231,6 @@ mod tests {
         assert!(table_str.contains("テストタスク1"));
         assert!(table_str.contains("2"));
         assert!(table_str.contains("テストタスク2"));
-    }
-
-    #[test]
-    fn test_create_single_task_table() {
-        let task = Task::new(
-            1,
-            "新しいタスク",
-            "",
-            Status::InProgress,
-            Priority::Medium,
-            vec![],
-        );
-        let table = create_single_task_table(&task);
-
-        let table_str = table.to_string();
-        assert!(table_str.contains("1"));
-        assert!(table_str.contains("新しいタスク"));
-        assert!(table_str.contains("進行中"));
     }
 
     #[test]
@@ -375,17 +396,6 @@ mod tests_tag {
         assert!(table_str.contains("重要"));
         assert!(table_str.contains("2"));
         assert!(table_str.contains("作業中"));
-    }
-
-    #[test]
-    fn test_create_single_tag_table() {
-        let tag = Tag::new(1, "新しいタグ", "新規タグの説明");
-        let table = create_single_tag_table(&tag);
-
-        let table_str = table.to_string();
-        assert!(table_str.contains("1"));
-        assert!(table_str.contains("新しいタグ"));
-        assert!(table_str.contains("新規タグの説明"));
     }
 
     #[test]

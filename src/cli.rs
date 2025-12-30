@@ -76,6 +76,11 @@ pub enum TaskCommands {
         #[arg(short, long, value_parser = clap::value_parser!(Filter))]
         filter: Option<Vec<Filter>>,
     },
+    /// タスクの詳細を表示
+    Show {
+        /// 詳細表示するタスクのID
+        id: u64,
+    },
     /// 新しいタスクを追加
     Add {
         /// タスクのタイトル
@@ -105,6 +110,13 @@ pub enum TaskCommands {
 /// タグ管理用のサブコマンド
 #[derive(Subcommand, Debug)]
 pub enum TagCommands {
+    /// タグ一覧を表示
+    List,
+    /// タグの詳細を表示
+    Show {
+        /// 詳細表示するタグのID
+        id: u64,
+    },
     /// 新しいタグを追加
     Add {
         /// タグの名前
@@ -114,8 +126,6 @@ pub enum TagCommands {
         #[arg(short, long)]
         description: Option<String>,
     },
-    /// タグ一覧を表示
-    List,
     /// 指定されたIDのタグを削除
     Delete {
         /// 削除するタグのID

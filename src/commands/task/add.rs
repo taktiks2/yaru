@@ -1,5 +1,5 @@
 use crate::{
-    display::create_single_task_table,
+    display::create_task_detail_table,
     repository::Repository,
     tag::Tag,
     task::{Priority, Status, Task},
@@ -37,8 +37,8 @@ pub fn add_task(
     let tags = tags.unwrap_or_default();
 
     // タグIDの存在確認
+    let existing_tags = tag_repo.load()?;
     if !tags.is_empty() {
-        let existing_tags = tag_repo.load()?;
         let existing_tag_ids: Vec<u64> = existing_tags.iter().map(|t| t.id).collect();
 
         for tag_id in &tags {
@@ -57,7 +57,7 @@ pub fn add_task(
 
     println!("タスクを登録しました。");
 
-    let table = create_single_task_table(&new_task);
+    let table = create_task_detail_table(&new_task, &existing_tags);
     println!("{table}");
 
     Ok(())

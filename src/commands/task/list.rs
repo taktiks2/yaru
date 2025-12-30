@@ -32,8 +32,10 @@ pub fn list_tasks(repo: &impl Repository<Task>, filters: Option<Vec<Filter>>) ->
 fn apply_filter(tasks: Vec<Task>, filter: &Filter) -> Result<Vec<Task>> {
     match filter.key {
         FilterKey::Status => {
-            let status = Status::from_filter_value(&filter.value)
-                .map_err(|_| anyhow::anyhow!("無効なステータス値です: {}", &filter.value))?;
+            let status = match Status::from_filter_value(&filter.value) {
+                Ok(s) => s,
+                Err(_) => anyhow::bail!("無効なステータス値です: {}", &filter.value),
+            };
             Ok(tasks
                 .into_iter()
                 .filter(|task| task.status == status)

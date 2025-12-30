@@ -7,12 +7,12 @@ mod repository;
 mod tag;
 mod task;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use commands::{
-    tag::{add_tag, delete_tag, list_tags},
-    task::{add_task, delete_task, list_tasks},
+    tag::{add_tag, delete_tag, list_tags, show_tag},
+    task::{add_task, delete_task, list_tasks, show_task},
 };
 use config::load_config;
 use repository::{JsonRepository, Repository};
@@ -21,13 +21,16 @@ use repository::{JsonRepository, Repository};
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
 pub fn run() -> Result<()> {
-    let args = Args::try_parse().map_err(|e| {
-        if e.kind() == ErrorKind::InvalidSubcommand {
-            anyhow!("無効なサブコマンドです。使用可能なコマンド: task, tag")
-        } else {
-            e.into()
+    let args = match Args::try_parse() {
+        Ok(args) => args,
+        Err(e) => {
+            if e.kind() == ErrorKind::InvalidSubcommand {
+                anyhow::bail!("無効なサブコマンドです。使用可能なコマンド: task, tag");
+            } else {
+                return Err(e.into());
+            }
         }
-    })?;
+    };
 
     // 設定を読み込む
     let config = load_config()?;
@@ -66,6 +69,7 @@ fn handle_task_command(
 ) -> Result<()> {
     match command {
         TaskCommands::List { filter } => list_tasks(&task_repo, filter),
+        TaskCommands::Show { id } => show_task(&task_repo, &tag_repo, id),
         TaskCommands::Add {
             title,
             description,
@@ -93,6 +97,7 @@ fn handle_tag_command(
 ) -> Result<()> {
     match command {
         TagCommands::Add { name, description } => add_tag(&tag_repo, name, description),
+        TagCommands::Show { id } => show_tag(&tag_repo, id),
         TagCommands::List => list_tags(&tag_repo),
         TagCommands::Delete { id } => delete_tag(&tag_repo, &task_repo, id),
     }
