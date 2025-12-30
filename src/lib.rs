@@ -7,7 +7,7 @@ mod repository;
 mod tag;
 mod task;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use commands::{
@@ -21,13 +21,16 @@ use repository::{JsonRepository, Repository};
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
 pub fn run() -> Result<()> {
-    let args = Args::try_parse().map_err(|e| {
-        if e.kind() == ErrorKind::InvalidSubcommand {
-            anyhow!("無効なサブコマンドです。使用可能なコマンド: task, tag")
-        } else {
-            e.into()
+    let args = match Args::try_parse() {
+        Ok(args) => args,
+        Err(e) => {
+            if e.kind() == ErrorKind::InvalidSubcommand {
+                anyhow::bail!("無効なサブコマンドです。使用可能なコマンド: task, tag");
+            } else {
+                return Err(e.into());
+            }
         }
-    })?;
+    };
 
     // 設定を読み込む
     let config = load_config()?;

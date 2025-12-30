@@ -10,10 +10,9 @@ pub fn show_task(
     let tasks = task_repo.load()?;
     let tags = tag_repo.load()?;
 
-    let task = tasks
-        .iter()
-        .find(|task| task.id == id)
-        .ok_or_else(|| anyhow::anyhow!("ID {} のタスクが見つかりません", id))?;
+    let Some(task) = tasks.iter().find(|task| task.id == id) else {
+        anyhow::bail!("ID {} のタスクが見つかりません", id);
+    };
 
     let table = create_task_detail_table(task, &tags);
     println!("{table}");

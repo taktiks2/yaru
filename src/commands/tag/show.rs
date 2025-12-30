@@ -5,10 +5,9 @@ use anyhow::Result;
 pub fn show_tag(repo: &impl Repository<Tag>, id: u64) -> Result<()> {
     let tags = repo.load()?;
 
-    let tag = tags
-        .iter()
-        .find(|tag| tag.id == id)
-        .ok_or_else(|| anyhow::anyhow!("ID {} のタグが見つかりません", id))?;
+    let Some(tag) = tags.iter().find(|tag| tag.id == id) else {
+        anyhow::bail!("ID {} のタグが見つかりません", id);
+    };
 
     let table = create_tag_detail_table(tag);
     println!("{table}");
