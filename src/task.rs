@@ -1,4 +1,3 @@
-use crate::repository::HasId;
 use chrono::Utc;
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
@@ -60,11 +59,6 @@ impl Task {
     }
 }
 
-impl HasId for Task {
-    fn id(&self) -> u64 {
-        self.id
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
 pub enum Status {

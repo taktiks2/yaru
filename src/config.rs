@@ -123,6 +123,7 @@ tag_file = "/custom/path/tags.json"
             storage: StorageConfig {
                 task_file: PathBuf::from("/test/path/tasks.json"),
                 tag_file: PathBuf::from("/test/path/tags.json"),
+                database_url: "sqlite://test.db?mode=rwc".to_string(),
             },
         };
         let toml_str = toml::to_string(&config).unwrap();

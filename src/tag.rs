@@ -1,4 +1,3 @@
-use crate::repository::HasId;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -37,12 +36,6 @@ impl Tag {
             created_at: Utc::now().to_rfc3339(),
             updated_at: Utc::now().to_rfc3339(),
         }
-    }
-}
-
-impl HasId for Tag {
-    fn id(&self) -> u64 {
-        self.id
     }
 }
 
