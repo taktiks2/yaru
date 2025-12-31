@@ -1,7 +1,7 @@
 use crate::{
     display::format::{format_local_time, truncate_text},
-    tag::Tag,
-    task::Task,
+    domain::tag::Tag,
+    domain::task::Task,
 };
 use comfy_table::{Table, presets::UTF8_FULL};
 
@@ -190,7 +190,7 @@ pub fn create_task_detail_table(task: &Task, all_tags: &[Tag]) -> Table {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::task::{Priority, Status};
+    use crate::domain::task::{Priority, Status};
 
     #[test]
     fn test_create_task_table_empty() {
@@ -369,7 +369,7 @@ mod tests {
 #[cfg(test)]
 mod tests_tag {
     use super::*;
-    use crate::tag::Tag;
+    use crate::domain::tag::Tag;
 
     #[test]
     fn test_create_tag_table_empty() {

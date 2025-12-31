@@ -1,18 +1,15 @@
 use crate::{
     cli::{Filter, FilterKey},
     display::create_task_table,
-    repository::task::TaskRepository,
+    domain::task::{Status, Task},
     repository::Repository,
-    task::{Status, Task},
+    repository::task::TaskRepository,
 };
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 
 /// 全てのタスクを一覧表示
-pub async fn list_tasks(
-    db: &DatabaseConnection,
-    filters: Option<Vec<Filter>>,
-) -> Result<()> {
+pub async fn list_tasks(db: &DatabaseConnection, filters: Option<Vec<Filter>>) -> Result<()> {
     // リポジトリから全タスクを取得
     let task_repo = TaskRepository::new(db);
     let mut tasks = task_repo.find_all().await?;

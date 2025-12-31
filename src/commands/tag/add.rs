@@ -1,6 +1,8 @@
-use crate::display::create_tag_detail_table;
-use crate::repository::{tag::TagRepository, Repository};
-use crate::tag::Tag;
+use crate::{
+    display::create_tag_detail_table,
+    domain::tag::Tag,
+    repository::{Repository, tag::TagRepository},
+};
 use anyhow::{Context, Result};
 use inquire::{Editor, Text, validator};
 use sea_orm::DatabaseConnection;
@@ -36,4 +38,3 @@ pub async fn add_tag(
 
     Ok(())
 }
-

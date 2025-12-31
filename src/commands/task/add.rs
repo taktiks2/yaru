@@ -1,7 +1,7 @@
 use crate::{
     display::create_task_detail_table,
-    repository::{tag::TagRepository, task::TaskRepository, Repository},
-    task::{Priority, Status, Task},
+    domain::task::{Priority, Status, Task},
+    repository::{Repository, tag::TagRepository, task::TaskRepository},
 };
 use anyhow::{Context, Result};
 use inquire::{Editor, Text, validator};
@@ -63,4 +63,3 @@ pub async fn add_task(
 
     Ok(())
 }
-

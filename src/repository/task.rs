@@ -1,12 +1,13 @@
 use crate::{
+    domain::task::{Priority, Status, Task},
+    entity::prelude::*,
     entity::{task_tags, tasks},
     repository::Repository,
-    task::{Priority, Status, Task},
 };
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    Set, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    TransactionTrait,
 };
 
 /// Task用のリポジトリ実装
@@ -21,7 +22,7 @@ impl<'a> TaskRepository<'a> {
 
     /// Entityからドメインモデルへ変換
     async fn entity_to_domain(&self, model: tasks::Model) -> Result<Task> {
-        let task_tag_models = task_tags::Entity::find()
+        let task_tag_models = TaskTags::find()
             .filter(task_tags::Column::TaskId.eq(model.id))
             .all(self.db)
             .await
@@ -53,7 +54,7 @@ impl<'a> TaskRepository<'a> {
 
 impl<'a> Repository<Task> for TaskRepository<'a> {
     async fn find_by_id(&self, id: u64) -> Result<Option<Task>> {
-        let task_model = tasks::Entity::find_by_id(id as i32)
+        let task_model = Tasks::find_by_id(id as i32)
             .one(self.db)
             .await
             .context("タスクの検索に失敗しました")?;
@@ -65,7 +66,7 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
     }
 
     async fn find_all(&self) -> Result<Vec<Task>> {
-        let task_models = tasks::Entity::find()
+        let task_models = Tasks::find()
             .all(self.db)
             .await
             .context("タスクの読み込みに失敗しました")?;
@@ -128,14 +129,14 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
         let txn = self.db.begin().await?;
 
         // タスクタグを削除
-        task_tags::Entity::delete_many()
+        TaskTags::delete_many()
             .filter(task_tags::Column::TaskId.eq(id as i32))
             .exec(&txn)
             .await
             .context("タスクタグの削除に失敗しました")?;
 
         // タスクを削除
-        let result = tasks::Entity::delete_by_id(id as i32)
+        let result = Tasks::delete_by_id(id as i32)
             .exec(&txn)
             .await
             .context("タスクの削除に失敗しました")?;
@@ -151,9 +152,8 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tag::Tag;
     use migration::MigratorTrait;
-    use sea_orm::Database;
+    use sea_orm::{Database, PaginatorTrait};
 
     async fn setup_test_db() -> DatabaseConnection {
         let db = Database::connect("sqlite::memory:")
@@ -359,7 +359,7 @@ mod tests {
         assert!(deleted);
 
         // task_tagsが削除されたことを確認
-        let task_tags_count = task_tags::Entity::find()
+        let task_tags_count = TaskTags::find()
             .filter(task_tags::Column::TaskId.eq(created_task.id as i32))
             .count(&db)
             .await

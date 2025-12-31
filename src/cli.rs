@@ -1,4 +1,4 @@
-use crate::task::{Priority, Status};
+use crate::domain::task::{Priority, Status};
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 

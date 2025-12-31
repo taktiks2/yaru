@@ -1,5 +1,7 @@
-use crate::display::create_tag_table;
-use crate::repository::{tag::TagRepository, Repository};
+use crate::{
+    display::create_tag_table,
+    repository::{Repository, tag::TagRepository},
+};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 
@@ -17,4 +19,3 @@ pub async fn list_tags(db: &DatabaseConnection) -> Result<()> {
     println!("{table}");
     Ok(())
 }
-

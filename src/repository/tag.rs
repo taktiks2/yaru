@@ -1,4 +1,9 @@
-use crate::{entity::tags, repository::Repository, tag::Tag};
+use crate::{
+    domain::tag::Tag,
+    entity::prelude::*,
+    entity::tags,
+    repository::Repository,
+};
 use anyhow::{Context, Result};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
 
@@ -26,7 +31,7 @@ impl<'a> TagRepository<'a> {
 
 impl<'a> Repository<Tag> for TagRepository<'a> {
     async fn find_by_id(&self, id: u64) -> Result<Option<Tag>> {
-        let tag_model = tags::Entity::find_by_id(id as i32)
+        let tag_model = Tags::find_by_id(id as i32)
             .one(self.db)
             .await
             .context("タグの検索に失敗しました")?;
@@ -35,7 +40,7 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
     }
 
     async fn find_all(&self) -> Result<Vec<Tag>> {
-        let tag_models = tags::Entity::find()
+        let tag_models = Tags::find()
             .all(self.db)
             .await
             .context("タグの読み込みに失敗しました")?;
@@ -72,7 +77,7 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
     }
 
     async fn delete(&self, id: u64) -> Result<bool> {
-        let result = tags::Entity::delete_by_id(id as i32)
+        let result = Tags::delete_by_id(id as i32)
             .exec(self.db)
             .await
             .context("タグの削除に失敗しました")?;
