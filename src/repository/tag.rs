@@ -11,17 +11,6 @@ impl<'a> TagRepository<'a> {
     pub fn new(db: &'a DatabaseConnection) -> Self {
         Self { db }
     }
-
-    /// Entityからドメインモデルへ変換
-    fn entity_to_domain(&self, model: tags::Model) -> Tag {
-        Tag {
-            id: model.id,
-            name: model.name,
-            description: model.description,
-            created_at: model.created_at.into(),
-            updated_at: model.updated_at.into(),
-        }
-    }
 }
 
 impl<'a> Repository<Tag> for TagRepository<'a> {
@@ -31,7 +20,7 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
             .await
             .context("タグの検索に失敗しました")?;
 
-        Ok(tag_model.map(|m| self.entity_to_domain(m)))
+        Ok(tag_model.map(Into::into))
     }
 
     async fn find_all(&self) -> Result<Vec<Tag>> {
@@ -40,10 +29,7 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
             .await
             .context("タグの読み込みに失敗しました")?;
 
-        Ok(tag_models
-            .into_iter()
-            .map(|m| self.entity_to_domain(m))
-            .collect())
+        Ok(tag_models.into_iter().map(Into::into).collect())
     }
 
     async fn search<F>(&self, predicate: F) -> Result<Vec<Tag>>
@@ -68,7 +54,7 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
             .await
             .context("タグの挿入に失敗しました")?;
 
-        Ok(self.entity_to_domain(inserted))
+        Ok(inserted.into())
     }
 
     async fn delete(&self, id: i32) -> Result<bool> {

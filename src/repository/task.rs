@@ -1,10 +1,10 @@
 use crate::{
-    domain::task::{Priority, Status, Task},
+    domain::task::Task,
     entity::prelude::*,
     entity::{task_tags, tasks},
     repository::Repository,
 };
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
     QueryFilter, Set, TransactionTrait,
@@ -19,60 +19,36 @@ impl<'a> TaskRepository<'a> {
     pub fn new(db: &'a DatabaseConnection) -> Self {
         Self { db }
     }
-
-    /// Entityからドメインモデルへ変換
-    fn entity_to_domain(
-        model: tasks::Model,
-        task_tag_models: Vec<task_tags::Model>,
-    ) -> Result<Task> {
-        let tag_ids: Vec<i32> = task_tag_models.into_iter().map(|tt| tt.tag_id).collect();
-
-        let status = match Status::from_db_value(&model.status) {
-            Ok(s) => s,
-            Err(e) => bail!(e),
-        };
-        let priority = match Priority::from_db_value(&model.priority) {
-            Ok(p) => p,
-            Err(e) => bail!(e),
-        };
-
-        Ok(Task {
-            id: model.id,
-            title: model.title,
-            description: model.description,
-            status,
-            priority,
-            tags: tag_ids,
-            created_at: model.created_at.into(),
-            updated_at: model.updated_at.into(),
-        })
-    }
 }
 
 impl<'a> Repository<Task> for TaskRepository<'a> {
     async fn find_by_id(&self, id: i32) -> Result<Option<Task>> {
         let result = Tasks::find_by_id(id)
-            .find_with_related(TaskTags)
+            .find_with_related(Tags)
             .all(self.db)
             .await
             .context("タスクの検索に失敗しました")?;
 
         match result.into_iter().next() {
-            Some((model, task_tags)) => Ok(Some(Self::entity_to_domain(model, task_tags)?)),
+            Some((model, tags)) => {
+                let task = Task::try_from((model, tags)).map_err(|e| anyhow::anyhow!(e))?;
+                Ok(Some(task))
+            }
             None => Ok(None),
         }
     }
 
     async fn find_all(&self) -> Result<Vec<Task>> {
         let tasks_with_tags = Tasks::find()
-            .find_with_related(TaskTags)
+            .find_with_related(Tags)
             .all(self.db)
             .await
             .context("タスクとタグの読み込みに失敗しました")?;
 
         let mut tasks = Vec::new();
-        for (model, task_tags) in tasks_with_tags {
-            tasks.push(Self::entity_to_domain(model, task_tags)?);
+        for (model, tags) in tasks_with_tags {
+            let task = Task::try_from((model, tags)).map_err(|e| anyhow::anyhow!(e))?;
+            tasks.push(task);
         }
 
         Ok(tasks)
@@ -94,8 +70,8 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             id: NotSet, // AUTO INCREMENT
             title: Set(item.title.clone()),
             description: Set(item.description.clone()),
-            status: Set(item.status.to_db_value().to_string()),
-            priority: Set(item.priority.to_db_value().to_string()),
+            status: Set(item.status.as_ref().to_string()),
+            priority: Set(item.priority.as_ref().to_string()),
             created_at: NotSet,
             updated_at: NotSet,
         };
@@ -106,24 +82,31 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .context("タスクの挿入に失敗しました")?;
 
         // タグの関連付けを保存
-        let mut task_tag_models = Vec::new();
-        for tag_id in &item.tags {
+        let mut tag_models = Vec::new();
+        for tag in &item.tags {
             let task_tag = task_tags::ActiveModel {
                 task_id: Set(inserted_task.id),
-                tag_id: Set(*tag_id),
+                tag_id: Set(tag.id),
             };
-            let inserted = task_tag
+            task_tag
                 .insert(&txn)
                 .await
                 .context("タスクタグの挿入に失敗しました")?;
-            task_tag_models.push(inserted);
+
+            // タグのモデルを取得
+            let tag_model = Tags::find_by_id(tag.id)
+                .one(&txn)
+                .await
+                .context("タグの取得に失敗しました")?
+                .context("タグが存在しません")?;
+            tag_models.push(tag_model);
         }
 
         txn.commit()
             .await
             .context("トランザクションのコミットに失敗しました")?;
 
-        Self::entity_to_domain(inserted_task, task_tag_models)
+        Task::try_from((inserted_task, tag_models)).map_err(|e| anyhow::anyhow!(e))
     }
 
     async fn delete(&self, id: i32) -> Result<bool> {
@@ -153,6 +136,7 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::task::{Priority, Status};
     use migration::MigratorTrait;
     use sea_orm::{Database, PaginatorTrait};
 
@@ -222,13 +206,16 @@ mod tests {
         let inserted_tag2 = tag2.insert(&db).await.unwrap();
 
         // タグ付きタスクを作成
+        use crate::domain::tag::Tag;
+        let tag1 = Tag::from(inserted_tag1.clone());
+        let tag2 = Tag::from(inserted_tag2.clone());
         let new_task = Task::new(
             0,
             "タグ付きタスク",
             "説明",
             Status::InProgress,
             Priority::High,
-            vec![inserted_tag1.id, inserted_tag2.id],
+            vec![tag1.clone(), tag2.clone()],
         );
 
         let created_task = task_repo.create(&new_task).await.unwrap();
@@ -236,8 +223,8 @@ mod tests {
         assert!(created_task.id > 0);
         assert_eq!(created_task.title, "タグ付きタスク");
         assert_eq!(created_task.tags.len(), 2);
-        assert!(created_task.tags.contains(&(inserted_tag1.id)));
-        assert!(created_task.tags.contains(&(inserted_tag2.id)));
+        assert!(created_task.tags.iter().any(|t| t.id == tag1.id));
+        assert!(created_task.tags.iter().any(|t| t.id == tag2.id));
     }
 
     #[tokio::test]
@@ -370,13 +357,15 @@ mod tests {
         let inserted_tag = tag.insert(&db).await.unwrap();
 
         // タグ付きタスクを作成
+        use crate::domain::tag::Tag;
+        let tag = Tag::from(inserted_tag.clone());
         let new_task = Task::new(
             0,
             "タグ削除テスト",
             "説明",
             Status::Pending,
             Priority::Medium,
-            vec![inserted_tag.id],
+            vec![tag],
         );
         let created_task = task_repo.create(&new_task).await.unwrap();
 
