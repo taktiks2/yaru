@@ -54,7 +54,7 @@ fn create_task_row(task: &Task) -> Vec<String> {
     } else {
         task.tags
             .iter()
-            .map(|id| id.to_string())
+            .map(|tag| tag.name.clone())
             .collect::<Vec<_>>()
             .join(",")
     };
@@ -141,15 +141,14 @@ pub fn create_tag_detail_table(tag: &Tag) -> Table {
     table
 }
 
-/// タスクの詳細をキー・バリュー形式で表示（タグ名付き）
+/// タスクの詳細をキー・バリュー形式で表示
 ///
 /// # 引数
 /// - `task`: 表示するタスク
-/// - `all_tags`: すべてのタグのリスト（タグID解決用）
 ///
 /// # 戻り値
 /// 2列のキー・バリュー形式テーブル
-pub fn create_task_detail_table(task: &Task, all_tags: &[Tag]) -> Table {
+pub fn create_task_detail_table(task: &Task) -> Table {
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
 
@@ -164,13 +163,7 @@ pub fn create_task_detail_table(task: &Task, all_tags: &[Tag]) -> Table {
     } else {
         task.tags
             .iter()
-            .map(|tag_id| {
-                all_tags
-                    .iter()
-                    .find(|tag| tag.id == *tag_id)
-                    .map(|tag| tag.name.clone())
-                    .unwrap_or_else(|| format!("ID:{}", tag_id))
-            })
+            .map(|tag| tag.name.clone())
             .collect::<Vec<_>>()
             .join(", ")
     };
@@ -335,7 +328,7 @@ mod tests {
             "",
             Status::Pending,
             Priority::Medium,
-            vec![1], // タグありにして、空文字列の"-"と区別
+            vec![Tag::new(1, "タグ", "")], // タグありにして、空文字列の"-"と区別
         )];
         let _table = create_task_table(&tasks);
 
@@ -449,5 +442,53 @@ mod tests_tag {
         let row = create_tag_row(&tags[0]);
         // description列（インデックス2）が"-"であることを確認
         assert_eq!(row[2], "-");
+    }
+}
+
+#[cfg(test)]
+mod tests_task_with_tags {
+    use super::*;
+    use crate::domain::task::{Priority, Status};
+
+    #[test]
+    fn test_create_task_row_displays_tag_names() {
+        let tag1 = Tag::new(1, "重要", "");
+        let tag2 = Tag::new(2, "緊急", "");
+
+        let task = Task::new(
+            1,
+            "タスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![tag1, tag2],
+        );
+
+        let row = create_task_row(&task);
+
+        // タグ列にタグ名が含まれることを期待
+        assert!(row[5].contains("重要"));
+        assert!(row[5].contains("緊急"));
+        // IDは含まれないことを確認
+        assert!(!row[5].contains("1"));
+    }
+
+    #[test]
+    fn test_create_task_detail_table_without_all_tags_parameter() {
+        let tag = Tag::new(1, "テスト", "説明");
+        let task = Task::new(
+            1,
+            "タスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![tag],
+        );
+
+        // all_tagsパラメータなしで呼び出せることを確認
+        let table = create_task_detail_table(&task);
+        let table_str = table.to_string();
+
+        assert!(table_str.contains("テスト"));
     }
 }
