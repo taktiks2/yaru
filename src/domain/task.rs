@@ -174,7 +174,9 @@ impl fmt::Display for Priority {
 impl TryFrom<(tasks::Model, Vec<tags::Model>)> for Task {
     type Error = String;
 
-    fn try_from((model, tag_models): (tasks::Model, Vec<tags::Model>)) -> Result<Self, Self::Error> {
+    fn try_from(
+        (model, tag_models): (tasks::Model, Vec<tags::Model>),
+    ) -> Result<Self, Self::Error> {
         let status = Status::try_from(model.status.as_str())?;
         let priority = Priority::try_from(model.priority.as_str())?;
         let tags: Vec<Tag> = tag_models.into_iter().map(|t| t.into()).collect();
