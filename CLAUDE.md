@@ -113,31 +113,47 @@ cargo run -- tag delete --id 1
 ### 設計パターン
 
 #### リポジトリパターン
-データアクセスをトレイトで抽象化し、将来的にSQLiteなど別の実装に切り替え可能:
+データアクセスをトレイトで抽象化し、異なる実装を切り替え可能:
 ```rust
 pub trait Repository<T> {
-    fn load(&self) -> Result<Vec<T>>;
-    fn save(&self, items: &[T]) -> Result<()>;
-    fn find_next_id(&self) -> Result<i32>;
-    fn ensure_data_exists(&self) -> Result<()>;
+    /// IDでエンティティを検索
+    async fn find_by_id(&self, id: i32) -> Result<Option<T>>;
+
+    /// 全エンティティを取得
+    async fn find_all(&self) -> Result<Vec<T>>;
+
+    /// 条件でエンティティを検索
+    ///
+    /// **注意**: 現在の実装では全データを読み込んでメモリ上でフィルタリングします。
+    /// データ量が多い場合（数千件以上）はパフォーマンスが低下する可能性があります。
+    /// 将来的にはクエリビルダーパターンの導入を検討してください。
+    async fn search<F>(&self, predicate: F) -> Result<Vec<T>>
+    where
+        F: Fn(&T) -> bool;
+
+    /// 新しいエンティティを作成
+    async fn create(&self, item: &T) -> Result<T>;
+
+    /// IDでエンティティを削除
+    async fn delete(&self, id: i32) -> Result<bool>;
 }
 ```
 
 #### コマンド関数の統一インターフェース
-全てのコマンド関数はリポジトリを引数として受け取る:
+全てのコマンド関数は非同期でデータベース接続を引数として受け取る:
 
 タスク管理:
 ```rust
-pub fn add_task(task_repo: &impl Repository<Task>, tag_repo: &impl Repository<Tag>, ...) -> Result<()>
-pub fn list_tasks(repo: &impl Repository<Task>, ...) -> Result<()>
-pub fn delete_task(repo: &impl Repository<Task>, ...) -> Result<()>
+pub async fn add_task(db: &DatabaseConnection, ...) -> Result<()>
+pub async fn list_tasks(db: &DatabaseConnection, ...) -> Result<()>
+pub async fn delete_task(db: &DatabaseConnection, id: i32) -> Result<()>
 ```
 
 タグ管理:
 ```rust
-pub fn add_tag(repo: &impl Repository<Tag>, ...) -> Result<()>
-pub fn list_tags(repo: &impl Repository<Tag>) -> Result<()>
-pub fn delete_tag(tag_repo: &impl Repository<Tag>, task_repo: &impl Repository<Task>, ...) -> Result<()>
+pub async fn add_tag(db: &DatabaseConnection, ...) -> Result<()>
+pub async fn list_tags(db: &DatabaseConnection) -> Result<()>
+pub async fn delete_tag(db: &DatabaseConnection, id: i32) -> Result<()>
 ```
 
 ### エラーハンドリング
@@ -145,6 +161,7 @@ pub fn delete_tag(tag_repo: &impl Repository<Tag>, task_repo: &impl Repository<T
 - `anyhow::Result` を使用した統一的なエラーハンドリング
 - `.context()` でエラーメッセージに文脈を追加
 - ユーザーフレンドリーな日本語エラーメッセージ
+- エラーを返す際は `anyhow::bail!` を使用する（`anyhow::anyhow!` + `return Err()` の代わり）
 
 ### テスト戦略
 
