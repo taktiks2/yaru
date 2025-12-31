@@ -154,6 +154,51 @@ pub fn delete_tag(tag_repo: &impl Repository<Tag>, task_repo: &impl Repository<T
 
 ## Development Notes
 
+### モジュール構成のベストプラクティス
+
+**重要: `mod.rs` は使用しない**
+
+Rustの現代的なモジュール構成では、`mod.rs` は非推奨です。以下のパターンを使用してください：
+
+#### 推奨パターン
+```
+src/
+├── lib.rs
+├── commands.rs          # commandsモジュールの定義とエクスポート
+├── commands/            # サブモジュールの実装
+│   ├── add.rs
+│   ├── list.rs
+│   └── delete.rs
+├── repository.rs        # repositoryモジュールの定義とエクスポート
+└── repository/          # サブモジュールの実装
+    ├── json.rs
+    └── sqlite.rs
+```
+
+#### 非推奨パターン（使用しないこと）
+```
+src/
+├── lib.rs
+├── commands/
+│   ├── mod.rs          # ❌ 使用しない
+│   ├── add.rs
+│   └── list.rs
+```
+
+#### モジュール宣言の例
+`commands.rs`:
+```rust
+// サブモジュールの宣言
+pub mod add;
+pub mod list;
+pub mod delete;
+
+// 必要に応じて公開
+pub use add::add_task;
+pub use list::list_tasks;
+pub use delete::delete_task;
+```
+
 ### 新しいコマンドの追加手順
 
 #### タスクサブコマンドの追加
