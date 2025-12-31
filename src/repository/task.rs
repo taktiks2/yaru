@@ -4,7 +4,7 @@ use crate::{
     entity::{task_tags, tasks},
     repository::Repository,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
     QueryFilter, Set, TransactionTrait,
@@ -21,13 +21,10 @@ impl<'a> TaskRepository<'a> {
     }
 
     /// Entityからドメインモデルへ変換
-    async fn entity_to_domain(&self, model: tasks::Model) -> Result<Task> {
-        let task_tag_models = TaskTags::find()
-            .filter(task_tags::Column::TaskId.eq(model.id))
-            .all(self.db)
-            .await
-            .context("タグIDの読み込みに失敗しました")?;
-
+    fn entity_to_domain(
+        model: tasks::Model,
+        task_tag_models: Vec<task_tags::Model>,
+    ) -> Result<Task> {
         let tag_ids: Vec<i32> = task_tag_models.into_iter().map(|tt| tt.tag_id).collect();
 
         let status = match Status::from_db_value(&model.status) {
@@ -54,26 +51,28 @@ impl<'a> TaskRepository<'a> {
 
 impl<'a> Repository<Task> for TaskRepository<'a> {
     async fn find_by_id(&self, id: i32) -> Result<Option<Task>> {
-        let task_model = Tasks::find_by_id(id)
-            .one(self.db)
+        let result = Tasks::find_by_id(id)
+            .find_with_related(TaskTags)
+            .all(self.db)
             .await
             .context("タスクの検索に失敗しました")?;
 
-        match task_model {
-            Some(model) => Ok(Some(self.entity_to_domain(model).await?)),
+        match result.into_iter().next() {
+            Some((model, task_tags)) => Ok(Some(Self::entity_to_domain(model, task_tags)?)),
             None => Ok(None),
         }
     }
 
     async fn find_all(&self) -> Result<Vec<Task>> {
-        let task_models = Tasks::find()
+        let tasks_with_tags = Tasks::find()
+            .find_with_related(TaskTags)
             .all(self.db)
             .await
-            .context("タスクの読み込みに失敗しました")?;
+            .context("タスクとタグの読み込みに失敗しました")?;
 
         let mut tasks = Vec::new();
-        for model in task_models {
-            tasks.push(self.entity_to_domain(model).await?);
+        for (model, task_tags) in tasks_with_tags {
+            tasks.push(Self::entity_to_domain(model, task_tags)?);
         }
 
         Ok(tasks)
@@ -107,22 +106,24 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .context("タスクの挿入に失敗しました")?;
 
         // タグの関連付けを保存
+        let mut task_tag_models = Vec::new();
         for tag_id in &item.tags {
             let task_tag = task_tags::ActiveModel {
                 task_id: Set(inserted_task.id),
                 tag_id: Set(*tag_id),
             };
-            task_tag
+            let inserted = task_tag
                 .insert(&txn)
                 .await
                 .context("タスクタグの挿入に失敗しました")?;
+            task_tag_models.push(inserted);
         }
 
         txn.commit()
             .await
             .context("トランザクションのコミットに失敗しました")?;
 
-        self.entity_to_domain(inserted_task).await
+        Self::entity_to_domain(inserted_task, task_tag_models)
     }
 
     async fn delete(&self, id: i32) -> Result<bool> {
