@@ -60,7 +60,6 @@ impl Task {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
 pub enum Status {
     Pending,
