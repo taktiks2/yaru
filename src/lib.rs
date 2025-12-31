@@ -5,7 +5,6 @@ mod display;
 mod entity;
 mod json;
 mod repository;
-mod sqlite_repository;
 mod tag;
 mod task;
 
@@ -19,12 +18,10 @@ use commands::{
 use config::load_config;
 use migration::MigratorTrait;
 use sea_orm::Database;
-use sqlite_repository::SqliteRepository;
 
 /// アプリケーションのエントリーポイント
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
-#[tokio::main]
 pub async fn run() -> Result<()> {
     let args = match Args::try_parse() {
         Ok(args) => args,
@@ -50,11 +47,8 @@ pub async fn run() -> Result<()> {
         .await
         .context("マイグレーション実行に失敗しました")?;
 
-    // リポジトリ作成
-    let task_repo = SqliteRepository::new(db.clone());
-    let tag_repo = SqliteRepository::new(db.clone());
-
-    handle_command(args, task_repo, tag_repo)?;
+    // コマンド実行（DB接続を直接渡す）
+    handle_command(args, &db).await?;
 
     // 接続を明示的に閉じる
     db.close().await?;
@@ -63,55 +57,38 @@ pub async fn run() -> Result<()> {
 }
 
 /// コマンドを実行
-fn handle_command(
-    args: Args,
-    task_repo: SqliteRepository<task::Task>,
-    tag_repo: SqliteRepository<tag::Tag>,
-) -> Result<()> {
+async fn handle_command(args: Args, db: &sea_orm::DatabaseConnection) -> Result<()> {
     match args.command {
-        Commands::Task { command } => handle_task_command(command, task_repo, tag_repo),
-        Commands::Tag { command } => handle_tag_command(command, tag_repo, task_repo),
+        Commands::Task { command } => handle_task_command(command, db).await,
+        Commands::Tag { command } => handle_tag_command(command, db).await,
     }
 }
 
 /// タスクコマンドを実行
-fn handle_task_command(
+async fn handle_task_command(
     command: TaskCommands,
-    task_repo: SqliteRepository<task::Task>,
-    tag_repo: SqliteRepository<tag::Tag>,
+    db: &sea_orm::DatabaseConnection,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => list_tasks(&task_repo, filter),
-        TaskCommands::Show { id } => show_task(&task_repo, &tag_repo, id),
+        TaskCommands::List { filter } => list_tasks(db, filter).await,
+        TaskCommands::Show { id } => show_task(db, id).await,
         TaskCommands::Add {
             title,
             description,
             status,
             priority,
             tags,
-        } => add_task(
-            &task_repo,
-            &tag_repo,
-            title,
-            description,
-            status,
-            priority,
-            tags,
-        ),
-        TaskCommands::Delete { id } => delete_task(&task_repo, id),
+        } => add_task(db, title, description, status, priority, tags).await,
+        TaskCommands::Delete { id } => delete_task(db, id).await,
     }
 }
 
 /// タグコマンドを実行
-fn handle_tag_command(
-    command: TagCommands,
-    tag_repo: SqliteRepository<tag::Tag>,
-    task_repo: SqliteRepository<task::Task>,
-) -> Result<()> {
+async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnection) -> Result<()> {
     match command {
-        TagCommands::Add { name, description } => add_tag(&tag_repo, name, description),
-        TagCommands::Show { id } => show_tag(&tag_repo, id),
-        TagCommands::List => list_tags(&tag_repo),
-        TagCommands::Delete { id } => delete_tag(&tag_repo, &task_repo, id),
+        TagCommands::Add { name, description } => add_tag(db, name, description).await,
+        TagCommands::Show { id } => show_tag(db, id).await,
+        TagCommands::List => list_tags(db).await,
+        TagCommands::Delete { id } => delete_tag(db, id).await,
     }
 }

@@ -1,8 +1,7 @@
+use anyhow::Result;
 use yaru::run;
 
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("エラー: {:?}", e);
-        std::process::exit(1);
-    }
+#[tokio::main]
+async fn main() -> Result<()> {
+    run().await
 }
