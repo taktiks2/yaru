@@ -1,3 +1,4 @@
+use crate::entity::tags;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -43,5 +44,18 @@ impl Tag {
 impl fmt::Display for Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
+    }
+}
+
+/// tags::ModelからTagドメインモデルへの変換
+impl From<tags::Model> for Tag {
+    fn from(model: tags::Model) -> Self {
+        Self {
+            id: model.id,
+            name: model.name,
+            description: model.description,
+            created_at: model.created_at.into(),
+            updated_at: model.updated_at.into(),
+        }
     }
 }
