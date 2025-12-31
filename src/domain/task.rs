@@ -68,6 +68,32 @@ pub enum Status {
 }
 
 impl Status {
+    /// データベース用の文字列表現を取得
+    pub fn to_db_value(&self) -> &'static str {
+        match self {
+            Status::Pending => "Pending",
+            Status::Completed => "Completed",
+            Status::InProgress => "InProgress",
+        }
+    }
+
+    /// データベースの値から Status を生成
+    ///
+    /// # 引数
+    /// - `value`: データベースの値（例: "Pending", "Completed", "InProgress"）
+    ///
+    /// # 戻り値
+    /// - `Ok(Status)`: 変換に成功した場合
+    /// - `Err(String)`: 無効な値の場合
+    pub fn from_db_value(value: &str) -> Result<Self, String> {
+        match value {
+            "Pending" => Ok(Status::Pending),
+            "Completed" => Ok(Status::Completed),
+            "InProgress" => Ok(Status::InProgress),
+            _ => Err(format!("Invalid status in database: '{}'", value)),
+        }
+    }
+
     /// フィルタ値から Status を生成
     ///
     /// # 引数
@@ -102,6 +128,36 @@ pub enum Priority {
     Medium,
     High,
     Critical,
+}
+
+impl Priority {
+    /// データベース用の文字列表現を取得
+    pub fn to_db_value(&self) -> &'static str {
+        match self {
+            Priority::Low => "Low",
+            Priority::Medium => "Medium",
+            Priority::High => "High",
+            Priority::Critical => "Critical",
+        }
+    }
+
+    /// データベースの値から Priority を生成
+    ///
+    /// # 引数
+    /// - `value`: データベースの値（例: "Low", "Medium", "High", "Critical"）
+    ///
+    /// # 戻り値
+    /// - `Ok(Priority)`: 変換に成功した場合
+    /// - `Err(String)`: 無効な値の場合
+    pub fn from_db_value(value: &str) -> Result<Self, String> {
+        match value {
+            "Low" => Ok(Priority::Low),
+            "Medium" => Ok(Priority::Medium),
+            "High" => Ok(Priority::High),
+            "Critical" => Ok(Priority::Critical),
+            _ => Err(format!("Invalid priority in database: '{}'", value)),
+        }
+    }
 }
 
 impl fmt::Display for Priority {

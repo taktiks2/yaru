@@ -4,7 +4,7 @@ use crate::{
     entity::{task_tags, tasks},
     repository::Repository,
 };
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
     QueryFilter, Set, TransactionTrait,
@@ -30,18 +30,21 @@ impl<'a> TaskRepository<'a> {
 
         let tag_ids: Vec<i32> = task_tag_models.into_iter().map(|tt| tt.tag_id).collect();
 
+        let status = match Status::from_db_value(&model.status) {
+            Ok(s) => s,
+            Err(e) => bail!(e),
+        };
+        let priority = match Priority::from_db_value(&model.priority) {
+            Ok(p) => p,
+            Err(e) => bail!(e),
+        };
+
         Ok(Task {
             id: model.id,
             title: model.title,
             description: model.description,
-            status: Status::from_filter_value(&model.status).unwrap_or(Status::Pending),
-            priority: match model.priority.as_str() {
-                "Low" => Priority::Low,
-                "Medium" => Priority::Medium,
-                "High" => Priority::High,
-                "Critical" => Priority::Critical,
-                _ => Priority::Medium,
-            },
+            status,
+            priority,
             tags: tag_ids,
             created_at: model.created_at.into(),
             updated_at: model.updated_at.into(),
@@ -92,8 +95,8 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             id: NotSet, // AUTO INCREMENT
             title: Set(item.title.clone()),
             description: Set(item.description.clone()),
-            status: Set(format!("{:?}", item.status)),
-            priority: Set(format!("{:?}", item.priority)),
+            status: Set(item.status.to_db_value().to_string()),
+            priority: Set(item.priority.to_db_value().to_string()),
             created_at: NotSet,
             updated_at: NotSet,
         };
