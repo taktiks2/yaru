@@ -51,6 +51,19 @@ impl MigrationTrait for Migration {
             .await?;
 
         // 3. TaskTags中間テーブル作成（多対多関係）
+        //
+        // 外部キー制約の削除時動作:
+        //
+        // task_id -> tasks (CASCADE):
+        //   タスクを削除すると、そのタスクに紐づくTaskTagsも自動削除される
+        //   理由: タスクが削除されたら、そのタグ関連付けも不要になるため
+        //   例: タスクID=1を削除 → task_tags内のtask_id=1も全て削除
+        //
+        // tag_id -> tags (RESTRICT):
+        //   タグを削除しようとしても、使用中のTaskTagsが存在する場合は削除が拒否される
+        //   理由: タグは複数のタスクで共有される重要なマスタデータなので誤削除を防ぐ
+        //   例: タグID=1を削除 → task_tags内にtag_id=1があればエラー
+        //       先にタスクからタグを外す必要がある
         manager
             .create_table(
                 Table::create()
@@ -69,7 +82,7 @@ impl MigrationTrait for Migration {
                         ForeignKey::create()
                             .from(TaskTags::Table, TaskTags::TagId)
                             .to(Tags::Table, Tags::Id)
-                            .on_delete(ForeignKeyAction::Cascade),
+                            .on_delete(ForeignKeyAction::Restrict),
                     )
                     .to_owned(),
             )
@@ -97,12 +110,19 @@ impl MigrationTrait for Migration {
             .await?;
 
         // 5. Tasksテーブルのupdated_at自動更新トリガー
+        //
+        // WHEN NEW.updated_at = OLD.updated_at の意味:
+        //   updated_atが明示的に変更されなかった場合のみトリガーを発動
+        //   理由: ユーザーが意図的にupdated_atを設定した場合は、その値を尊重し自動更新をスキップする
+        //   例: 通常のUPDATE → 自動更新される
+        //       UPDATE tasks SET updated_at = '2025-01-01' → 自動更新されない（指定値が使われる）
         manager
             .get_connection()
             .execute_unprepared(
                 "CREATE TRIGGER update_tasks_timestamp
                  AFTER UPDATE ON tasks
                  FOR EACH ROW
+                 WHEN NEW.updated_at = OLD.updated_at
                  BEGIN
                      UPDATE tasks SET updated_at = CURRENT_TIMESTAMP
                      WHERE id = NEW.id;
@@ -117,6 +137,7 @@ impl MigrationTrait for Migration {
                 "CREATE TRIGGER update_tags_timestamp
                  AFTER UPDATE ON tags
                  FOR EACH ROW
+                 WHEN NEW.updated_at = OLD.updated_at
                  BEGIN
                      UPDATE tags SET updated_at = CURRENT_TIMESTAMP
                      WHERE id = NEW.id;
