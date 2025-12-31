@@ -35,30 +35,37 @@ pub async fn add_task(
     let priority = priority.unwrap_or(Priority::Medium);
     let tag_ids = tag_ids.unwrap_or_default();
 
-    // タグIDの存在確認
-    if !tag_ids.is_empty() {
+    // タグIDからTagオブジェクトへの変換
+    let tags = if !tag_ids.is_empty() {
         let tag_repo = TagRepository::new(db);
         let existing_tags = tag_repo.find_all().await?;
         let existing_tag_ids: Vec<i32> = existing_tags.iter().map(|t| t.id).collect();
 
+        // 存在確認
         for tag_id in &tag_ids {
             if !existing_tag_ids.contains(tag_id) {
                 anyhow::bail!("存在しないタグID: {}", tag_id);
             }
         }
-    }
+
+        // Vec<Tag>に変換
+        tag_ids
+            .iter()
+            .filter_map(|id| existing_tags.iter().find(|t| t.id == *id).cloned())
+            .collect()
+    } else {
+        vec![]
+    };
 
     // リポジトリを使用してタスクを作成
-    let new_task = Task::new(0, &title, &description, status, priority, tag_ids);
+    let new_task = Task::new(0, &title, &description, status, priority, tags);
     let task_repo = TaskRepository::new(db);
     let created_task = task_repo.create(&new_task).await?;
 
     println!("タスクを登録しました。");
 
-    // 全タグを取得して表示
-    let tag_repo = TagRepository::new(db);
-    let all_tags = tag_repo.find_all().await?;
-    let table = create_task_detail_table(&created_task, &all_tags);
+    // all_tagsパラメータ削除
+    let table = create_task_detail_table(&created_task);
     println!("{table}");
 
     Ok(())

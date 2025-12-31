@@ -1,6 +1,6 @@
 use crate::{
     display::create_task_detail_table,
-    repository::{Repository, tag::TagRepository, task::TaskRepository},
+    repository::{Repository, task::TaskRepository},
 };
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
@@ -13,11 +13,8 @@ pub async fn show_task(db: &DatabaseConnection, id: i32) -> Result<()> {
         anyhow::bail!("ID {id} のタスクが見つかりません");
     };
 
-    // 全タグを取得して表示
-    let tag_repo = TagRepository::new(db);
-    let tags = tag_repo.find_all().await?;
-
-    let table = create_task_detail_table(&task, &tags);
+    // all_tagsの取得と渡しを削除
+    let table = create_task_detail_table(&task);
     println!("{table}");
 
     Ok(())
