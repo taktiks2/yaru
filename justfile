@@ -1,7 +1,7 @@
 # yaruプロジェクトのタスクランナー
 
-# データベースURL
-db_url := "sqlite:///Users/taktiks2/.config/yaru/yaru.db?mode=rwc"
+# データベースURL（環境変数HOMEから動的に取得）
+db_url := "sqlite://" + env_var('HOME') + "/.config/yaru/yaru.db?mode=rwc"
 
 # コードのフォーマットを実行
 fmt:
@@ -42,4 +42,4 @@ db-refresh: db-reset db-generate
 
 # sqlite3でデータベースに接続
 db-connect:
-    sqlite3 ~/.config/yaru/yaru.db
+    sqlite3 {{env_var('HOME')}}/.config/yaru/yaru.db
