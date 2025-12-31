@@ -1,9 +1,9 @@
-use crate::repository::{tag::TagRepository, task::TaskRepository, Repository};
+use crate::repository::{Repository, tag::TagRepository, task::TaskRepository};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 
 /// 指定されたIDのタグを削除
-pub async fn delete_tag(db: &DatabaseConnection, id: u64) -> Result<()> {
+pub async fn delete_tag(db: &DatabaseConnection, id: i32) -> Result<()> {
     // 参照整合性チェック
     let task_repo = TaskRepository::new(db);
     let referenced_tasks = task_repo.search(|task| task.tags.contains(&id)).await?;
@@ -26,4 +26,3 @@ pub async fn delete_tag(db: &DatabaseConnection, id: u64) -> Result<()> {
     println!("タグを削除しました。");
     Ok(())
 }
-

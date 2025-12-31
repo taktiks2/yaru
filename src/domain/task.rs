@@ -14,13 +14,13 @@ use std::fmt;
 /// - `tags`: タスクに紐づくタグのIDリスト
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Task {
-    pub id: u64,
+    pub id: i32,
     pub title: String,
     pub description: String,
     pub status: Status,
     pub priority: Priority,
     #[serde(default)]
-    pub tags: Vec<u64>,
+    pub tags: Vec<i32>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -39,12 +39,12 @@ impl Task {
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTaskインスタンス
     pub fn new(
-        id: u64,
+        id: i32,
         title: &str,
         description: &str,
         status: Status,
         priority: Priority,
-        tags: Vec<u64>,
+        tags: Vec<i32>,
     ) -> Self {
         let now = Utc::now();
         Self {

@@ -1,9 +1,9 @@
-use crate::repository::{task::TaskRepository, Repository};
+use crate::repository::{Repository, task::TaskRepository};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 
 /// 指定されたIDのタスクを削除
-pub async fn delete_task(db: &DatabaseConnection, id: u64) -> Result<()> {
+pub async fn delete_task(db: &DatabaseConnection, id: i32) -> Result<()> {
     // リポジトリを使用して削除
     let task_repo = TaskRepository::new(db);
     let deleted = task_repo.delete(id).await?;
@@ -16,4 +16,3 @@ pub async fn delete_task(db: &DatabaseConnection, id: u64) -> Result<()> {
     println!("タスクを削除しました。");
     Ok(())
 }
-

@@ -1,11 +1,6 @@
-use crate::{
-    domain::tag::Tag,
-    entity::prelude::*,
-    entity::tags,
-    repository::Repository,
-};
+use crate::{domain::tag::Tag, entity::prelude::*, entity::tags, repository::Repository};
 use anyhow::{Context, Result};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set};
 
 /// Tag用のリポジトリ実装
 pub struct TagRepository<'a> {
@@ -20,7 +15,7 @@ impl<'a> TagRepository<'a> {
     /// Entityからドメインモデルへ変換
     fn entity_to_domain(&self, model: tags::Model) -> Tag {
         Tag {
-            id: model.id as u64,
+            id: model.id,
             name: model.name,
             description: model.description,
             created_at: model.created_at.into(),
@@ -30,8 +25,8 @@ impl<'a> TagRepository<'a> {
 }
 
 impl<'a> Repository<Tag> for TagRepository<'a> {
-    async fn find_by_id(&self, id: u64) -> Result<Option<Tag>> {
-        let tag_model = Tags::find_by_id(id as i32)
+    async fn find_by_id(&self, id: i32) -> Result<Option<Tag>> {
+        let tag_model = Tags::find_by_id(id)
             .one(self.db)
             .await
             .context("タグの検索に失敗しました")?;
@@ -61,11 +56,11 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
 
     async fn create(&self, item: &Tag) -> Result<Tag> {
         let new_tag = tags::ActiveModel {
-            id: sea_orm::ActiveValue::NotSet, // AUTO INCREMENT
+            id: NotSet,
             name: Set(item.name.clone()),
             description: Set(item.description.clone()),
-            created_at: Set(chrono::Utc::now().into()),
-            updated_at: Set(chrono::Utc::now().into()),
+            created_at: NotSet,
+            updated_at: NotSet,
         };
 
         let inserted = new_tag
@@ -76,8 +71,8 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
         Ok(self.entity_to_domain(inserted))
     }
 
-    async fn delete(&self, id: u64) -> Result<bool> {
-        let result = Tags::delete_by_id(id as i32)
+    async fn delete(&self, id: i32) -> Result<bool> {
+        let result = Tags::delete_by_id(id)
             .exec(self.db)
             .await
             .context("タグの削除に失敗しました")?;
@@ -93,9 +88,7 @@ mod tests {
     use sea_orm::Database;
 
     async fn setup_test_db() -> DatabaseConnection {
-        let db = Database::connect("sqlite::memory:")
-            .await
-            .unwrap();
+        let db = Database::connect("sqlite::memory:").await.unwrap();
         migration::Migrator::up(&db, None).await.unwrap();
         db
     }
@@ -214,10 +207,7 @@ mod tests {
         repo.create(&tag3).await.unwrap();
 
         // "重要"を含むタグを検索
-        let important_tags = repo
-            .search(|tag| tag.name.contains("重要"))
-            .await
-            .unwrap();
+        let important_tags = repo.search(|tag| tag.name.contains("重要")).await.unwrap();
 
         assert_eq!(important_tags.len(), 1);
         assert_eq!(important_tags[0].name, "重要");

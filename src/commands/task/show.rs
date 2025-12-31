@@ -1,12 +1,12 @@
 use crate::{
     display::create_task_detail_table,
-    repository::{tag::TagRepository, task::TaskRepository, Repository},
+    repository::{Repository, tag::TagRepository, task::TaskRepository},
 };
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 
 /// 指定されたIDのタスク詳細を表示
-pub async fn show_task(db: &DatabaseConnection, id: u64) -> Result<()> {
+pub async fn show_task(db: &DatabaseConnection, id: i32) -> Result<()> {
     // リポジトリからタスクを検索
     let task_repo = TaskRepository::new(db);
     let Some(task) = task_repo.find_by_id(id).await? else {
@@ -22,4 +22,3 @@ pub async fn show_task(db: &DatabaseConnection, id: u64) -> Result<()> {
 
     Ok(())
 }
-

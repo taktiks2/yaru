@@ -4,7 +4,7 @@ use anyhow::Result;
 /// データの永続化方法を抽象化し、異なる実装を切り替え可能にする
 pub trait Repository<T> {
     /// IDでエンティティを検索
-    async fn find_by_id(&self, id: u64) -> Result<Option<T>>;
+    async fn find_by_id(&self, id: i32) -> Result<Option<T>>;
 
     /// 全エンティティを取得
     async fn find_all(&self) -> Result<Vec<T>>;
@@ -18,9 +18,9 @@ pub trait Repository<T> {
     async fn create(&self, item: &T) -> Result<T>;
 
     /// IDでエンティティを削除
-    async fn delete(&self, id: u64) -> Result<bool>;
+    async fn delete(&self, id: i32) -> Result<bool>;
 }
 
 // サブモジュールをエクスポート
-pub mod task;
 pub mod tag;
+pub mod task;

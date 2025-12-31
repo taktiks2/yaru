@@ -11,7 +11,7 @@ use std::fmt;
 /// - `created_at`: タグの作成日時
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Tag {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
     pub description: String,
     pub created_at: DateTime<Utc>,
@@ -28,7 +28,7 @@ impl Tag {
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`に設定した新しいTagインスタンス
-    pub fn new(id: u64, name: &str, description: &str) -> Self {
+    pub fn new(id: i32, name: &str, description: &str) -> Self {
         let now = Utc::now();
         Self {
             id,

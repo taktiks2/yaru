@@ -6,8 +6,8 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
-    TransactionTrait,
+    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
+    QueryFilter, Set, TransactionTrait,
 };
 
 /// Task用のリポジトリ実装
@@ -28,13 +28,10 @@ impl<'a> TaskRepository<'a> {
             .await
             .context("タグIDの読み込みに失敗しました")?;
 
-        let tag_ids: Vec<u64> = task_tag_models
-            .into_iter()
-            .map(|tt| tt.tag_id as u64)
-            .collect();
+        let tag_ids: Vec<i32> = task_tag_models.into_iter().map(|tt| tt.tag_id).collect();
 
         Ok(Task {
-            id: model.id as u64,
+            id: model.id,
             title: model.title,
             description: model.description,
             status: Status::from_filter_value(&model.status).unwrap_or(Status::Pending),
@@ -53,8 +50,8 @@ impl<'a> TaskRepository<'a> {
 }
 
 impl<'a> Repository<Task> for TaskRepository<'a> {
-    async fn find_by_id(&self, id: u64) -> Result<Option<Task>> {
-        let task_model = Tasks::find_by_id(id as i32)
+    async fn find_by_id(&self, id: i32) -> Result<Option<Task>> {
+        let task_model = Tasks::find_by_id(id)
             .one(self.db)
             .await
             .context("タスクの検索に失敗しました")?;
@@ -92,13 +89,13 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
 
         // タスクを新規作成
         let new_task = tasks::ActiveModel {
-            id: sea_orm::ActiveValue::NotSet, // AUTO INCREMENT
+            id: NotSet, // AUTO INCREMENT
             title: Set(item.title.clone()),
             description: Set(item.description.clone()),
             status: Set(format!("{:?}", item.status)),
             priority: Set(format!("{:?}", item.priority)),
-            created_at: Set(chrono::Utc::now().into()),
-            updated_at: Set(chrono::Utc::now().into()),
+            created_at: NotSet,
+            updated_at: NotSet,
         };
 
         let inserted_task = new_task
@@ -109,8 +106,8 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
         // タグの関連付けを保存
         for tag_id in &item.tags {
             let task_tag = task_tags::ActiveModel {
-                task_id: Set(inserted_task.id.into()),
-                tag_id: Set(*tag_id as i64),
+                task_id: Set(inserted_task.id),
+                tag_id: Set(*tag_id),
             };
             task_tag
                 .insert(&txn)
@@ -125,18 +122,18 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
         self.entity_to_domain(inserted_task).await
     }
 
-    async fn delete(&self, id: u64) -> Result<bool> {
+    async fn delete(&self, id: i32) -> Result<bool> {
         let txn = self.db.begin().await?;
 
         // タスクタグを削除
         TaskTags::delete_many()
-            .filter(task_tags::Column::TaskId.eq(id as i32))
+            .filter(task_tags::Column::TaskId.eq(id))
             .exec(&txn)
             .await
             .context("タスクタグの削除に失敗しました")?;
 
         // タスクを削除
-        let result = Tasks::delete_by_id(id as i32)
+        let result = Tasks::delete_by_id(id)
             .exec(&txn)
             .await
             .context("タスクの削除に失敗しました")?;
@@ -156,9 +153,7 @@ mod tests {
     use sea_orm::{Database, PaginatorTrait};
 
     async fn setup_test_db() -> DatabaseConnection {
-        let db = Database::connect("sqlite::memory:")
-            .await
-            .unwrap();
+        let db = Database::connect("sqlite::memory:").await.unwrap();
         migration::Migrator::up(&db, None).await.unwrap();
         db
     }
@@ -229,7 +224,7 @@ mod tests {
             "説明",
             Status::InProgress,
             Priority::High,
-            vec![inserted_tag1.id as u64, inserted_tag2.id as u64],
+            vec![inserted_tag1.id, inserted_tag2.id],
         );
 
         let created_task = task_repo.create(&new_task).await.unwrap();
@@ -237,8 +232,8 @@ mod tests {
         assert!(created_task.id > 0);
         assert_eq!(created_task.title, "タグ付きタスク");
         assert_eq!(created_task.tags.len(), 2);
-        assert!(created_task.tags.contains(&(inserted_tag1.id as u64)));
-        assert!(created_task.tags.contains(&(inserted_tag2.id as u64)));
+        assert!(created_task.tags.contains(&(inserted_tag1.id)));
+        assert!(created_task.tags.contains(&(inserted_tag2.id)));
     }
 
     #[tokio::test]
@@ -282,9 +277,30 @@ mod tests {
         let repo = TaskRepository::new(&db);
 
         // 複数のタスクを作成
-        let task1 = Task::new(0, "タスク1", "説明1", Status::Pending, Priority::Low, vec![]);
-        let task2 = Task::new(0, "タスク2", "説明2", Status::InProgress, Priority::Medium, vec![]);
-        let task3 = Task::new(0, "タスク3", "説明3", Status::Completed, Priority::High, vec![]);
+        let task1 = Task::new(
+            0,
+            "タスク1",
+            "説明1",
+            Status::Pending,
+            Priority::Low,
+            vec![],
+        );
+        let task2 = Task::new(
+            0,
+            "タスク2",
+            "説明2",
+            Status::InProgress,
+            Priority::Medium,
+            vec![],
+        );
+        let task3 = Task::new(
+            0,
+            "タスク3",
+            "説明3",
+            Status::Completed,
+            Priority::High,
+            vec![],
+        );
 
         repo.create(&task1).await.unwrap();
         repo.create(&task2).await.unwrap();
@@ -302,7 +318,14 @@ mod tests {
         let repo = TaskRepository::new(&db);
 
         // タスクを作成
-        let new_task = Task::new(0, "削除テスト", "説明", Status::Pending, Priority::Medium, vec![]);
+        let new_task = Task::new(
+            0,
+            "削除テスト",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+        );
         let created_task = repo.create(&new_task).await.unwrap();
 
         // 削除
@@ -349,7 +372,7 @@ mod tests {
             "説明",
             Status::Pending,
             Priority::Medium,
-            vec![inserted_tag.id as u64],
+            vec![inserted_tag.id],
         );
         let created_task = task_repo.create(&new_task).await.unwrap();
 
@@ -360,7 +383,7 @@ mod tests {
 
         // task_tagsが削除されたことを確認
         let task_tags_count = TaskTags::find()
-            .filter(task_tags::Column::TaskId.eq(created_task.id as i32))
+            .filter(task_tags::Column::TaskId.eq(created_task.id))
             .count(&db)
             .await
             .unwrap();
@@ -374,9 +397,30 @@ mod tests {
         let repo = TaskRepository::new(&db);
 
         // 複数のタスクを作成
-        let task1 = Task::new(0, "タスク1", "説明1", Status::Pending, Priority::Low, vec![]);
-        let task2 = Task::new(0, "タスク2", "説明2", Status::Completed, Priority::Medium, vec![]);
-        let task3 = Task::new(0, "タスク3", "説明3", Status::Completed, Priority::High, vec![]);
+        let task1 = Task::new(
+            0,
+            "タスク1",
+            "説明1",
+            Status::Pending,
+            Priority::Low,
+            vec![],
+        );
+        let task2 = Task::new(
+            0,
+            "タスク2",
+            "説明2",
+            Status::Completed,
+            Priority::Medium,
+            vec![],
+        );
+        let task3 = Task::new(
+            0,
+            "タスク3",
+            "説明3",
+            Status::Completed,
+            Priority::High,
+            vec![],
+        );
 
         repo.create(&task1).await.unwrap();
         repo.create(&task2).await.unwrap();
@@ -389,6 +433,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(completed_tasks.len(), 2);
-        assert!(completed_tasks.iter().all(|t| t.status == Status::Completed));
+        assert!(
+            completed_tasks
+                .iter()
+                .all(|t| t.status == Status::Completed)
+        );
     }
 }

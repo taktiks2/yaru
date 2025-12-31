@@ -79,7 +79,7 @@ pub enum TaskCommands {
     /// タスクの詳細を表示
     Show {
         /// 詳細表示するタスクのID
-        id: u64,
+        id: i32,
     },
     /// 新しいタスクを追加
     Add {
@@ -97,13 +97,13 @@ pub enum TaskCommands {
         priority: Option<Priority>,
         /// タスクに紐づけるタグのID（カンマ区切り）
         #[arg(long, value_delimiter = ',')]
-        tags: Option<Vec<u64>>,
+        tags: Option<Vec<i32>>,
     },
     /// 指定されたIDのタスクを削除
     Delete {
         /// 削除するタスクのID
         #[arg(short, long)]
-        id: u64,
+        id: i32,
     },
 }
 
@@ -115,7 +115,7 @@ pub enum TagCommands {
     /// タグの詳細を表示
     Show {
         /// 詳細表示するタグのID
-        id: u64,
+        id: i32,
     },
     /// 新しいタグを追加
     Add {
@@ -130,6 +130,6 @@ pub enum TagCommands {
     Delete {
         /// 削除するタグのID
         #[arg(short, long)]
-        id: u64,
+        id: i32,
     },
 }

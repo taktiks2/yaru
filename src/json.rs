@@ -117,7 +117,7 @@ mod tests {
 
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     struct TestData {
-        id: u64,
+        id: i32,
         name: String,
     }
 

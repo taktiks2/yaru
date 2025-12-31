@@ -14,7 +14,7 @@ pub async fn add_task(
     description: Option<String>,
     status: Option<Status>,
     priority: Option<Priority>,
-    tag_ids: Option<Vec<u64>>,
+    tag_ids: Option<Vec<i32>>,
 ) -> Result<()> {
     let title = match title {
         Some(t) => t,
@@ -39,7 +39,7 @@ pub async fn add_task(
     if !tag_ids.is_empty() {
         let tag_repo = TagRepository::new(db);
         let existing_tags = tag_repo.find_all().await?;
-        let existing_tag_ids: Vec<u64> = existing_tags.iter().map(|t| t.id).collect();
+        let existing_tag_ids: Vec<i32> = existing_tags.iter().map(|t| t.id).collect();
 
         for tag_id in &tag_ids {
             if !existing_tag_ids.contains(tag_id) {
