@@ -1,14 +1,11 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 
-/// UTC時間の文字列を現地時間に変換してフォーマット
-pub fn format_local_time(utc_time_str: &str) -> String {
-    DateTime::parse_from_rfc3339(utc_time_str)
-        .map(|dt| {
-            dt.with_timezone(&Local)
-                .format("%Y-%m-%d %H:%M")
-                .to_string()
-        })
-        .unwrap_or_else(|_| utc_time_str.to_string())
+/// UTC時間を現地時間に変換してフォーマット
+pub fn format_local_time(utc_time: &DateTime<Utc>) -> String {
+    utc_time
+        .with_timezone(&Local)
+        .format("%Y-%m-%d %H:%M")
+        .to_string()
 }
 
 /// 説明文を指定された最大長に切り詰める

@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -21,8 +21,8 @@ pub struct Task {
     pub priority: Priority,
     #[serde(default)]
     pub tags: Vec<u64>,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Task {
@@ -46,6 +46,7 @@ impl Task {
         priority: Priority,
         tags: Vec<u64>,
     ) -> Self {
+        let now = Utc::now();
         Self {
             id,
             title: title.to_string(),
@@ -53,8 +54,8 @@ impl Task {
             status,
             priority,
             tags,
-            created_at: Utc::now().to_rfc3339(),
-            updated_at: Utc::now().to_rfc3339(),
+            created_at: now,
+            updated_at: now,
         }
     }
 }

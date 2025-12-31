@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -14,8 +14,8 @@ pub struct Tag {
     pub id: u64,
     pub name: String,
     pub description: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Tag {
@@ -29,12 +29,13 @@ impl Tag {
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`に設定した新しいTagインスタンス
     pub fn new(id: u64, name: &str, description: &str) -> Self {
+        let now = Utc::now();
         Self {
             id,
             name: name.to_string(),
             description: description.to_string(),
-            created_at: Utc::now().to_rfc3339(),
-            updated_at: Utc::now().to_rfc3339(),
+            created_at: now,
+            updated_at: now,
         }
     }
 }

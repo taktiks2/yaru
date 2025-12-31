@@ -46,8 +46,8 @@ impl<'a> TaskRepository<'a> {
                 _ => Priority::Medium,
             },
             tags: tag_ids,
-            created_at: model.created_at.to_rfc3339(),
-            updated_at: model.updated_at.to_rfc3339(),
+            created_at: model.created_at.into(),
+            updated_at: model.updated_at.into(),
         })
     }
 }

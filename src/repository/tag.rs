@@ -23,8 +23,8 @@ impl<'a> TagRepository<'a> {
             id: model.id as u64,
             name: model.name,
             description: model.description,
-            created_at: model.created_at.to_rfc3339(),
-            updated_at: model.updated_at.to_rfc3339(),
+            created_at: model.created_at.into(),
+            updated_at: model.updated_at.into(),
         }
     }
 }
