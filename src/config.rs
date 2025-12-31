@@ -104,6 +104,7 @@ mod tests {
 [storage]
 task_file = "/custom/path/tasks.json"
 tag_file = "/custom/path/tags.json"
+database_url = "sqlite:///custom/path/yaru.db?mode=rwc"
 "#;
         let config: Config = toml::from_str(toml_str).unwrap();
         assert_eq!(
@@ -113,6 +114,10 @@ tag_file = "/custom/path/tags.json"
         assert_eq!(
             config.storage.tag_file,
             PathBuf::from("/custom/path/tags.json")
+        );
+        assert_eq!(
+            config.storage.database_url,
+            "sqlite:///custom/path/yaru.db?mode=rwc"
         );
     }
 
@@ -145,6 +150,7 @@ tag_file = "/custom/path/tags.json"
 [storage]
 task_file = "/custom/path/tasks.json"
 tag_file = "/custom/path/tags.json"
+database_url = "sqlite:///custom/path/yaru.db?mode=rwc"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
@@ -157,6 +163,10 @@ tag_file = "/custom/path/tags.json"
         assert_eq!(
             config.storage.tag_file,
             PathBuf::from("/custom/path/tags.json")
+        );
+        assert_eq!(
+            config.storage.database_url,
+            "sqlite:///custom/path/yaru.db?mode=rwc"
         );
     }
 
@@ -211,6 +221,7 @@ task_file = "/custom/path/tasks.json"
 [storage]
 task_file = "/existing/path/tasks.json"
 tag_file = "/existing/path/tags.json"
+database_url = "sqlite:///existing/path/yaru.db?mode=rwc"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
@@ -224,6 +235,10 @@ tag_file = "/existing/path/tags.json"
         assert_eq!(
             config.storage.tag_file,
             PathBuf::from("/existing/path/tags.json")
+        );
+        assert_eq!(
+            config.storage.database_url,
+            "sqlite:///existing/path/yaru.db?mode=rwc"
         );
     }
 
