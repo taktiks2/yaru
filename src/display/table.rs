@@ -171,8 +171,8 @@ pub fn create_task_detail_table(task: &Task) -> Table {
     table.add_row(vec!["ID", &task.id.to_string()]);
     table.add_row(vec!["タイトル", &task.title]);
     table.add_row(vec!["説明", &description]);
-    table.add_row(vec!["ステータス", &task.status.to_string()]);
-    table.add_row(vec!["優先度", &task.priority.to_string()]);
+    table.add_row(vec!["ステータス", &task.status.as_ref()]);
+    table.add_row(vec!["優先度", &task.priority.as_ref()]);
     table.add_row(vec!["タグ", &tags_str]);
     table.add_row(vec!["作成日", &format_local_time(&task.created_at)]);
     table.add_row(vec!["更新日", &format_local_time(&task.updated_at)]);
