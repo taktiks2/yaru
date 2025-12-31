@@ -10,7 +10,7 @@ pub async fn show_task(db: &DatabaseConnection, id: i32) -> Result<()> {
     // リポジトリからタスクを検索
     let task_repo = TaskRepository::new(db);
     let Some(task) = task_repo.find_by_id(id).await? else {
-        anyhow::bail!("ID {} のタスクが見つかりません", id);
+        anyhow::bail!("ID {id} のタスクが見つかりません");
     };
 
     // 全タグを取得して表示

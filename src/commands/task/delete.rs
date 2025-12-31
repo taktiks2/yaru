@@ -9,8 +9,7 @@ pub async fn delete_task(db: &DatabaseConnection, id: i32) -> Result<()> {
     let deleted = task_repo.delete(id).await?;
 
     if !deleted {
-        println!("ID {} のタスクが見つかりませんでした。", id);
-        return Ok(());
+        anyhow::bail!("ID {id} のタスクが見つかりません");
     }
 
     println!("タスクを削除しました。");

@@ -9,7 +9,7 @@ use sea_orm::DatabaseConnection;
 pub async fn show_tag(db: &DatabaseConnection, id: i32) -> Result<()> {
     let tag_repo = TagRepository::new(db);
     let Some(tag) = tag_repo.find_by_id(id).await? else {
-        anyhow::bail!("ID {} のタグが見つかりません", id);
+        anyhow::bail!("ID {id} のタグが見つかりません");
     };
 
     let table = create_tag_detail_table(&tag);
