@@ -22,6 +22,28 @@ impl<'a> TaskRepository<'a> {
 }
 
 impl<'a> Repository<Task> for TaskRepository<'a> {
+    // SeaORMの関連エンティティ取得方法について:
+    //
+    // 現在の実装では `find_with_related()` を使用しています。
+    // これは1回のクエリ（JOIN使用）で主エンティティと関連エンティティを取得します。
+    //
+    // 代替案として EntityLoader パターン（`load_many()`）もありますが、
+    // 以下の理由から現在の実装を採用しています：
+    //
+    // 【find_with_related() の特徴】
+    // - 1回のクエリで完結（JOIN使用）
+    // - タスク管理アプリでは通常タグ数が少ない（2-3個程度）
+    // - 常にタグ情報が必要
+    // - シンプルで保守性が高い
+    //
+    // 【EntityLoader パターン（load_many()）の特徴】
+    // - 複数回のクエリ（主エンティティ + 関連エンティティごと）
+    // - タスクあたりのタグ数が非常に多い場合（10個以上）に効率的
+    // - 複数の1:N関連がある場合に有効
+    // - 選択的読み込み（必要なものだけ取得）が可能
+    //
+    // 参考: https://www.sea-ql.org/SeaORM/docs/advanced-query/custom-select/
+
     async fn find_by_id(&self, id: i32) -> Result<Option<Task>> {
         let result = Tasks::find_by_id(id)
             .find_with_related(Tags)
@@ -31,7 +53,7 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
 
         match result.into_iter().next() {
             Some((model, tags)) => {
-                let task = Task::try_from((model, tags)).map_err(|e| anyhow::anyhow!(e))?;
+                let task = Task::try_from((model, tags)).map_err(anyhow::Error::msg)?;
                 Ok(Some(task))
             }
             None => Ok(None),
@@ -45,13 +67,10 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .await
             .context("タスクとタグの読み込みに失敗しました")?;
 
-        let mut tasks = Vec::new();
-        for (model, tags) in tasks_with_tags {
-            let task = Task::try_from((model, tags)).map_err(|e| anyhow::anyhow!(e))?;
-            tasks.push(task);
-        }
-
-        Ok(tasks)
+        tasks_with_tags
+            .into_iter()
+            .map(|(model, tags)| Task::try_from((model, tags)).map_err(anyhow::Error::msg))
+            .collect()
     }
 
     async fn search<F>(&self, predicate: F) -> Result<Vec<Task>>
@@ -106,7 +125,7 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .await
             .context("トランザクションのコミットに失敗しました")?;
 
-        Task::try_from((inserted_task, tag_models)).map_err(|e| anyhow::anyhow!(e))
+        Task::try_from((inserted_task, tag_models)).map_err(anyhow::Error::msg)
     }
 
     async fn delete(&self, id: i32) -> Result<bool> {
