@@ -12,6 +12,7 @@ pub struct Config {
 pub struct StorageConfig {
     pub task_file: PathBuf,
     pub tag_file: PathBuf,
+    pub database_url: String,
 }
 
 impl Default for StorageConfig {
@@ -19,6 +20,8 @@ impl Default for StorageConfig {
         Self {
             task_file: get_default_task_path().unwrap_or_else(|_| PathBuf::from("tasks.json")),
             tag_file: get_default_tag_path().unwrap_or_else(|_| PathBuf::from("tags.json")),
+            database_url: get_default_database_url()
+                .unwrap_or_else(|_| "sqlite://yaru.db?mode=rwc".to_string()),
         }
     }
 }
@@ -42,6 +45,12 @@ fn get_default_task_path() -> Result<PathBuf> {
 /// デフォルトのタグファイルパスを取得
 fn get_default_tag_path() -> Result<PathBuf> {
     Ok(get_yaru_dir()?.join("tags.json"))
+}
+
+/// デフォルトのデータベースURLを取得
+fn get_default_database_url() -> Result<String> {
+    let db_path = get_yaru_dir()?.join("yaru.db");
+    Ok(format!("sqlite://{}?mode=rwc", db_path.display()))
 }
 
 /// 設定を読み込む
