@@ -2,11 +2,10 @@ mod cli;
 mod commands;
 mod config;
 mod display;
+mod domain;
 mod entity;
 mod json;
 mod repository;
-mod tag;
-mod task;
 
 use anyhow::{Context, Result};
 use clap::{error::ErrorKind, Parser};
