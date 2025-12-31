@@ -1,70 +1,19 @@
-use crate::{display::create_tag_detail_table, repository::Repository, tag::Tag};
+use crate::{
+    display::create_tag_detail_table,
+    repository::{Repository, tag::TagRepository},
+};
 use anyhow::Result;
+use sea_orm::DatabaseConnection;
 
 /// 指定されたIDのタグ詳細を表示
-pub fn show_tag(repo: &impl Repository<Tag>, id: u64) -> Result<()> {
-    let tags = repo.load()?;
-
-    let Some(tag) = tags.iter().find(|tag| tag.id == id) else {
-        anyhow::bail!("ID {} のタグが見つかりません", id);
+pub async fn show_tag(db: &DatabaseConnection, id: i32) -> Result<()> {
+    let tag_repo = TagRepository::new(db);
+    let Some(tag) = tag_repo.find_by_id(id).await? else {
+        anyhow::bail!("ID {id} のタグが見つかりません");
     };
 
-    let table = create_tag_detail_table(tag);
+    let table = create_tag_detail_table(&tag);
     println!("{table}");
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::repository::JsonRepository;
-    use crate::tag::Tag;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_show_tag_found() {
-        let dir = tempdir().unwrap();
-        let tag_repo = JsonRepository::<Tag>::new(dir.path().join("tags.json"));
-
-        // タグを準備
-        let tags = vec![
-            Tag::new(1, "重要", "重要なタスク"),
-            Tag::new(2, "作業中", "現在作業中"),
-        ];
-        tag_repo.save(&tags).unwrap();
-
-        // ID 2 のタグを表示（エラーが発生しないことを確認）
-        let result = show_tag(&tag_repo, 2);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_show_tag_not_found() {
-        let dir = tempdir().unwrap();
-        let tag_repo = JsonRepository::<Tag>::new(dir.path().join("tags.json"));
-
-        // タグを準備
-        let tags = vec![Tag::new(1, "重要", "重要なタスク")];
-        tag_repo.save(&tags).unwrap();
-
-        // 存在しないID 999 を検索
-        let result = show_tag(&tag_repo, 999);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("見つかりません"));
-    }
-
-    #[test]
-    fn test_show_tag_empty_repository() {
-        let dir = tempdir().unwrap();
-        let tag_repo = JsonRepository::<Tag>::new(dir.path().join("tags.json"));
-
-        // 空のリポジトリを準備
-        tag_repo.ensure_data_exists().unwrap();
-
-        // 存在しないID を検索
-        let result = show_tag(&tag_repo, 1);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("見つかりません"));
-    }
 }

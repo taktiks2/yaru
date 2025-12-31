@@ -1,5 +1,8 @@
 # yaruプロジェクトのタスクランナー
 
+# データベースURL（環境変数HOMEから動的に取得）
+db_url := "sqlite://" + env_var('HOME') + "/.config/yaru/yaru.db?mode=rwc"
+
 # コードのフォーマットを実行
 fmt:
     cargo fmt
@@ -12,36 +15,31 @@ lint:
 check: fmt lint
     @echo "フォーマットとリントが完了しました"
 
-# tasks.jsonとtags.jsonの両方を整形して出力
-show-all:
-    @echo "=== Tasks ==="
-    @just show-data
-    @echo ""
-    @echo "=== Tags ==="
-    @just show-tags
-
-# tasks.jsonを整形して出力
-show-data:
-    @if [ -f ~/.config/yaru/tasks.json ]; then \
-        jq '.' ~/.config/yaru/tasks.json; \
-    else \
-        echo "データファイルが存在しません"; \
-    fi
-
-# tags.jsonを整形して出力
-show-tags:
-    @if [ -f ~/.config/yaru/tags.json ]; then \
-        jq '.' ~/.config/yaru/tags.json; \
-    else \
-        echo "タグデータファイルが存在しません"; \
-    fi
-
-# tasks.jsonファイルを削除
-clean-data:
-    rm -f ~/.config/yaru/tasks.json
-    @echo "データファイルを削除しました"
-
 # tasks.jsonとconfig.tomlの両方を削除
 clean-all:
     rm -rf ~/.config/yaru/
     @echo "yaruの設定ディレクトリを削除しました"
+
+# データベースのマイグレーションをリセット（down -> up）
+db-reset:
+    #!/usr/bin/env bash
+    export DATABASE_URL="{{db_url}}"
+    cd migration && cargo run -- down && cargo run -- up
+    @echo "データベースをリセットしました"
+
+# エンティティファイルを再生成
+db-generate:
+    #!/usr/bin/env bash
+    export DATABASE_URL="{{db_url}}"
+    sea-orm-cli generate entity -o src/entity --lib
+    rm src/entity.rs
+    mv src/entity/lib.rs src/entity.rs
+    @echo "エンティティファイルを生成しました"
+
+# データベースリセット + エ���ティティ再生成
+db-refresh: db-reset db-generate
+    @echo "データベースのリセットとエンティティ生成が完了しました"
+
+# sqlite3でデータベースに接続
+db-connect:
+    sqlite3 {{env_var('HOME')}}/.config/yaru/yaru.db

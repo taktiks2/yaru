@@ -1,5 +1,5 @@
-use crate::repository::HasId;
-use chrono::Utc;
+use crate::entity::tags;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -12,11 +12,11 @@ use std::fmt;
 /// - `created_at`: タグの作成日時
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Tag {
-    pub id: u64,
+    pub id: i32,
     pub name: String,
     pub description: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Tag {
@@ -29,25 +29,33 @@ impl Tag {
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`に設定した新しいTagインスタンス
-    pub fn new(id: u64, name: &str, description: &str) -> Self {
+    pub fn new(id: i32, name: &str, description: &str) -> Self {
+        let now = Utc::now();
         Self {
             id,
             name: name.to_string(),
             description: description.to_string(),
-            created_at: Utc::now().to_rfc3339(),
-            updated_at: Utc::now().to_rfc3339(),
+            created_at: now,
+            updated_at: now,
         }
-    }
-}
-
-impl HasId for Tag {
-    fn id(&self) -> u64 {
-        self.id
     }
 }
 
 impl fmt::Display for Tag {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
+    }
+}
+
+/// tags::ModelからTagドメインモデルへの変換
+impl From<tags::Model> for Tag {
+    fn from(model: tags::Model) -> Self {
+        Self {
+            id: model.id,
+            name: model.name,
+            description: model.description,
+            created_at: model.created_at.into(),
+            updated_at: model.updated_at.into(),
+        }
     }
 }

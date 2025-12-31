@@ -10,15 +10,14 @@ pub struct Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
-    pub task_file: PathBuf,
-    pub tag_file: PathBuf,
+    pub database_url: String,
 }
 
 impl Default for StorageConfig {
     fn default() -> Self {
         Self {
-            task_file: get_default_task_path().unwrap_or_else(|_| PathBuf::from("tasks.json")),
-            tag_file: get_default_tag_path().unwrap_or_else(|_| PathBuf::from("tags.json")),
+            database_url: get_default_database_url()
+                .unwrap_or_else(|_| "sqlite://yaru.db?mode=rwc".to_string()),
         }
     }
 }
@@ -34,14 +33,10 @@ fn get_config_path() -> Result<PathBuf> {
     Ok(get_yaru_dir()?.join("config.toml"))
 }
 
-/// デフォルトのタスクファイルパスを取得
-fn get_default_task_path() -> Result<PathBuf> {
-    Ok(get_yaru_dir()?.join("tasks.json"))
-}
-
-/// デフォルトのタグファイルパスを取得
-fn get_default_tag_path() -> Result<PathBuf> {
-    Ok(get_yaru_dir()?.join("tags.json"))
+/// デフォルトのデータベースURLを取得
+fn get_default_database_url() -> Result<String> {
+    let db_path = get_yaru_dir()?.join("yaru.db");
+    Ok(format!("sqlite://{}?mode=rwc", db_path.display()))
 }
 
 /// 設定を読み込む
@@ -72,7 +67,7 @@ mod tests {
     fn test_config_default() {
         use std::env;
 
-        // デフォルト設定が ~/.config/yaru/tasks.json を使用することを確認
+        // デフォルト設定が ~/.config/yaru/yaru.db を使用することを確認
         let config = Config::default();
 
         // HOME環境変数が設定されている場合は絶対パスを確認
@@ -80,11 +75,12 @@ mod tests {
             let expected_path = PathBuf::from(home)
                 .join(".config")
                 .join("yaru")
-                .join("tasks.json");
-            assert_eq!(config.storage.task_file, expected_path);
+                .join("yaru.db");
+            let expected_url = format!("sqlite://{}?mode=rwc", expected_path.display());
+            assert_eq!(config.storage.database_url, expected_url);
         } else {
             // HOME環境変数がない場合はフォールバック値を確認
-            assert_eq!(config.storage.task_file, PathBuf::from("tasks.json"));
+            assert_eq!(config.storage.database_url, "sqlite://yaru.db?mode=rwc");
         }
     }
 
@@ -93,17 +89,12 @@ mod tests {
         // TOML文字列からConfigをデシリアライズできることを確認
         let toml_str = r#"
 [storage]
-task_file = "/custom/path/tasks.json"
-tag_file = "/custom/path/tags.json"
+database_url = "sqlite:///custom/path/yaru.db?mode=rwc"
 "#;
         let config: Config = toml::from_str(toml_str).unwrap();
         assert_eq!(
-            config.storage.task_file,
-            PathBuf::from("/custom/path/tasks.json")
-        );
-        assert_eq!(
-            config.storage.tag_file,
-            PathBuf::from("/custom/path/tags.json")
+            config.storage.database_url,
+            "sqlite:///custom/path/yaru.db?mode=rwc"
         );
     }
 
@@ -112,13 +103,12 @@ tag_file = "/custom/path/tags.json"
         // ConfigをTOML文字列にシリアライズできることを確認
         let config = Config {
             storage: StorageConfig {
-                task_file: PathBuf::from("/test/path/tasks.json"),
-                tag_file: PathBuf::from("/test/path/tags.json"),
+                database_url: "sqlite://test.db?mode=rwc".to_string(),
             },
         };
         let toml_str = toml::to_string(&config).unwrap();
-        assert!(toml_str.contains("task_file"));
-        assert!(toml_str.contains("/test/path/tasks.json"));
+        assert!(toml_str.contains("database_url"));
+        assert!(toml_str.contains("sqlite://test.db?mode=rwc"));
     }
 
     #[test]
@@ -133,20 +123,15 @@ tag_file = "/custom/path/tags.json"
         // テスト用の設定ファイルを作成
         let config_content = r#"
 [storage]
-task_file = "/custom/path/tasks.json"
-tag_file = "/custom/path/tags.json"
+database_url = "sqlite:///custom/path/yaru.db?mode=rwc"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
         // ファイルから設定を読み込む
         let config = load_config_from_file(&config_file).unwrap();
         assert_eq!(
-            config.storage.task_file,
-            PathBuf::from("/custom/path/tasks.json")
-        );
-        assert_eq!(
-            config.storage.tag_file,
-            PathBuf::from("/custom/path/tags.json")
+            config.storage.database_url,
+            "sqlite:///custom/path/yaru.db?mode=rwc"
         );
     }
 
@@ -162,7 +147,7 @@ tag_file = "/custom/path/tags.json"
         // 不正なTOMLファイルを作成
         let invalid_content = r#"
 [storage
-task_file = "/custom/path/tasks.json"
+database_url = "sqlite://test.db?mode=rwc"
 "#;
         fs::write(&config_file, invalid_content).unwrap();
 
@@ -199,21 +184,15 @@ task_file = "/custom/path/tasks.json"
         // テスト用の設定ファイルを作成
         let config_content = r#"
 [storage]
-task_file = "/existing/path/tasks.json"
-tag_file = "/existing/path/tags.json"
+database_url = "sqlite:///existing/path/yaru.db?mode=rwc"
 "#;
         fs::write(&config_file, config_content).unwrap();
 
         // 設定ファイルが存在する場合、正しく読み込まれることを確認
-        // Note: この関数は実装後にHOME環境変数を設定する必要がある
         let config = load_config_from_file(&config_file).unwrap();
         assert_eq!(
-            config.storage.task_file,
-            PathBuf::from("/existing/path/tasks.json")
-        );
-        assert_eq!(
-            config.storage.tag_file,
-            PathBuf::from("/existing/path/tags.json")
+            config.storage.database_url,
+            "sqlite:///existing/path/yaru.db?mode=rwc"
         );
     }
 
@@ -229,11 +208,12 @@ tag_file = "/existing/path/tags.json"
             let expected_path = PathBuf::from(home)
                 .join(".config")
                 .join("yaru")
-                .join("tasks.json");
-            assert_eq!(config.storage.task_file, expected_path);
+                .join("yaru.db");
+            let expected_url = format!("sqlite://{}?mode=rwc", expected_path.display());
+            assert_eq!(config.storage.database_url, expected_url);
         } else {
             // HOME環境変数がない場合はフォールバック値を確認
-            assert_eq!(config.storage.task_file, PathBuf::from("tasks.json"));
+            assert_eq!(config.storage.database_url, "sqlite://yaru.db?mode=rwc");
         }
     }
 }

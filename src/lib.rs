@@ -2,10 +2,10 @@ mod cli;
 mod commands;
 mod config;
 mod display;
+mod domain;
+mod entity;
 mod json;
 mod repository;
-mod tag;
-mod task;
 
 use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
@@ -15,12 +15,13 @@ use commands::{
     task::{add_task, delete_task, list_tasks, show_task},
 };
 use config::load_config;
-use repository::{JsonRepository, Repository};
+use migration::MigratorTrait;
+use sea_orm::Database;
 
 /// アプリケーションのエントリーポイント
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
-pub fn run() -> Result<()> {
+pub async fn run() -> Result<()> {
     let args = match Args::try_parse() {
         Ok(args) => args,
         Err(e) => {
@@ -35,70 +36,58 @@ pub fn run() -> Result<()> {
     // 設定を読み込む
     let config = load_config()?;
 
-    // データファイルが存在することを確認
-    let task_repo = JsonRepository::new(&config.storage.task_file);
-    task_repo
-        .ensure_data_exists()
-        .context("タスクファイルの初期化に失敗しました")?;
+    // データベース接続を確立
+    let db = Database::connect(&config.storage.database_url)
+        .await
+        .context("データベース接続に失敗しました")?;
 
-    let tag_repo = JsonRepository::new(&config.storage.tag_file);
-    tag_repo
-        .ensure_data_exists()
-        .context("タグファイルの初期化に失敗しました")?;
+    // マイグレーション実行
+    migration::Migrator::up(&db, None)
+        .await
+        .context("マイグレーション実行に失敗しました")?;
 
-    handle_command(args, task_repo, tag_repo)
+    // コマンド実行（DB接続を直接渡す）
+    handle_command(args, &db).await?;
+
+    // 接続を明示的に閉じる
+    db.close().await?;
+
+    Ok(())
 }
 
 /// コマンドを実行
-fn handle_command(
-    args: Args,
-    task_repo: JsonRepository<task::Task>,
-    tag_repo: JsonRepository<tag::Tag>,
-) -> Result<()> {
+async fn handle_command(args: Args, db: &sea_orm::DatabaseConnection) -> Result<()> {
     match args.command {
-        Commands::Task { command } => handle_task_command(command, task_repo, tag_repo),
-        Commands::Tag { command } => handle_tag_command(command, tag_repo, task_repo),
+        Commands::Task { command } => handle_task_command(command, db).await,
+        Commands::Tag { command } => handle_tag_command(command, db).await,
     }
 }
 
 /// タスクコマンドを実行
-fn handle_task_command(
+async fn handle_task_command(
     command: TaskCommands,
-    task_repo: JsonRepository<task::Task>,
-    tag_repo: JsonRepository<tag::Tag>,
+    db: &sea_orm::DatabaseConnection,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => list_tasks(&task_repo, filter),
-        TaskCommands::Show { id } => show_task(&task_repo, &tag_repo, id),
+        TaskCommands::List { filter } => list_tasks(db, filter).await,
+        TaskCommands::Show { id } => show_task(db, id).await,
         TaskCommands::Add {
             title,
             description,
             status,
             priority,
             tags,
-        } => add_task(
-            &task_repo,
-            &tag_repo,
-            title,
-            description,
-            status,
-            priority,
-            tags,
-        ),
-        TaskCommands::Delete { id } => delete_task(&task_repo, id),
+        } => add_task(db, title, description, status, priority, tags).await,
+        TaskCommands::Delete { id } => delete_task(db, id).await,
     }
 }
 
 /// タグコマンドを実行
-fn handle_tag_command(
-    command: TagCommands,
-    tag_repo: JsonRepository<tag::Tag>,
-    task_repo: JsonRepository<task::Task>,
-) -> Result<()> {
+async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnection) -> Result<()> {
     match command {
-        TagCommands::Add { name, description } => add_tag(&tag_repo, name, description),
-        TagCommands::Show { id } => show_tag(&tag_repo, id),
-        TagCommands::List => list_tags(&tag_repo),
-        TagCommands::Delete { id } => delete_tag(&tag_repo, &task_repo, id),
+        TagCommands::Add { name, description } => add_tag(db, name, description).await,
+        TagCommands::Show { id } => show_tag(db, id).await,
+        TagCommands::List => list_tags(db).await,
+        TagCommands::Delete { id } => delete_tag(db, id).await,
     }
 }

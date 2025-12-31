@@ -1,10 +1,14 @@
-use crate::display::create_tag_table;
-use crate::{repository::Repository, tag::Tag};
+use crate::{
+    display::create_tag_table,
+    repository::{Repository, tag::TagRepository},
+};
 use anyhow::Result;
+use sea_orm::DatabaseConnection;
 
 /// タグ一覧を表示
-pub fn list_tags(repo: &impl Repository<Tag>) -> Result<()> {
-    let tags = repo.load()?;
+pub async fn list_tags(db: &DatabaseConnection) -> Result<()> {
+    let tag_repo = TagRepository::new(db);
+    let tags = tag_repo.find_all().await?;
 
     if tags.is_empty() {
         println!("登録されているタグはありません");
@@ -14,42 +18,4 @@ pub fn list_tags(repo: &impl Repository<Tag>) -> Result<()> {
     let table = create_tag_table(&tags);
     println!("{table}");
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::repository::JsonRepository;
-    use crate::tag::Tag;
-    use tempfile::TempDir;
-
-    fn setup_test_repo() -> (TempDir, JsonRepository<Tag>) {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let tag_file = temp_dir.path().join("tags.json");
-        let repo = JsonRepository::new(&tag_file);
-        repo.ensure_data_exists().unwrap();
-        (temp_dir, repo)
-    }
-
-    #[test]
-    fn test_list_tags_empty() {
-        let (_temp_dir, repo) = setup_test_repo();
-
-        // 空の状態でリストを表示
-        let result = list_tags(&repo);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_list_tags_with_data() {
-        let (_temp_dir, repo) = setup_test_repo();
-
-        // タグを追加
-        let tags = vec![Tag::new(1, "重要", "重要なタスク用")];
-        repo.save(&tags).unwrap();
-
-        // リストを表示
-        let result = list_tags(&repo);
-        assert!(result.is_ok());
-    }
 }

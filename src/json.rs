@@ -46,6 +46,7 @@ use std::{fs, path::Path};
 ///
 /// 一方、`save_json` は `&T` を受け取るため、参照自体のサイズが固定なので
 /// `?Sized` を付けてサイズ不定の型も受け入れられます。
+#[allow(dead_code)]
 pub fn load_json<T>(path: impl AsRef<Path>) -> Result<T>
 where
     T: DeserializeOwned,
@@ -88,6 +89,7 @@ where
 /// let s: &str = "hello";
 /// save_json("path.json", s);  // T = str ✓ (?Sized がないとエラー)
 /// ```
+#[allow(dead_code)]
 pub fn save_json<T>(path: impl AsRef<Path>, data: &T) -> Result<()>
 where
     T: Serialize + ?Sized,
@@ -115,7 +117,7 @@ mod tests {
 
     #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
     struct TestData {
-        id: u64,
+        id: i32,
         name: String,
     }
 
