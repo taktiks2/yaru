@@ -118,7 +118,7 @@ cargo run -- tag delete --id 1
 pub trait Repository<T> {
     fn load(&self) -> Result<Vec<T>>;
     fn save(&self, items: &[T]) -> Result<()>;
-    fn find_next_id(&self) -> Result<u64>;
+    fn find_next_id(&self) -> Result<i32>;
     fn ensure_data_exists(&self) -> Result<()>;
 }
 ```
