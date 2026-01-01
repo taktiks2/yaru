@@ -1,10 +1,6 @@
-use crate::{
-    domain::task::Task,
-    entity::prelude::*,
-    entity::{task_tags, tasks},
-    repository::Repository,
-};
+use crate::{domain::task::Task, repository::Repository};
 use anyhow::{Context, Result};
+use entity::{prelude::*, task_tags, tasks};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
     QueryFilter, Set, TransactionTrait,
@@ -204,7 +200,7 @@ mod tests {
         let task_repo = TaskRepository::new(&db);
 
         // タグを作成（直接Entityを使用）
-        use crate::entity::tags;
+        use entity::tags;
         use sea_orm::ActiveValue::NotSet;
         let tag1 = tags::ActiveModel {
             id: NotSet,
@@ -213,7 +209,7 @@ mod tests {
             created_at: Set(chrono::Utc::now().into()),
             updated_at: Set(chrono::Utc::now().into()),
         };
-        let inserted_tag1 = tag1.insert(&db).await.unwrap();
+        let inserted_tag1: tags::Model = tag1.insert(&db).await.unwrap();
 
         let tag2 = tags::ActiveModel {
             id: NotSet,
@@ -222,7 +218,7 @@ mod tests {
             created_at: Set(chrono::Utc::now().into()),
             updated_at: Set(chrono::Utc::now().into()),
         };
-        let inserted_tag2 = tag2.insert(&db).await.unwrap();
+        let inserted_tag2: tags::Model = tag2.insert(&db).await.unwrap();
 
         // タグ付きタスクを作成
         use crate::domain::tag::Tag;
@@ -364,7 +360,7 @@ mod tests {
         let task_repo = TaskRepository::new(&db);
 
         // タグを作成
-        use crate::entity::tags;
+        use entity::tags;
         use sea_orm::ActiveValue::NotSet;
         let tag = tags::ActiveModel {
             id: NotSet,
@@ -373,7 +369,7 @@ mod tests {
             created_at: Set(chrono::Utc::now().into()),
             updated_at: Set(chrono::Utc::now().into()),
         };
-        let inserted_tag = tag.insert(&db).await.unwrap();
+        let inserted_tag: tags::Model = tag.insert(&db).await.unwrap();
 
         // タグ付きタスクを作成
         use crate::domain::tag::Tag;
@@ -445,10 +441,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(completed_tasks.len(), 2);
-        assert!(
-            completed_tasks
-                .iter()
-                .all(|t| t.status == Status::Completed)
-        );
+        assert!(completed_tasks
+            .iter()
+            .all(|t| t.status == Status::Completed));
     }
 }

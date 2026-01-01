@@ -3,7 +3,7 @@ use crate::{
     domain::tag::Tag,
     domain::task::Task,
 };
-use comfy_table::{Table, presets::UTF8_FULL};
+use comfy_table::{presets::UTF8_FULL, Table};
 
 /// タスクのテーブルを作成
 pub fn create_task_table(tasks: &[Task]) -> Table {

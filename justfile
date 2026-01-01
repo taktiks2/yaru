@@ -24,22 +24,29 @@ clean-all:
 db-reset:
     #!/usr/bin/env bash
     export DATABASE_URL="{{db_url}}"
+    export RUN_SEEDER=1
     cd migration && cargo run -- down && cargo run -- up
-    @echo "データベースをリセットしました"
+    echo "データベースをリセットしました"
 
 # エンティティファイルを再生成
 db-generate:
     #!/usr/bin/env bash
     export DATABASE_URL="{{db_url}}"
-    sea-orm-cli generate entity -o src/entity --lib
-    rm src/entity.rs
-    mv src/entity/lib.rs src/entity.rs
-    @echo "エンティティファイルを生成しました"
+    sea-orm-cli generate entity -o entity --lib
+    echo "エンティティファイルを生成しました"
 
-# データベースリセット + エ���ティティ再生成
+# データベースリセット + エンティティ再生成
 db-refresh: db-reset db-generate
-    @echo "データベースのリセットとエンティティ生成が完了しました"
+    @echo "データベースのリセット・エンティティ生成が完了しました"
 
 # sqlite3でデータベースに接続
 db-connect:
     sqlite3 {{env_var('HOME')}}/.config/yaru/yaru.db
+
+# serenaの初期化処理
+serena-setup:
+  claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"
+
+# project.ymlが生成されてから実行する
+serena-index:
+  uvx --from git+https://github.com/oraios/serena serena project index

@@ -1,6 +1,6 @@
 use crate::{
     display::create_task_detail_table,
-    repository::{Repository, task::TaskRepository},
+    repository::{task::TaskRepository, Repository},
 };
 use anyhow::Result;
 use sea_orm::DatabaseConnection;

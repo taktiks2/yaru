@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 use std::{fs, path::Path};
 
 /// JSONファイルを読み込む関数

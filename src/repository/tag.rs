@@ -1,5 +1,6 @@
-use crate::{domain::tag::Tag, entity::prelude::*, entity::tags, repository::Repository};
+use crate::{domain::tag::Tag, repository::Repository};
 use anyhow::{Context, Result};
+use entity::{prelude::*, tags};
 use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set};
 
 /// Tag用のリポジトリ実装
