@@ -18,7 +18,7 @@ pub enum Relation {
         from = "Column::TagId",
         to = "super::tags::Column::Id",
         on_update = "NoAction",
-        on_delete = "Cascade"
+        on_delete = "Restrict"
     )]
     Tags,
     #[sea_orm(

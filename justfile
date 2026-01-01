@@ -31,8 +31,7 @@ db-reset:
 db-generate:
     #!/usr/bin/env bash
     export DATABASE_URL="{{db_url}}"
-    sea-orm-cli generate entity -o src/entity
-    mv src/entity/mod.rs src/entity.rs
+    sea-orm-cli generate entity -o entity --lib
     echo "エンティティファイルを生成しました"
 
 # データベースリセット + エ���ティティ再生成

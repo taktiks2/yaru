@@ -1,10 +1,6 @@
-use crate::{
-    domain::task::Task,
-    entity::prelude::*,
-    entity::{task_tags, tasks},
-    repository::Repository,
-};
+use crate::{domain::task::Task, repository::Repository};
 use anyhow::{Context, Result};
+use entity::{prelude::*, task_tags, tasks};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
     QueryFilter, Set, TransactionTrait,
@@ -445,10 +441,8 @@ mod tests {
             .unwrap();
 
         assert_eq!(completed_tasks.len(), 2);
-        assert!(
-            completed_tasks
-                .iter()
-                .all(|t| t.status == Status::Completed)
-        );
+        assert!(completed_tasks
+            .iter()
+            .all(|t| t.status == Status::Completed));
     }
 }

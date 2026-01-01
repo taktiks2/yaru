@@ -1,10 +1,9 @@
+use crate::domain::tag::Tag;
 use chrono::{DateTime, Utc};
 use clap::ValueEnum;
+use entity::{tags, tasks};
 use serde::{Deserialize, Serialize};
 use std::fmt;
-
-use crate::domain::tag::Tag;
-use crate::entity::{tags, tasks};
 
 /// タスクを表す構造体
 ///
