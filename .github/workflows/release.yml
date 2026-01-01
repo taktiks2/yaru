@@ -51,6 +51,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: テストとビルドチェック
+        run: |
+          cargo test
+          cargo clippy -- -D warnings
+
       - name: バージョンバンプ
         id: bump
         run: |
@@ -63,7 +68,7 @@ jobs:
 
           echo "バージョンタイプ: $VERSION_TYPE"
 
-          # バージョンをバンプ
+          # バージョンをバンプ（pre_bump_hooksとpost_bump_hooksをスキップ）
           if [ "$VERSION_TYPE" = "auto" ]; then
             BUMP_CMD="cog bump --auto"
           else
@@ -72,7 +77,10 @@ jobs:
 
           if $BUMP_CMD 2>&1 | tee bump_output.txt; then
             echo "バージョンバンプ成功"
+            NEW_VERSION=$(git describe --tags --abbrev=0)
+            echo "新しいバージョン: $NEW_VERSION"
             echo "bumped=true" >> $GITHUB_OUTPUT
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           else
             if grep -q "No conventional commits for your repository that required a bump" bump_output.txt; then
               echo "バンプが必要なコミットがありません"
@@ -83,6 +91,12 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: Cargo.tomlバージョン確認
+        if: steps.bump.outputs.bumped == 'true'
+        run: |
+          echo "Cargo.tomlのバージョン:"
+          grep '^version = ' Cargo.toml
 
       - name: 変更をプッシュ
         if: steps.bump.outputs.bumped == 'true'
