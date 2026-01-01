@@ -20,7 +20,7 @@ indicatif = "0.18.3"
 console = "0.16.2"
 comfy-table = "7.2.1"
 toml = "0.9"
-inquire = { version = "0.9.1", features = ["editor"] }
+inquire = { version = "0.9.1", features = ["editor", "date"] }
 sea-orm = { workspace = true, features = [
   "sqlx-sqlite",
   "runtime-tokio-rustls",

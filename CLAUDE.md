@@ -45,7 +45,7 @@ cargo run -- <subcommand>
 
 # 例:
 cargo run -- task list
-cargo run -- task add --title "タスク" --status pending
+cargo run -- task add "タスク" --status pending --due-date 2026-12-31
 cargo run -- task delete --id 1
 cargo run -- tag list
 cargo run -- tag add --name "重要"
@@ -83,10 +83,13 @@ cargo run -- tag delete --id 1
 
 #### ドメイン層
 `task.rs`:
-- `Task`: タスクの構造体（id, title, description, status, priority, tags, created_at, updated_at）
+- `Task`: タスクの構造体（id, title, description, status, priority, tags, created_at, updated_at, due_date, completed_at）
+  - `due_date`: タスクの期限（Option<NaiveDate>）
+  - `completed_at`: タスクの完了日時（Option<DateTime<Utc>>）
+    - ステータスがCompletedになった時に自動的に現在時刻が設定される
 - `Status`: タスクのステータス（Pending, Completed, InProgress）
   - `from_filter_value()`: フィルタ文字列からStatusへの変換
-- `Priority`: タスクの優先度（Low, Medium, High）
+- `Priority`: タスクの優先度（Low, Medium, High, Critical）
 
 `tag.rs`:
 - `Tag`: タグの構造体（id, name, description, created_at, updated_at）
