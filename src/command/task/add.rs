@@ -5,7 +5,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use clap::ValueEnum;
-use inquire::{Editor, MultiSelect, Text, validator};
+use inquire::{Editor, MultiSelect, Select, Text, validator};
 use sea_orm::DatabaseConnection;
 
 /// 新しいタスクを追加
@@ -55,16 +55,18 @@ pub async fn add_task(
             let d = Editor::new("タスクの説明を入力してください")
                 .prompt()
                 .context("タスクの説明の入力に失敗しました")?;
-            let s = inquire::Select::new(
+            let s = Select::new(
                 "ステータスを選択してください",
                 Status::value_variants().to_vec(),
             )
+            .with_vim_mode(true)
             .prompt()
             .unwrap_or(Status::Pending);
-            let p = inquire::Select::new(
+            let p = Select::new(
                 "優先度を選択してください",
                 Priority::value_variants().to_vec(),
             )
+            .with_vim_mode(true)
             .prompt()
             .unwrap_or(Priority::Medium);
 
@@ -78,6 +80,7 @@ pub async fn add_task(
                     "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
                     available_tags.clone(),
                 )
+                .with_vim_mode(true)
                 .prompt()
                 .unwrap_or_default()
             };
