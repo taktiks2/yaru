@@ -44,7 +44,9 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Cocogitto のインストール
-        run: cargo install cocogitto
+        run: |
+          cargo install cocogitto
+          cargo install cargo-edit
 
       - name: Git 設定
         run: |
