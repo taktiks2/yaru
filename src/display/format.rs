@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local, NaiveDate, Utc};
 
 /// UTC時間を現地時間に変換してフォーマット
 pub fn format_local_time(utc_time: &DateTime<Utc>) -> String {
@@ -6,6 +6,19 @@ pub fn format_local_time(utc_time: &DateTime<Utc>) -> String {
         .with_timezone(&Local)
         .format("%Y-%m-%d %H:%M")
         .to_string()
+}
+
+/// 日付をフォーマット
+///
+/// # 引数
+/// - `date`: フォーマットする日付（Option型）
+///
+/// # 戻り値
+/// - 日付が存在する場合: "YYYY-MM-DD" 形式の文字列
+/// - 日付が存在しない場合: "-"
+pub fn format_date(date: &Option<NaiveDate>) -> String {
+    date.map(|d| d.format("%Y-%m-%d").to_string())
+        .unwrap_or_else(|| "-".to_string())
 }
 
 /// 説明文を指定された最大長に切り詰める

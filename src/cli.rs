@@ -1,4 +1,5 @@
 use crate::domain::task::{Priority, Status};
+use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 
@@ -37,6 +38,19 @@ impl FromStr for Filter {
             value: parts[1].to_string(),
         })
     }
+}
+
+/// 日付文字列をパースする関数
+///
+/// # 引数
+/// - `s`: YYYY-MM-DD形式の日付文字列
+///
+/// # 戻り値
+/// - `Ok(NaiveDate)`: パースに成功した場合
+/// - `Err(String)`: パースに失敗した場合、エラーメッセージを返す
+fn parse_date(s: &str) -> Result<NaiveDate, String> {
+    NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|e| format!("日付のパースに失敗しました: {}。YYYY-MM-DD形式で入力してください", e))
 }
 
 /// タスク管理アプリケーションのコマンドライン引数
@@ -97,6 +111,9 @@ pub enum TaskCommands {
         /// タスクに紐づけるタグのID（カンマ区切り）
         #[arg(long, value_delimiter = ',')]
         tags: Option<Vec<i32>>,
+        /// タスクの期限（YYYY-MM-DD形式）
+        #[arg(long, value_parser = parse_date)]
+        due_date: Option<NaiveDate>,
     },
     /// 指定されたIDのタスクを削除
     Delete {

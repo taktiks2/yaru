@@ -1,5 +1,9 @@
-use crate::{domain::task::Task, repository::Repository};
+use crate::{
+    domain::task::{Status, Task},
+    repository::Repository,
+};
 use anyhow::{Context, Result};
+use chrono::Utc;
 use entity::{prelude::*, task_tags, tasks};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
@@ -80,6 +84,17 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
     async fn create(&self, item: &Task) -> Result<Task> {
         let txn = self.db.begin().await?;
 
+        // completed_atの自動設定ロジック
+        let completed_at = if item.status == Status::Completed {
+            if item.completed_at.is_some() {
+                item.completed_at // 既に設定されていればそれを使用
+            } else {
+                Some(Utc::now()) // 未設定なら現在時刻を設定
+            }
+        } else {
+            None // Completed以外はNone
+        };
+
         // タスクを新規作成
         let new_task = tasks::ActiveModel {
             id: NotSet, // AUTO INCREMENT
@@ -89,6 +104,8 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             priority: Set(item.priority.as_ref().to_string()),
             created_at: NotSet,
             updated_at: NotSet,
+            due_date: Set(item.due_date),
+            completed_at: Set(completed_at.map(|dt| dt.into())),
         };
 
         let inserted_task = new_task
@@ -182,6 +199,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![],
+            None,
         );
 
         let created_task = repo.create(&new_task).await.unwrap();
@@ -231,6 +249,7 @@ mod tests {
             Status::InProgress,
             Priority::High,
             vec![tag1.clone(), tag2.clone()],
+            None,
         );
 
         let created_task = task_repo.create(&new_task).await.unwrap();
@@ -255,6 +274,7 @@ mod tests {
             Status::Pending,
             Priority::Low,
             vec![],
+            None,
         );
         let created_task = repo.create(&new_task).await.unwrap();
 
@@ -290,6 +310,7 @@ mod tests {
             Status::Pending,
             Priority::Low,
             vec![],
+            None,
         );
         let task2 = Task::new(
             0,
@@ -298,6 +319,7 @@ mod tests {
             Status::InProgress,
             Priority::Medium,
             vec![],
+            None,
         );
         let task3 = Task::new(
             0,
@@ -306,6 +328,7 @@ mod tests {
             Status::Completed,
             Priority::High,
             vec![],
+            None,
         );
 
         repo.create(&task1).await.unwrap();
@@ -331,6 +354,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![],
+            None,
         );
         let created_task = repo.create(&new_task).await.unwrap();
 
@@ -381,6 +405,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![tag],
+            None,
         );
         let created_task = task_repo.create(&new_task).await.unwrap();
 
@@ -412,6 +437,7 @@ mod tests {
             Status::Pending,
             Priority::Low,
             vec![],
+            None,
         );
         let task2 = Task::new(
             0,
@@ -420,6 +446,7 @@ mod tests {
             Status::Completed,
             Priority::Medium,
             vec![],
+            None,
         );
         let task3 = Task::new(
             0,
@@ -428,6 +455,7 @@ mod tests {
             Status::Completed,
             Priority::High,
             vec![],
+            None,
         );
 
         repo.create(&task1).await.unwrap();

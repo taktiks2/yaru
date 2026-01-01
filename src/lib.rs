@@ -76,7 +76,8 @@ async fn handle_task_command(
             status,
             priority,
             tags,
-        } => add_task(db, title, description, status, priority, tags).await,
+            due_date,
+        } => add_task(db, title, description, status, priority, tags, due_date).await,
         TaskCommands::Delete { id } => delete_task(db, id).await,
     }
 }
