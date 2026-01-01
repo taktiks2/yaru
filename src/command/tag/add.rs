@@ -13,19 +13,21 @@ pub async fn add_tag(
     name: Option<String>,
     description: Option<String>,
 ) -> Result<()> {
-    let name = match name {
-        Some(n) => n,
-        None => Text::new("タグの名前を入力してください")
-            .with_validator(validator::MinLengthValidator::new(1))
-            .prompt()
-            .context("タグの名前の入力に失敗しました")?,
-    };
-
-    let description = match description {
-        Some(d) => d,
-        None => Editor::new("タグの説明を入力してください")
-            .prompt()
-            .context("タグの説明の入力に失敗しました")?,
+    let (name, description) = match name {
+        Some(name) => {
+            anyhow::ensure!(!name.is_empty(), "名前は空にできません");
+            (name, description.unwrap_or_default())
+        }
+        None => {
+            let name = Text::new("タグの名前を入力してください")
+                .with_validator(validator::MinLengthValidator::new(1))
+                .prompt()
+                .context("タグの名前の入力に失敗しました")?;
+            let description = Editor::new("タグの説明を入力してください")
+                .prompt()
+                .unwrap_or_default();
+            (name, description)
+        }
     };
 
     // リポジトリを使用してタグを作成

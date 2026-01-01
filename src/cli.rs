@@ -84,7 +84,6 @@ pub enum TaskCommands {
     /// 新しいタスクを追加
     Add {
         /// タスクのタイトル
-        #[arg(short, long)]
         title: Option<String>,
         /// タスクの説明
         #[arg(short, long)]
@@ -102,7 +101,6 @@ pub enum TaskCommands {
     /// 指定されたIDのタスクを削除
     Delete {
         /// 削除するタスクのID
-        #[arg(short, long)]
         id: i32,
     },
 }
@@ -120,7 +118,6 @@ pub enum TagCommands {
     /// 新しいタグを追加
     Add {
         /// タグの名前
-        #[arg(short, long)]
         name: Option<String>,
         /// タグの説明
         #[arg(short, long)]
@@ -129,7 +126,6 @@ pub enum TagCommands {
     /// 指定されたIDのタグを削除
     Delete {
         /// 削除するタグのID
-        #[arg(short, long)]
         id: i32,
     },
 }
