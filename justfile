@@ -24,6 +24,7 @@ clean-all:
 db-reset:
     #!/usr/bin/env bash
     export DATABASE_URL="{{db_url}}"
+    export RUN_SEEDER=1
     cd migration && cargo run -- down && cargo run -- up
     echo "データベースをリセットしました"
 
@@ -34,9 +35,9 @@ db-generate:
     sea-orm-cli generate entity -o entity --lib
     echo "エンティティファイルを生成しました"
 
-# データベースリセット + エ���ティティ再生成
+# データベースリセット + エンティティ再生成
 db-refresh: db-reset db-generate
-    @echo "データベースのリセットとエンティティ生成が完了しました"
+    @echo "データベースのリセット・エンティティ生成が完了しました"
 
 # sqlite3でデータベースに接続
 db-connect:

@@ -1,3 +1,5 @@
+use entity::{tags, task_tags, tasks};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, TransactionTrait};
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
@@ -145,6 +147,13 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // 7. 開発用のシーダー実行
+        // 環境変数RUN_SEEDERが設定されている場合のみ実行
+        if std::env::var("RUN_SEEDER").is_ok() {
+            println!("環境変数RUN_SEEDERが設定されているため、シーダーを実行します...");
+            self.seed_data(manager).await?;
+        }
+
         Ok(())
     }
 
@@ -172,6 +181,149 @@ impl MigrationTrait for Migration {
         manager
             .drop_table(Table::drop().table(Tags::Table).to_owned())
             .await?;
+
+        Ok(())
+    }
+}
+
+impl Migration {
+    /// シーディングデータを投入する
+    async fn seed_data(&self, manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+        let db = manager.get_connection();
+
+        // トランザクションを開始（ベストプラクティス）
+        let txn = db.begin().await?;
+
+        println!("タグのサンプルデータを作成中...");
+
+        // 1. タグを作成
+        let tag_important = tags::ActiveModel {
+            name: Set("重要".to_owned()),
+            description: Set("優先度が高く、注目すべき項目".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        let tag_urgent = tags::ActiveModel {
+            name: Set("緊急".to_owned()),
+            description: Set("即座に対応が必要な項目".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        let _tag_bugfix = tags::ActiveModel {
+            name: Set("バグ修正".to_owned()),
+            description: Set("不具合の修正に関する項目".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        let tag_feature = tags::ActiveModel {
+            name: Set("新機能".to_owned()),
+            description: Set("新しい機能の追加に関する項目".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        println!("タスクのサンプルデータを作成中...");
+
+        // 2. タスクを作成
+        let task1 = tasks::ActiveModel {
+            title: Set("データベース設計の見直し".to_owned()),
+            description: Set(
+                "パフォーマンス向上のためのインデックス最適化とテーブル構造の見直し".to_owned(),
+            ),
+            status: Set("Pending".to_owned()),
+            priority: Set("High".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        let task2 = tasks::ActiveModel {
+            title: Set("ユニットテストの追加".to_owned()),
+            description: Set("リポジトリ層とコマンド層のユニットテストを作成".to_owned()),
+            status: Set("InProgress".to_owned()),
+            priority: Set("Medium".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        let _task3 = tasks::ActiveModel {
+            title: Set("ドキュメント作成".to_owned()),
+            description: Set("API仕様書とユーザーマニュアルの作成".to_owned()),
+            status: Set("Pending".to_owned()),
+            priority: Set("Low".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        let task4 = tasks::ActiveModel {
+            title: Set("パフォーマンス改善".to_owned()),
+            description: Set("クエリの最適化とキャッシュ機構の導入".to_owned()),
+            status: Set("Completed".to_owned()),
+            priority: Set("High".to_owned()),
+            ..Default::default()
+        }
+        .insert(&txn)
+        .await?;
+
+        println!("タスクとタグの関連付けを作成中...");
+
+        // 3. タスクとタグの関連付け
+        // task1: 重要、緊急
+        task_tags::ActiveModel {
+            task_id: Set(task1.id),
+            tag_id: Set(tag_important.id),
+        }
+        .insert(&txn)
+        .await?;
+
+        task_tags::ActiveModel {
+            task_id: Set(task1.id),
+            tag_id: Set(tag_urgent.id),
+        }
+        .insert(&txn)
+        .await?;
+
+        // task2: 重要
+        task_tags::ActiveModel {
+            task_id: Set(task2.id),
+            tag_id: Set(tag_important.id),
+        }
+        .insert(&txn)
+        .await?;
+
+        // task3: なし（タグなしのタスク例）
+
+        // task4: 重要、新機能
+        task_tags::ActiveModel {
+            task_id: Set(task4.id),
+            tag_id: Set(tag_important.id),
+        }
+        .insert(&txn)
+        .await?;
+
+        task_tags::ActiveModel {
+            task_id: Set(task4.id),
+            tag_id: Set(tag_feature.id),
+        }
+        .insert(&txn)
+        .await?;
+
+        // トランザクションをコミット
+        txn.commit().await?;
+
+        println!("シーダーの実行が完了しました！");
+        println!("  - タグ: 4件");
+        println!("  - タスク: 4件");
+        println!("  - タスク-タグ関連: 5件");
 
         Ok(())
     }
