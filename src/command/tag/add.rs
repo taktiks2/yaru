@@ -25,7 +25,7 @@ pub async fn add_tag(
                 .context("タグの名前の入力に失敗しました")?;
             let description = Editor::new("タグの説明を入力してください")
                 .prompt()
-                .context("タグの説明の入力に失敗しました")?;
+                .unwrap_or_default();
             (name, description)
         }
     };

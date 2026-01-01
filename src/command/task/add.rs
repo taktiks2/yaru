@@ -54,7 +54,7 @@ pub async fn add_task(
                 .context("タスクのタイトルの入力に失敗しました")?;
             let d = Editor::new("タスクの説明を入力してください")
                 .prompt()
-                .context("タスクの説明の入力に失敗しました")?;
+                .unwrap_or_default();
             let s = Select::new(
                 "ステータスを選択してください",
                 Status::value_variants().to_vec(),
