@@ -2,6 +2,55 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.0](https://github.com/taktiks2/yaru/compare/9cb94e1628391943dd23402d44f681a7e70bd878..0.5.0) - 2026-01-01
+#### Features
+- TaskRepositoryとTagRepositoryを実装 - ([b10e310](https://github.com/taktiks2/yaru/commit/b10e31091c2d741783d5a5073adfa1aadd090cb2)) - taktiks2
+- SQLiteデータベースへの完全移行 - ([51f3d02](https://github.com/taktiks2/yaru/commit/51f3d02565b6569c6ea33fccdf78b60d8ba93fcb)) - taktiks2
+- SqliteRepositoryを実装 - ([a636d71](https://github.com/taktiks2/yaru/commit/a636d7175af94b6c0d0db4196c903de7b44f177a)) - taktiks2
+- SeaORM Entityを自動生成 - ([9b69dec](https://github.com/taktiks2/yaru/commit/9b69decdc913a9887fdd5f8d2b0d73b1b94c0c32)) - taktiks2
+- tasks/tags/task_tagsテーブルのマイグレーションを実装 - ([967c68d](https://github.com/taktiks2/yaru/commit/967c68d4479736eec3db89d6ed0ab854cadb1f8d)) - taktiks2
+#### Performance
+- タスク取得時のN+1問題を解決 - ([58b1c8b](https://github.com/taktiks2/yaru/commit/58b1c8b16fcf4f79b671fed7785c523a2a6acc2a)) - taktiks2
+#### Documentation
+- リポジトリパターンをSQLite実装に更新 - ([04160b1](https://github.com/taktiks2/yaru/commit/04160b1ccb68ff719c0df1a4bdd2edb81de860dc)) - taktiks2
+- CLAUDE.mdのRepository traitドキュメントを更新 - ([02db392](https://github.com/taktiks2/yaru/commit/02db39226e4181c54aa42fd2b2c4d7bf3c2ab817)) - taktiks2
+- mod.rsの利用禁止ルールを追加 - ([cf00159](https://github.com/taktiks2/yaru/commit/cf00159a2bd86ce6670136d0a728f806ab8d0a2e)) - taktiks2
+#### Tests
+- テストコードをSQLite移行に対応 - ([6e9f6e9](https://github.com/taktiks2/yaru/commit/6e9f6e9d88c7d8c525db9dcd6fd0a892b698daff)) - taktiks2
+#### Build System
+- データベース用のコマンドを追加 - ([aa40d2f](https://github.com/taktiks2/yaru/commit/aa40d2fa5eb0609ee022979290e99643a0415522)) - taktiks2
+- SeaORMとSQLite依存関係を追加 - ([3c91b88](https://github.com/taktiks2/yaru/commit/3c91b8846060ee1116e8ed3ca735e07bd569b9b2)) - taktiks2
+#### Refactoring
+- as_refへの変更 - ([5540f4e](https://github.com/taktiks2/yaru/commit/5540f4e6c7f20ee6294e60b439fd0aa9b29e9914)) - taktiks2
+- tasks変数の削除 - ([26d7976](https://github.com/taktiks2/yaru/commit/26d7976e129047bba63aacc45a7254c7f19c1c2c)) - taktiks2
+- コマンドレイヤーからall_tagsパラメータを削除 - ([3a9f891](https://github.com/taktiks2/yaru/commit/3a9f8919aa387a7d6fef94fe2cfdf793a1b6c115)) - taktiks2
+- タグ表示をIDから名前に変更 - ([88c1eff](https://github.com/taktiks2/yaru/commit/88c1eff60534befe79ecbe034e5a56bddb670b38)) - taktiks2
+- リポジトリの変換処理をトレイトベースに統一 - ([a0bd19e](https://github.com/taktiks2/yaru/commit/a0bd19e418159481eb3251569cab3800a7dd256e)) - taktiks2
+- TaskのtagsをVec<i32>からVec<Tag>に変更 - ([a230af8](https://github.com/taktiks2/yaru/commit/a230af8fda4b5449045e8cadb9551692b8fc5fc7)) - taktiks2
+- 未使用のJSONファイルパス設定を削除 - ([b519f0c](https://github.com/taktiks2/yaru/commit/b519f0c87105191dcb933b80dae6bf0239f7d891)) - taktiks2
+- コマンドのエラーハンドリングとメッセージを改善 - ([f269715](https://github.com/taktiks2/yaru/commit/f26971524bf97b364db248a77a30020efc49d4cc)) - taktiks2
+- StatusとPriorityのデータベース変換メソッドを追加 - ([ee53c20](https://github.com/taktiks2/yaru/commit/ee53c201c92d67dd5241917b25e057d1f3e92e91)) - taktiks2
+- マイグレーションスキーマの外部キー制約とトリガー条件を改善 - ([8140028](https://github.com/taktiks2/yaru/commit/8140028fb5b7b705c399e97e1de89996b63f5384)) - taktiks2
+- タスクリストのフィルタリング処理を改善 - ([d7b357e](https://github.com/taktiks2/yaru/commit/d7b357e61dbde2854bd32429245c641102fec863)) - taktiks2
+- ID型をu64からi32に統一 - ([101fb1f](https://github.com/taktiks2/yaru/commit/101fb1f2b9d7ec6a5536a06272767c817a699c0d)) - taktiks2
+- データベースマイグレーションのスキーマ定義を改善 - ([9f4d9a3](https://github.com/taktiks2/yaru/commit/9f4d9a3b0a117a86e4b8c122e3efc37d73ab1301)) - taktiks2
+- DateTime型への変換 - ([83e3a7d](https://github.com/taktiks2/yaru/commit/83e3a7dcc27401f68bb42e168c02c3b9ad4724c6)) - taktiks2
+- domain層の移動に伴いインポートパスを修正 - ([08e06ba](https://github.com/taktiks2/yaru/commit/08e06baeff55e17baafe1a07edf122c8bec7a21d)) - taktiks2
+- ドメインモデルをdomain/配下に移動 - ([008ca9d](https://github.com/taktiks2/yaru/commit/008ca9d230801cc3ac2fd2fe60d7335da8c58fc4)) - taktiks2
+- コマンド層を非同期化しTaskRepository/TagRepositoryを使用 - ([a5e36e9](https://github.com/taktiks2/yaru/commit/a5e36e9e614e3e6f3a9c5340c98b189319666c5a)) - taktiks2
+- main.rsとlib.rsを非同期化 - ([2c85beb](https://github.com/taktiks2/yaru/commit/2c85beb23b311430308d1d95824f9b443609dff4)) - taktiks2
+- SqliteRepositoryを削除しTaskRepository/TagRepositoryに移行 - ([c94df27](https://github.com/taktiks2/yaru/commit/c94df278f9fa3ab292d3ef60b3deaa86369f0283)) - taktiks2
+- Repository<T>トレイトを非同期化しHasIdトレイトを削除 - ([801a52e](https://github.com/taktiks2/yaru/commit/801a52ef237db55ecf56fcb8f3799d2aab9e01e4)) - taktiks2
+#### Miscellaneous Chores
+- データベースパスを環境変数HOMEから動的に取得 - ([50bddf5](https://github.com/taktiks2/yaru/commit/50bddf5024825fb164a6e852ccb1f2856465ee6b)) - taktiks2
+- 未使用のJSON関数にallow(dead_code)を追加 - ([6881fca](https://github.com/taktiks2/yaru/commit/6881fca0abb5981f3ac8d052ce5e84f448c0328f)) - taktiks2
+- Sea-ORM Migrationの初期化 - ([9cb94e1](https://github.com/taktiks2/yaru/commit/9cb94e1628391943dd23402d44f681a7e70bd878)) - taktiks2
+#### Styling
+- format - ([c2ebf34](https://github.com/taktiks2/yaru/commit/c2ebf348959da5f124b461b1e8736ec1c3f09f2f)) - taktiks2
+- フォーマット - ([ede4abb](https://github.com/taktiks2/yaru/commit/ede4abb6aeee0eb5cd92053cde9af5fad8c50e50)) - taktiks2
+
+- - -
+
 ## [0.4.0](https://github.com/taktiks2/yaru/compare/fd8fe75aff051229705923d22cc33c08a5084180..0.4.0) - 2025-12-30
 #### Features
 - showコマンドの実装を追加 - ([312f261](https://github.com/taktiks2/yaru/commit/312f2617c19e430732030a9c38d682c421f56538)) - taktiks2
