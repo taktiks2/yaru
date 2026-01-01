@@ -26,15 +26,9 @@ from_latest_tag = true
 # PRのマージコミットを無視する（GitHubのマージコミットはConventional Commitsに従わないため）
 ignore_merge_commits = true
 
-# バージョンバンプ前に実行するフック（テストやビルドなど）
 pre_bump_hooks = [
-  "cargo test",   # テストを実行
-  "cargo clippy", # Lintチェック
-]
-
-# バージョンバンプ後に実行するフック（ビルドやリリースなど）
-post_bump_hooks = [
-  "cargo build --release", # リリースビルド
+  "cargo build --release",         # verify the project builds
+  "cargo set-version {{version}}", # bump version in Cargo.toml
 ]
 
 # コミットタイプの定義

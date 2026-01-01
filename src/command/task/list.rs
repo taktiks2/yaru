@@ -2,8 +2,8 @@ use crate::{
     cli::{Filter, FilterKey},
     display::create_task_table,
     domain::task::{Status, Task},
-    repository::task::TaskRepository,
     repository::Repository,
+    repository::task::TaskRepository,
 };
 use anyhow::Result;
 use sea_orm::DatabaseConnection;

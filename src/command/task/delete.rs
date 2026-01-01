@@ -1,4 +1,4 @@
-use crate::repository::{task::TaskRepository, Repository};
+use crate::repository::{Repository, task::TaskRepository};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 

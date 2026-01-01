@@ -441,8 +441,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(completed_tasks.len(), 2);
-        assert!(completed_tasks
-            .iter()
-            .all(|t| t.status == Status::Completed));
+        assert!(
+            completed_tasks
+                .iter()
+                .all(|t| t.status == Status::Completed)
+        );
     }
 }

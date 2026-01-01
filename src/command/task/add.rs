@@ -1,10 +1,10 @@
 use crate::{
     display::create_task_detail_table,
     domain::task::{Priority, Status, Task},
-    repository::{tag::TagRepository, task::TaskRepository, Repository},
+    repository::{Repository, tag::TagRepository, task::TaskRepository},
 };
 use anyhow::{Context, Result};
-use inquire::{validator, Editor, Text};
+use inquire::{Editor, Text, validator};
 use sea_orm::DatabaseConnection;
 
 /// 新しいタスクを追加
