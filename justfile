@@ -42,3 +42,11 @@ db-refresh: db-reset db-generate
 # sqlite3でデータベースに接続
 db-connect:
     sqlite3 {{env_var('HOME')}}/.config/yaru/yaru.db
+
+# serenaの初期化処理
+serena-setup:
+  claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"
+
+# project.ymlが生成されてから実行する
+serena-index:
+  uvx --from git+https://github.com/oraios/serena serena project index
