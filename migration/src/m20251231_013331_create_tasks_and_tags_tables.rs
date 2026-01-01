@@ -1,5 +1,5 @@
 use entity::{tags, task_tags, tasks};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set};
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
@@ -148,11 +148,8 @@ impl MigrationTrait for Migration {
             .await?;
 
         // 7. 開発用のシーダー実行
-        // 環境変数RUN_SEEDERが設定されている場合のみ実行
-        if std::env::var("RUN_SEEDER").is_ok() {
-            println!("環境変数RUN_SEEDERが設定されているため、シーダーを実行します...");
-            self.seed_data(manager).await?;
-        }
+        crate::seeder::run_if_enabled(manager, |txn| async move { self.seed_data(txn).await })
+            .await?;
 
         Ok(())
     }
@@ -188,12 +185,7 @@ impl MigrationTrait for Migration {
 
 impl Migration {
     /// シーディングデータを投入する
-    async fn seed_data(&self, manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-        let db = manager.get_connection();
-
-        // トランザクションを開始（ベストプラクティス）
-        let txn = db.begin().await?;
-
+    async fn seed_data(&self, txn: sea_orm::DatabaseTransaction) -> Result<(), DbErr> {
         println!("タグのサンプルデータを作成中...");
 
         // 1. タグを作成
@@ -320,7 +312,6 @@ impl Migration {
         // トランザクションをコミット
         txn.commit().await?;
 
-        println!("シーダーの実行が完了しました！");
         println!("  - タグ: 4件");
         println!("  - タスク: 4件");
         println!("  - タスク-タグ関連: 5件");
