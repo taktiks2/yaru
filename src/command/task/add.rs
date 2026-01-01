@@ -25,8 +25,6 @@ pub async fn add_task(
 
     let (title, description, status, priority, tags, due_date) = match title {
         Some(title) => {
-            anyhow::ensure!(!title.is_empty(), "タイトルは空にできません");
-
             let tags = match tag_ids {
                 Some(ref ids) => ids
                     .iter()
