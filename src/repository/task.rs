@@ -200,7 +200,7 @@ mod tests {
         let task_repo = TaskRepository::new(&db);
 
         // タグを作成（直接Entityを使用）
-        use crate::entity::tags;
+        use entity::tags;
         use sea_orm::ActiveValue::NotSet;
         let tag1 = tags::ActiveModel {
             id: NotSet,
@@ -209,7 +209,7 @@ mod tests {
             created_at: Set(chrono::Utc::now().into()),
             updated_at: Set(chrono::Utc::now().into()),
         };
-        let inserted_tag1 = tag1.insert(&db).await.unwrap();
+        let inserted_tag1: tags::Model = tag1.insert(&db).await.unwrap();
 
         let tag2 = tags::ActiveModel {
             id: NotSet,
@@ -218,7 +218,7 @@ mod tests {
             created_at: Set(chrono::Utc::now().into()),
             updated_at: Set(chrono::Utc::now().into()),
         };
-        let inserted_tag2 = tag2.insert(&db).await.unwrap();
+        let inserted_tag2: tags::Model = tag2.insert(&db).await.unwrap();
 
         // タグ付きタスクを作成
         use crate::domain::tag::Tag;
@@ -360,7 +360,7 @@ mod tests {
         let task_repo = TaskRepository::new(&db);
 
         // タグを作成
-        use crate::entity::tags;
+        use entity::tags;
         use sea_orm::ActiveValue::NotSet;
         let tag = tags::ActiveModel {
             id: NotSet,
@@ -369,7 +369,7 @@ mod tests {
             created_at: Set(chrono::Utc::now().into()),
             updated_at: Set(chrono::Utc::now().into()),
         };
-        let inserted_tag = tag.insert(&db).await.unwrap();
+        let inserted_tag: tags::Model = tag.insert(&db).await.unwrap();
 
         // タグ付きタスクを作成
         use crate::domain::tag::Tag;
