@@ -1,4 +1,4 @@
-use crate::repository::{tag::TagRepository, Repository};
+use crate::repository::{Repository, tag::TagRepository};
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 

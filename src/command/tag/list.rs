@@ -1,6 +1,6 @@
 use crate::{
     display::create_tag_table,
-    repository::{tag::TagRepository, Repository},
+    repository::{Repository, tag::TagRepository},
 };
 use anyhow::Result;
 use sea_orm::DatabaseConnection;

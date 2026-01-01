@@ -197,8 +197,8 @@ impl TryFrom<(tasks::Model, Vec<tags::Model>)> for Task {
 mod tests {
     use super::*;
     use crate::domain::tag::Tag;
-    use entity::{tags, tasks};
     use chrono::Utc;
+    use entity::{tags, tasks};
     use sea_orm::prelude::DateTimeWithTimeZone;
 
     #[test]

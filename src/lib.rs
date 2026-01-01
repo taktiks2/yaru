@@ -7,7 +7,7 @@ mod json;
 mod repository;
 
 use anyhow::{Context, Result};
-use clap::{error::ErrorKind, Parser};
+use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use command::{
     tag::{add_tag, delete_tag, list_tags, show_tag},

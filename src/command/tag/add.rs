@@ -1,10 +1,10 @@
 use crate::{
     display::create_tag_detail_table,
     domain::tag::Tag,
-    repository::{tag::TagRepository, Repository},
+    repository::{Repository, tag::TagRepository},
 };
 use anyhow::{Context, Result};
-use inquire::{validator, Editor, Text};
+use inquire::{Editor, Text, validator};
 use sea_orm::DatabaseConnection;
 
 /// 新しいタグを追加
