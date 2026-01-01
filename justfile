@@ -25,16 +25,15 @@ db-reset:
     #!/usr/bin/env bash
     export DATABASE_URL="{{db_url}}"
     cd migration && cargo run -- down && cargo run -- up
-    @echo "データベースをリセットしました"
+    echo "データベースをリセットしました"
 
 # エンティティファイルを再生成
 db-generate:
     #!/usr/bin/env bash
     export DATABASE_URL="{{db_url}}"
-    sea-orm-cli generate entity -o src/entity --lib
-    rm src/entity.rs
-    mv src/entity/lib.rs src/entity.rs
-    @echo "エンティティファイルを生成しました"
+    sea-orm-cli generate entity -o src/entity
+    mv src/entity/mod.rs src/entity.rs
+    echo "エンティティファイルを生成しました"
 
 # データベースリセット + エ���ティティ再生成
 db-refresh: db-reset db-generate
