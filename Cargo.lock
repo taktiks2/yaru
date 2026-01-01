@@ -623,7 +623,7 @@ checksum = "34aa73646ffb006b8f5147f3dc182bd4bcb190227ce861fc4a4844bf8e3cb2c0"
 
 [[package]]
 name = "entity"
-version = "0.1.0"
+version = "0.6.0"
 dependencies = [
  "sea-orm",
 ]
@@ -1236,7 +1236,7 @@ checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
 name = "migration"
-version = "0.1.0"
+version = "0.6.0"
 dependencies = [
  "dotenvy",
  "entity",
@@ -3263,7 +3263,7 @@ checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "yaru"
-version = "0.1.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",

@@ -2,6 +2,37 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.6.0](https://github.com/taktiks2/yaru/compare/d91298401fdcad5e389fbf456cd66f5f4ea753e7..0.6.0) - 2026-01-01
+#### Features
+- タスク追加時の対話モードでVimモードを有効化 - ([62de22b](https://github.com/taktiks2/yaru/commit/62de22b4e9d2fa315683b7cddd59cfa8c6963c33)) - taktiks2
+- タスク追加コマンドのインターフェースを拡張 - ([72bf616](https://github.com/taktiks2/yaru/commit/72bf616216ad89f4c4588755c19a8227e740045f)) - taktiks2
+- CLIのインターフェース変更 - ([d8100c6](https://github.com/taktiks2/yaru/commit/d8100c63d2e3c2cee5c18546854407aba5a48793)) - taktiks2
+#### Documentation
+- seeder.rsに型パラメータとライフタイムの詳細な解説コメントを追加 - ([626e19b](https://github.com/taktiks2/yaru/commit/626e19bb271f7c003780da80b280439a30f1c708)) - taktiks2
+#### Build System
+- seeding機能の追加 - ([60fb699](https://github.com/taktiks2/yaru/commit/60fb699a5e47f2478d422e6e5d45f8ab623c1695)) - taktiks2
+- Serena統合用のjustコマンドを追加 - ([3f6d4ad](https://github.com/taktiks2/yaru/commit/3f6d4adaf5e7899b412e54a503203fcebee6243f)) - taktiks2
+- コマンドの修正 - ([d912984](https://github.com/taktiks2/yaru/commit/d91298401fdcad5e389fbf456cd66f5f4ea753e7)) - taktiks2
+#### Continuous Integration
+- cargo set-versionが実行できるようにする - ([19a464b](https://github.com/taktiks2/yaru/commit/19a464b595b5bec7514ee0702efd2623374a846c)) - taktiks2
+- releaseフローの修正 - ([af81f72](https://github.com/taktiks2/yaru/commit/af81f729b674a1f4e5a7f7a5433cc4fff934e0f5)) - taktiks2
+#### Refactoring
+- 説明はデフォルト値を利用 - ([b120ae7](https://github.com/taktiks2/yaru/commit/b120ae72ec7d09788aada739f490028998c485ff)) - taktiks2
+- タスク詳細表示でas_refの代わりにto_stringを使用 - ([aa6b5cf](https://github.com/taktiks2/yaru/commit/aa6b5cf5519e38bd7fa9e45a44bf046ee219c2b9)) - taktiks2
+- タグ追加コマンドのインターフェースを改善 - ([4f2ed5e](https://github.com/taktiks2/yaru/commit/4f2ed5e92770f3abc9ecf800e2dfb3d74a03557a)) - taktiks2
+- seederのトランザクション処理を改善 - ([594f5ef](https://github.com/taktiks2/yaru/commit/594f5ef15332069fde8f074036047b191cacfb00)) - taktiks2
+- seeder用の関数を作成 - ([8b5c493](https://github.com/taktiks2/yaru/commit/8b5c4934899e2172d5afc8ad38bc1f4ea37db81d)) - taktiks2
+- entityをライブラリ化と依存関係の整理 - ([21ba284](https://github.com/taktiks2/yaru/commit/21ba2843399b96834bb5faa25a7903ec500e817e)) - taktiks2
+- commandsディレクトリをcommandにリネーム - ([aefcecf](https://github.com/taktiks2/yaru/commit/aefcecfc671426735753c86e4efca80182528212)) - taktiks2
+#### Miscellaneous Chores
+- lockの削除 - ([3937071](https://github.com/taktiks2/yaru/commit/3937071e73a274fa43a1e283c0d4b875720face8)) - taktiks2
+- editionを統一 - ([53cc880](https://github.com/taktiks2/yaru/commit/53cc880c56d992138598cd1ecac3fc6ad9f4ae1b)) - taktiks2
+- Serenaプロジェクト設定とメモリファイルを追加 - ([54eb522](https://github.com/taktiks2/yaru/commit/54eb52262762be6ab4a6f90a7259c9fbea31ace5)) - taktiks2
+#### Styling
+- フォーマット - ([918069e](https://github.com/taktiks2/yaru/commit/918069e31e3ce3dde140f083ee76775c6e17da06)) - taktiks2
+
+- - -
+
 ## [0.5.0](https://github.com/taktiks2/yaru/compare/9cb94e1628391943dd23402d44f681a7e70bd878..0.5.0) - 2026-01-01
 #### Features
 - TaskRepositoryとTagRepositoryを実装 - ([b10e310](https://github.com/taktiks2/yaru/commit/b10e31091c2d741783d5a5073adfa1aadd090cb2)) - taktiks2
