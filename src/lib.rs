@@ -1,5 +1,5 @@
 mod cli;
-mod commands;
+mod command;
 mod config;
 mod display;
 mod domain;
@@ -10,7 +10,7 @@ mod repository;
 use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
-use commands::{
+use command::{
     tag::{add_tag, delete_tag, list_tags, show_tag},
     task::{add_task, delete_task, list_tasks, show_task},
 };

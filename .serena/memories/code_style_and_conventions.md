@@ -9,8 +9,8 @@ Rustの現代的なモジュール構成では、`mod.rs` は非推奨です。
 ```
 src/
 ├── lib.rs
-├── commands.rs          # commandsモジュールの定義とエクスポート
-├── commands/            # サブモジュールの実装
+├── command.rs          # commandモジュールの定義とエクスポート
+├── command/            # サブモジュールの実装
 │   ├── task/
 │   │   ├── add.rs
 │   │   ├── list.rs
@@ -23,7 +23,7 @@ src/
 
 **モジュール宣言の例:**
 ```rust
-// commands.rs
+// command.rs
 pub mod task;
 pub mod tag;
 

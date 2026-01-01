@@ -10,8 +10,8 @@ yaru/
 │   ├── cli.rs                     # CLI引数定義（Args, Commands, TaskCommands, TagCommands）
 │   ├── config.rs                  # TOML設定ファイル管理
 │   ├── json.rs                    # JSON操作の汎用関数（load_json, save_json）
-│   ├── commands.rs                # コマンドモジュールのエクスポート
-│   ├── commands/
+│   ├── command.rs                # コマンドモジュールのエクスポート
+│   ├── command/
 │   │   ├── task/                  # タスク管理コマンド
 │   │   │   ├── add.rs             # タスク追加（対話モード対応）
 │   │   │   ├── list.rs            # タスク一覧表示（フィルタ機能）
@@ -60,7 +60,7 @@ yaru/
 - `TagCommands`: タグ管理サブコマンド
 - `Filter`: フィルタ機能のパース
 
-### コマンド層 (commands/)
+### コマンド層 (command/)
 各サブコマンドの実装。データベース接続を受け取り、ビジネスロジックを実行。
 
 **タスク管理:**

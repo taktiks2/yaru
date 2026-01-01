@@ -12,18 +12,14 @@ yaru
 - ステータスフィルタリング（pending, in-progress, completed）
 - 優先度設定（Low, Medium, High）
 - 対話モード（タイトルやステータスを対話的に入力）
-- JSON形式でのデータ永続化
 - SQLiteデータベース対応（SeaORMを使用）
 
 ## 特徴
 - **シンプルなインターフェース**: 直感的なコマンドでタスク管理
 - **日本語対応**: 完全日本語対応のUI
 - **軽量**: Rustで実装され、高速に動作
-- **JSONベース**: 人間が読めるJSON形式でデータを保存
 - **フィルタ機能**: ステータスでタスクをフィルタリング
 
 ## データの保存先
 - デフォルト設定ファイル: `~/.config/yaru/config.toml`
-- デフォルトタスクファイル: `~/.config/yaru/tasks.json`
-- デフォルトタグファイル: `~/.config/yaru/tags.json`
 - SQLiteデータベース: `~/.config/yaru/yaru.db`
