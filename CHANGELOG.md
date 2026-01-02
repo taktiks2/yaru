@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.8.0](https://github.com/taktiks2/yaru/compare/c315337765dfa6f5a73de78606c332493ef6067f..0.8.0) - 2026-01-02
+#### Features
+- editコマンドの実装を追加 - ([c315337](https://github.com/taktiks2/yaru/commit/c315337765dfa6f5a73de78606c332493ef6067f)) - taktiks2
+#### Documentation
+- copilotのレビュールールを追加 - ([8d22912](https://github.com/taktiks2/yaru/commit/8d229122ba35718b2cb9da98e79f0f130aa69a2a)) - taktiks2
+#### Refactoring
+- ステータス選択肢の順番変更 - ([db92d2d](https://github.com/taktiks2/yaru/commit/db92d2d6c5fcbd13379fb29303e265d122075797)) - taktiks2
+- N+1問題の解消 - ([df04b55](https://github.com/taktiks2/yaru/commit/df04b552f47dc58a0dba37a5a8b22266a81c6441)) - taktiks2
+- タグのバリデーションを一箇所にまとめる - ([a077a69](https://github.com/taktiks2/yaru/commit/a077a692a602b004f8c4f1c8fb721b6aa07b2a99)) - taktiks2
+- 設定された処理はインタラクションで再度聞かないようにする - ([d3ffd3a](https://github.com/taktiks2/yaru/commit/d3ffd3a59ae0c633ed48fbcf786f0a3c5eb3ee07)) - taktiks2
+- Params構造体の適用 - ([6143151](https://github.com/taktiks2/yaru/commit/61431518cd9ba3f458192f159a3aa2ef16f509b7)) - taktiks2
+- 引数モードと対話モードの判定ロジックを明確化 - ([0deeaa8](https://github.com/taktiks2/yaru/commit/0deeaa858445635cba47f243e3a76e69f9912bb1)) - taktiks2
+
+- - -
+
 ## [0.7.0](https://github.com/taktiks2/yaru/compare/534ad58dcde0667e20279ea314987d2a6bdb6f31..0.7.0) - 2026-01-02
 #### Features
 - タスクにdue_dateとcompleted_atフィールドを追加 - ([af84cc2](https://github.com/taktiks2/yaru/commit/af84cc27626599e717873a897255618a2a58de17)) - taktiks2
