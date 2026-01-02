@@ -23,76 +23,78 @@ pub async fn add_task(
     let tag_repo = TagRepository::new(db);
     let available_tags = tag_repo.find_all().await?;
 
-    let (title, description, status, priority, tags, due_date) = match title {
-        Some(title) => {
-            let tags = match tag_ids {
-                Some(ref ids) => ids
-                    .iter()
-                    .map(|id| {
-                        available_tags
-                            .iter()
-                            .find(|t| t.id == *id)
-                            .cloned()
-                            .ok_or_else(|| anyhow::anyhow!("存在しないタグID: {}", id))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-                None => vec![],
-            };
+    // 引数モードか対話モードか判定
+    let is_interactive = title.is_none();
 
-            (
-                title,
-                description.unwrap_or_default(),
-                status.unwrap_or(Status::Pending),
-                priority.unwrap_or(Priority::Medium),
-                tags,
-                due_date,
-            )
-        }
-        None => {
-            let t = Text::new("タスクのタイトルを入力してください")
-                .with_validator(validator::MinLengthValidator::new(1))
-                .prompt()
-                .context("タスクのタイトルの入力に失敗しました")?;
-            let d = Editor::new("タスクの説明を入力してください")
-                .prompt()
-                .unwrap_or_default();
-            let s = Select::new(
-                "ステータスを選択してください",
-                Status::value_variants().to_vec(),
+    let (title, description, status, priority, tags, due_date) = if is_interactive {
+        // 対話モード
+        let t = Text::new("タスクのタイトルを入力してください")
+            .with_validator(validator::MinLengthValidator::new(1))
+            .prompt()
+            .context("タスクのタイトルの入力に失敗しました")?;
+        let d = Editor::new("タスクの説明を入力してください")
+            .prompt()
+            .unwrap_or_default();
+        let s = Select::new(
+            "ステータスを選択してください",
+            Status::value_variants().to_vec(),
+        )
+        .with_vim_mode(true)
+        .prompt()
+        .unwrap_or(Status::Pending);
+        let p = Select::new(
+            "優先度を選択してください",
+            Priority::value_variants().to_vec(),
+        )
+        .with_vim_mode(true)
+        .prompt()
+        .unwrap_or(Priority::Medium);
+
+        // タグ選択
+        let tags = if available_tags.is_empty() {
+            // タグが0件の場合は空のVecを返す
+            Vec::new()
+        } else {
+            // MultiSelectでタグを選択
+            MultiSelect::new(
+                "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
+                available_tags.clone(),
             )
             .with_vim_mode(true)
             .prompt()
-            .unwrap_or(Status::Pending);
-            let p = Select::new(
-                "優先度を選択してください",
-                Priority::value_variants().to_vec(),
-            )
-            .with_vim_mode(true)
+            .unwrap_or_default()
+        };
+
+        // 期限の入力
+        let due = DateSelect::new("期限を選択してください（Escでスキップ）")
             .prompt()
-            .unwrap_or(Priority::Medium);
+            .ok();
 
-            // タグ選択
-            let tags = if available_tags.is_empty() {
-                // タグが0件の場合は空のVecを返す
-                Vec::new()
-            } else {
-                // MultiSelectでタグを選択
-                MultiSelect::new(
-                    "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
-                    available_tags.clone(),
-                )
-                .with_vim_mode(true)
-                .prompt()
-                .unwrap_or_default()
-            };
+        (t, d, s, p, tags, due)
+    } else {
+        // 引数モード
+        let tags = match tag_ids {
+            Some(ref ids) => ids
+                .iter()
+                .map(|id| {
+                    available_tags
+                        .iter()
+                        .find(|t| t.id == *id)
+                        .cloned()
+                        .ok_or_else(|| anyhow::anyhow!("存在しないタグID: {}", id))
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+            None => vec![],
+        };
 
-            // 期限の入力
-            let due = DateSelect::new("期限を選択してください（Escでスキップ）")
-                .prompt()
-                .ok();
-
-            (t, d, s, p, tags, due)
-        }
+        (
+            title.unwrap_or_default(),
+            description.unwrap_or_default(),
+            status.unwrap_or(Status::Pending),
+            priority.unwrap_or(Priority::Medium),
+            tags,
+            due_date,
+        )
     };
 
     // リポジトリを使用してタスクを作成

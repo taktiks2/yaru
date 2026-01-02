@@ -13,18 +13,22 @@ pub async fn add_tag(
     name: Option<String>,
     description: Option<String>,
 ) -> Result<()> {
-    let (name, description) = match name {
-        Some(name) => (name, description.unwrap_or_default()),
-        None => {
-            let name = Text::new("タグの名前を入力してください")
-                .with_validator(validator::MinLengthValidator::new(1))
-                .prompt()
-                .context("タグの名前の入力に失敗しました")?;
-            let description = Editor::new("タグの説明を入力してください")
-                .prompt()
-                .unwrap_or_default();
-            (name, description)
-        }
+    // 引数モードか対話モードか判定
+    let is_interactive = name.is_none() && description.is_none();
+
+    let (name, description) = if is_interactive {
+        // 対話モード
+        let n = Text::new("タグの名前を入力してください")
+            .with_validator(validator::MinLengthValidator::new(1))
+            .prompt()
+            .context("タグの名前の入力に失敗しました")?;
+        let d = Editor::new("タグの説明を入力してください")
+            .prompt()
+            .unwrap_or_default();
+        (n, d)
+    } else {
+        // 引数モード
+        (name.unwrap_or_default(), description.unwrap_or_default())
     };
 
     // リポジトリを使用してタグを作成
