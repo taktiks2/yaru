@@ -8,12 +8,17 @@ use crate::{
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
 
+/// タスク一覧表示のパラメータ
+pub struct ListTasksParams {
+    pub filters: Option<Vec<Filter>>,
+}
+
 /// 全てのタスクを一覧表示
-pub async fn list_tasks(db: &DatabaseConnection, filters: Option<Vec<Filter>>) -> Result<()> {
+pub async fn list_tasks(db: &DatabaseConnection, params: ListTasksParams) -> Result<()> {
     let task_repo = TaskRepository::new(db);
 
     // フィルタがある場合はsearchを使用、ない場合はfind_allを使用
-    let tasks = if let Some(filters) = filters {
+    let tasks = if let Some(filters) = params.filters {
         task_repo
             .search(|task| filters.iter().all(|filter| match_filter(task, filter)))
             .await?

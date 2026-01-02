@@ -7,22 +7,27 @@ use anyhow::{Context, Result};
 use inquire::{Editor, Text, validator};
 use sea_orm::DatabaseConnection;
 
+/// タグ編集のパラメータ
+pub struct EditTagParams {
+    pub id: i32,
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
+
 /// タグを編集
 pub async fn edit_tag(
     db: &DatabaseConnection,
-    id: i32,
-    name: Option<String>,
-    description: Option<String>,
+    params: EditTagParams,
 ) -> Result<()> {
     // 1. 既存タグを取得
     let tag_repo = TagRepository::new(db);
     let existing_tag = tag_repo
-        .find_by_id(id)
+        .find_by_id(params.id)
         .await?
-        .ok_or_else(|| anyhow::anyhow!("ID {} のタグが見つかりません", id))?;
+        .ok_or_else(|| anyhow::anyhow!("ID {} のタグが見つかりません", params.id))?;
 
     // 2. 引数モードか対話モードか判定
-    let is_interactive = name.is_none() && description.is_none();
+    let is_interactive = params.name.is_none() && params.description.is_none();
 
     let (new_name, new_description) = if is_interactive {
         // 対話モード
@@ -41,8 +46,8 @@ pub async fn edit_tag(
     } else {
         // 引数モード
         (
-            name.unwrap_or(existing_tag.name),
-            description.unwrap_or(existing_tag.description),
+            params.name.unwrap_or(existing_tag.name),
+            params.description.unwrap_or(existing_tag.description),
         )
     };
 

@@ -9,38 +9,42 @@ use clap::ValueEnum;
 use inquire::{DateSelect, Editor, MultiSelect, Select, Text, validator};
 use sea_orm::DatabaseConnection;
 
+/// タスク編集のパラメータ
+pub struct EditTaskParams {
+    pub id: i32,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<Status>,
+    pub priority: Option<Priority>,
+    pub tag_ids: Option<Vec<i32>>,
+    pub due_date: Option<NaiveDate>,
+    pub clear_due_date: bool,
+}
+
 /// タスクを編集
-#[allow(clippy::too_many_arguments)]
 pub async fn edit_task(
     db: &DatabaseConnection,
-    id: i32,
-    title: Option<String>,
-    description: Option<String>,
-    status: Option<Status>,
-    priority: Option<Priority>,
-    tag_ids: Option<Vec<i32>>,
-    due_date: Option<NaiveDate>,
-    clear_due_date: bool,
+    params: EditTaskParams,
 ) -> Result<()> {
     // 1. 既存タスクを取得
     let task_repo = TaskRepository::new(db);
     let existing_task = task_repo
-        .find_by_id(id)
+        .find_by_id(params.id)
         .await?
-        .ok_or_else(|| anyhow::anyhow!("ID {} のタスクが見つかりません", id))?;
+        .ok_or_else(|| anyhow::anyhow!("ID {} のタスクが見つかりません", params.id))?;
 
     // 2. 利用可能なタグを取得（対話モード用）
     let tag_repo = TagRepository::new(db);
     let available_tags = tag_repo.find_all().await?;
 
     // 3. 引数モードか対話モードか判定
-    let is_interactive = title.is_none()
-        && description.is_none()
-        && status.is_none()
-        && priority.is_none()
-        && tag_ids.is_none()
-        && due_date.is_none()
-        && !clear_due_date;
+    let is_interactive = params.title.is_none()
+        && params.description.is_none()
+        && params.status.is_none()
+        && params.priority.is_none()
+        && params.tag_ids.is_none()
+        && params.due_date.is_none()
+        && !params.clear_due_date;
 
     let (new_title, new_description, new_status, new_priority, new_tags, new_due_date) =
         if is_interactive {
@@ -127,7 +131,7 @@ pub async fn edit_task(
             (t, d, s, p, tags, due)
         } else {
             // 引数モード: 指定された引数のみ更新、未指定は現在値を維持
-            let new_tags = if let Some(ids) = tag_ids {
+            let new_tags = if let Some(ids) = params.tag_ids {
                 // タグIDが指定された場合、存在確認して取得
                 ids.iter()
                     .map(|&id| {
@@ -142,17 +146,17 @@ pub async fn edit_task(
                 existing_task.tags.clone()
             };
 
-            let new_due_date = if clear_due_date {
+            let new_due_date = if params.clear_due_date {
                 None
             } else {
-                due_date.or(existing_task.due_date)
+                params.due_date.or(existing_task.due_date)
             };
 
             (
-                title.unwrap_or(existing_task.title),
-                description.unwrap_or(existing_task.description),
-                status.unwrap_or(existing_task.status),
-                priority.unwrap_or(existing_task.priority),
+                params.title.unwrap_or(existing_task.title),
+                params.description.unwrap_or(existing_task.description),
+                params.status.unwrap_or(existing_task.status),
+                params.priority.unwrap_or(existing_task.priority),
                 new_tags,
                 new_due_date,
             )

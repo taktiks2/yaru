@@ -9,22 +9,27 @@ use clap::ValueEnum;
 use inquire::{DateSelect, Editor, MultiSelect, Select, Text, validator};
 use sea_orm::DatabaseConnection;
 
+/// タスク追加のパラメータ
+pub struct AddTaskParams {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<Status>,
+    pub priority: Option<Priority>,
+    pub tag_ids: Option<Vec<i32>>,
+    pub due_date: Option<NaiveDate>,
+}
+
 /// 新しいタスクを追加
 pub async fn add_task(
     db: &DatabaseConnection,
-    title: Option<String>,
-    description: Option<String>,
-    status: Option<Status>,
-    priority: Option<Priority>,
-    tag_ids: Option<Vec<i32>>,
-    due_date: Option<NaiveDate>,
+    params: AddTaskParams,
 ) -> Result<()> {
     // タグリポジトリから全タグを取得（引数モードとインタラクティブモード両方で使用）
     let tag_repo = TagRepository::new(db);
     let available_tags = tag_repo.find_all().await?;
 
     // 引数モードか対話モードか判定
-    let is_interactive = title.is_none();
+    let is_interactive = params.title.is_none();
 
     let (title, description, status, priority, tags, due_date) = if is_interactive {
         // 対話モード
@@ -73,7 +78,7 @@ pub async fn add_task(
         (t, d, s, p, tags, due)
     } else {
         // 引数モード
-        let tags = match tag_ids {
+        let tags = match params.tag_ids {
             Some(ref ids) => ids
                 .iter()
                 .map(|id| {
@@ -88,12 +93,12 @@ pub async fn add_task(
         };
 
         (
-            title.unwrap_or_default(),
-            description.unwrap_or_default(),
-            status.unwrap_or(Status::Pending),
-            priority.unwrap_or(Priority::Medium),
+            params.title.unwrap_or_default(),
+            params.description.unwrap_or_default(),
+            params.status.unwrap_or(Status::Pending),
+            params.priority.unwrap_or(Priority::Medium),
             tags,
-            due_date,
+            params.due_date,
         )
     };
 
@@ -143,12 +148,14 @@ mod tests {
         // タスクを作成
         let result = add_task(
             &db,
-            Some("テストタスク".to_string()),
-            Some("テスト説明".to_string()),
-            None,
-            None,
-            Some(vec![tag1.id, tag2.id]),
-            None,
+            AddTaskParams {
+                title: Some("テストタスク".to_string()),
+                description: Some("テスト説明".to_string()),
+                status: None,
+                priority: None,
+                tag_ids: Some(vec![tag1.id, tag2.id]),
+                due_date: None,
+            },
         )
         .await;
 
@@ -169,12 +176,14 @@ mod tests {
         // 存在しないタグIDでタスクを作成
         let result = add_task(
             &db,
-            Some("テストタスク".to_string()),
-            Some("テスト説明".to_string()),
-            None,
-            None,
-            Some(vec![999]),
-            None,
+            AddTaskParams {
+                title: Some("テストタスク".to_string()),
+                description: Some("テスト説明".to_string()),
+                status: None,
+                priority: None,
+                tag_ids: Some(vec![999]),
+                due_date: None,
+            },
         )
         .await;
 
@@ -189,12 +198,14 @@ mod tests {
 
         let result = add_task(
             &db,
-            Some("テストタスク".to_string()),
-            Some("テスト説明".to_string()),
-            None,
-            None,
-            None,
-            None,
+            AddTaskParams {
+                title: Some("テストタスク".to_string()),
+                description: Some("テスト説明".to_string()),
+                status: None,
+                priority: None,
+                tag_ids: None,
+                due_date: None,
+            },
         )
         .await;
 

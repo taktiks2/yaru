@@ -7,14 +7,19 @@ use anyhow::{Context, Result};
 use inquire::{Editor, Text, validator};
 use sea_orm::DatabaseConnection;
 
+/// タグ追加のパラメータ
+pub struct AddTagParams {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}
+
 /// 新しいタグを追加
 pub async fn add_tag(
     db: &DatabaseConnection,
-    name: Option<String>,
-    description: Option<String>,
+    params: AddTagParams,
 ) -> Result<()> {
     // 引数モードか対話モードか判定
-    let is_interactive = name.is_none() && description.is_none();
+    let is_interactive = params.name.is_none() && params.description.is_none();
 
     let (name, description) = if is_interactive {
         // 対話モード
@@ -28,7 +33,7 @@ pub async fn add_tag(
         (n, d)
     } else {
         // 引数モード
-        (name.unwrap_or_default(), description.unwrap_or_default())
+        (params.name.unwrap_or_default(), params.description.unwrap_or_default())
     };
 
     // リポジトリを使用してタグを作成

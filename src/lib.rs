@@ -10,8 +10,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use command::{
-    tag::{add_tag, delete_tag, edit_tag, list_tags, show_tag},
-    task::{add_task, delete_task, edit_task, list_tasks, show_task},
+    tag::{add_tag, delete_tag, edit_tag, list_tags, show_tag, AddTagParams, DeleteTagParams, EditTagParams, ShowTagParams},
+    task::{add_task, delete_task, edit_task, list_tasks, show_task, AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams},
 };
 use config::load_config;
 use migration::MigratorTrait;
@@ -68,8 +68,10 @@ async fn handle_task_command(
     db: &sea_orm::DatabaseConnection,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => list_tasks(db, filter).await,
-        TaskCommands::Show { id } => show_task(db, id).await,
+        TaskCommands::List { filter } => {
+            list_tasks(db, ListTasksParams { filters: filter }).await
+        }
+        TaskCommands::Show { id } => show_task(db, ShowTaskParams { id }).await,
         TaskCommands::Add {
             title,
             description,
@@ -77,8 +79,21 @@ async fn handle_task_command(
             priority,
             tags,
             due_date,
-        } => add_task(db, title, description, status, priority, tags, due_date).await,
-        TaskCommands::Delete { id } => delete_task(db, id).await,
+        } => {
+            add_task(
+                db,
+                AddTaskParams {
+                    title,
+                    description,
+                    status,
+                    priority,
+                    tag_ids: tags,
+                    due_date,
+                },
+            )
+            .await
+        }
+        TaskCommands::Delete { id } => delete_task(db, DeleteTaskParams { id }).await,
         TaskCommands::Edit {
             id,
             title,
@@ -91,14 +106,16 @@ async fn handle_task_command(
         } => {
             edit_task(
                 db,
-                id,
-                title,
-                description,
-                status,
-                priority,
-                tags,
-                due_date,
-                clear_due_date,
+                EditTaskParams {
+                    id,
+                    title,
+                    description,
+                    status,
+                    priority,
+                    tag_ids: tags,
+                    due_date,
+                    clear_due_date,
+                },
             )
             .await
         }
@@ -108,14 +125,16 @@ async fn handle_task_command(
 /// タグコマンドを実行
 async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnection) -> Result<()> {
     match command {
-        TagCommands::Add { name, description } => add_tag(db, name, description).await,
-        TagCommands::Show { id } => show_tag(db, id).await,
+        TagCommands::Add { name, description } => {
+            add_tag(db, AddTagParams { name, description }).await
+        }
+        TagCommands::Show { id } => show_tag(db, ShowTagParams { id }).await,
         TagCommands::List => list_tags(db).await,
-        TagCommands::Delete { id } => delete_tag(db, id).await,
+        TagCommands::Delete { id } => delete_tag(db, DeleteTagParams { id }).await,
         TagCommands::Edit {
             id,
             name,
             description,
-        } => edit_tag(db, id, name, description).await,
+        } => edit_tag(db, EditTagParams { id, name, description }).await,
     }
 }
