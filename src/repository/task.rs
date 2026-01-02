@@ -86,13 +86,9 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
 
         // completed_atの自動設定ロジック
         let completed_at = if item.status == Status::Completed {
-            if item.completed_at.is_some() {
-                item.completed_at // 既に設定されていればそれを使用
-            } else {
-                Some(Utc::now()) // 未設定なら現在時刻を設定
-            }
+            item.completed_at.or_else(|| Some(Utc::now()))
         } else {
-            None // Completed以外はNone
+            None
         };
 
         // タスクを新規作成
