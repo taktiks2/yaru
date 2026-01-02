@@ -35,7 +35,7 @@ PR作成前に以下を順次実行：
 
 ```bash
 cargo fmt
-cargo clippy
+cargo clippy -- -D warnings
 cargo test
 ```
 
