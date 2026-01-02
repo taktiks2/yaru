@@ -14,12 +14,9 @@ pub struct AddTagParams {
 }
 
 /// 新しいタグを追加
-pub async fn add_tag(
-    db: &DatabaseConnection,
-    params: AddTagParams,
-) -> Result<()> {
+pub async fn add_tag(db: &DatabaseConnection, params: AddTagParams) -> Result<()> {
     // 引数モードか対話モードか判定
-    let is_interactive = params.name.is_none() && params.description.is_none();
+    let is_interactive = params.name.is_none();
 
     let (name, description) = if is_interactive {
         // 対話モード
@@ -27,13 +24,18 @@ pub async fn add_tag(
             .with_validator(validator::MinLengthValidator::new(1))
             .prompt()
             .context("タグの名前の入力に失敗しました")?;
-        let d = Editor::new("タグの説明を入力してください")
-            .prompt()
-            .unwrap_or_default();
+        let d = params.description.unwrap_or_else(|| {
+            Editor::new("タグの説明を入力してください")
+                .prompt()
+                .unwrap_or_default()
+        });
         (n, d)
     } else {
         // 引数モード
-        (params.name.unwrap_or_default(), params.description.unwrap_or_default())
+        (
+            params.name.unwrap_or_default(),
+            params.description.unwrap_or_default(),
+        )
     };
 
     // リポジトリを使用してタグを作成

@@ -15,10 +15,7 @@ pub struct EditTagParams {
 }
 
 /// タグを編集
-pub async fn edit_tag(
-    db: &DatabaseConnection,
-    params: EditTagParams,
-) -> Result<()> {
+pub async fn edit_tag(db: &DatabaseConnection, params: EditTagParams) -> Result<()> {
     // 1. 既存タグを取得
     let tag_repo = TagRepository::new(db);
     let existing_tag = tag_repo
@@ -53,11 +50,9 @@ pub async fn edit_tag(
 
     // 3. 更新されたタグを作成
     let updated_tag = Tag {
-        id: existing_tag.id,
         name: new_name,
         description: new_description,
-        created_at: existing_tag.created_at,
-        updated_at: existing_tag.updated_at,
+        ..existing_tag
     };
 
     // 4. リポジトリで更新

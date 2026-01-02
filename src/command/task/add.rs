@@ -20,10 +20,7 @@ pub struct AddTaskParams {
 }
 
 /// 新しいタスクを追加
-pub async fn add_task(
-    db: &DatabaseConnection,
-    params: AddTaskParams,
-) -> Result<()> {
+pub async fn add_task(db: &DatabaseConnection, params: AddTaskParams) -> Result<()> {
     // タグリポジトリから全タグを取得（引数モードとインタラクティブモード両方で使用）
     let tag_repo = TagRepository::new(db);
     let available_tags = tag_repo.find_all().await?;
@@ -37,37 +34,57 @@ pub async fn add_task(
             .with_validator(validator::MinLengthValidator::new(1))
             .prompt()
             .context("タスクのタイトルの入力に失敗しました")?;
-        let d = Editor::new("タスクの説明を入力してください")
+        let d = params.description.unwrap_or_else(|| {
+            Editor::new("タスクの説明を入力してください")
+                .prompt()
+                .unwrap_or_default()
+        });
+        let s = params.status.unwrap_or_else(|| {
+            Select::new(
+                "ステータスを選択してください",
+                Status::value_variants().to_vec(),
+            )
+            .with_vim_mode(true)
             .prompt()
-            .unwrap_or_default();
-        let s = Select::new(
-            "ステータスを選択してください",
-            Status::value_variants().to_vec(),
-        )
-        .with_vim_mode(true)
-        .prompt()
-        .unwrap_or(Status::Pending);
-        let p = Select::new(
-            "優先度を選択してください",
-            Priority::value_variants().to_vec(),
-        )
-        .with_vim_mode(true)
-        .prompt()
-        .unwrap_or(Priority::Medium);
+            .unwrap_or(Status::Pending)
+        });
+        let p = params.priority.unwrap_or_else(|| {
+            Select::new(
+                "優先度を選択してください",
+                Priority::value_variants().to_vec(),
+            )
+            .with_vim_mode(true)
+            .prompt()
+            .unwrap_or(Priority::Medium)
+        });
 
         // タグ選択
         let tags = if available_tags.is_empty() {
             // タグが0件の場合は空のVecを返す
             Vec::new()
         } else {
-            // MultiSelectでタグを選択
-            MultiSelect::new(
-                "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
-                available_tags.clone(),
-            )
-            .with_vim_mode(true)
-            .prompt()
-            .unwrap_or_default()
+            match params.tag_ids {
+                Some(ref ids) => ids
+                    .iter()
+                    .map(|id| {
+                        available_tags
+                            .iter()
+                            .find(|t| t.id == *id)
+                            .cloned()
+                            .ok_or_else(|| anyhow::anyhow!("存在しないタグID: {}", id))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+                None => {
+                    // MultiSelectでタグを選択
+                    MultiSelect::new(
+                        "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
+                        available_tags.clone(),
+                    )
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or_default()
+                }
+            }
         };
 
         // 期限の入力

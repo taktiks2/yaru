@@ -22,10 +22,7 @@ pub struct EditTaskParams {
 }
 
 /// タスクを編集
-pub async fn edit_task(
-    db: &DatabaseConnection,
-    params: EditTaskParams,
-) -> Result<()> {
+pub async fn edit_task(db: &DatabaseConnection, params: EditTaskParams) -> Result<()> {
     // 1. 既存タスクを取得
     let task_repo = TaskRepository::new(db);
     let existing_task = task_repo
@@ -164,17 +161,13 @@ pub async fn edit_task(
 
     // 4. 更新されたタスクを作成
     let updated_task = Task {
-        id: existing_task.id,
         title: new_title,
         description: new_description,
         status: new_status,
         priority: new_priority,
         tags: new_tags,
         due_date: new_due_date,
-        // これらのフィールドはRepositoryで適切に処理される
-        created_at: existing_task.created_at,
-        updated_at: existing_task.updated_at,
-        completed_at: existing_task.completed_at,
+        ..existing_task
     };
 
     // 5. リポジトリで更新
