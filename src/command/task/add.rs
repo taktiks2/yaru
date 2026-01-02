@@ -4,8 +4,9 @@ use crate::{
     repository::{Repository, tag::TagRepository, task::TaskRepository},
 };
 use anyhow::{Context, Result};
+use chrono::NaiveDate;
 use clap::ValueEnum;
-use inquire::{Editor, MultiSelect, Select, Text, validator};
+use inquire::{DateSelect, Editor, MultiSelect, Select, Text, validator};
 use sea_orm::DatabaseConnection;
 
 /// 新しいタスクを追加
@@ -16,15 +17,14 @@ pub async fn add_task(
     status: Option<Status>,
     priority: Option<Priority>,
     tag_ids: Option<Vec<i32>>,
+    due_date: Option<NaiveDate>,
 ) -> Result<()> {
     // タグリポジトリから全タグを取得（引数モードとインタラクティブモード両方で使用）
     let tag_repo = TagRepository::new(db);
     let available_tags = tag_repo.find_all().await?;
 
-    let (title, description, status, priority, tags) = match title {
+    let (title, description, status, priority, tags, due_date) = match title {
         Some(title) => {
-            anyhow::ensure!(!title.is_empty(), "タイトルは空にできません");
-
             let tags = match tag_ids {
                 Some(ref ids) => ids
                     .iter()
@@ -45,6 +45,7 @@ pub async fn add_task(
                 status.unwrap_or(Status::Pending),
                 priority.unwrap_or(Priority::Medium),
                 tags,
+                due_date,
             )
         }
         None => {
@@ -85,12 +86,17 @@ pub async fn add_task(
                 .unwrap_or_default()
             };
 
-            (t, d, s, p, tags)
+            // 期限の入力
+            let due = DateSelect::new("期限を選択してください（Escでスキップ）")
+                .prompt()
+                .ok();
+
+            (t, d, s, p, tags, due)
         }
     };
 
     // リポジトリを使用してタスクを作成
-    let new_task = Task::new(0, &title, &description, status, priority, tags);
+    let new_task = Task::new(0, &title, &description, status, priority, tags, due_date);
     let task_repo = TaskRepository::new(db);
     let created_task = task_repo.create(&new_task).await?;
 
@@ -140,6 +146,7 @@ mod tests {
             None,
             None,
             Some(vec![tag1.id, tag2.id]),
+            None,
         )
         .await;
 
@@ -165,6 +172,7 @@ mod tests {
             None,
             None,
             Some(vec![999]),
+            None,
         )
         .await;
 
@@ -181,6 +189,7 @@ mod tests {
             &db,
             Some("テストタスク".to_string()),
             Some("テスト説明".to_string()),
+            None,
             None,
             None,
             None,

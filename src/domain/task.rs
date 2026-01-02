@@ -1,5 +1,5 @@
 use crate::domain::tag::Tag;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use clap::ValueEnum;
 use entity::{tags, tasks};
 use serde::{Deserialize, Serialize};
@@ -25,6 +25,8 @@ pub struct Task {
     pub tags: Vec<Tag>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub due_date: Option<NaiveDate>,
+    pub completed_at: Option<DateTime<Utc>>,
 }
 
 impl Task {
@@ -37,9 +39,11 @@ impl Task {
     /// - `status`: タスクの状態
     /// - `priority`: タスクの優先度
     /// - `tags`: タスクに紐づくタグのIDリスト
+    /// - `due_date`: タスクの期限（オプション）
     ///
     /// # 戻り値
     /// 現在時刻（UTC）を`created_at`と`updated_at`に設定した新しいTaskインスタンス
+    /// `completed_at`は常にNoneで初期化される
     pub fn new(
         id: i32,
         title: &str,
@@ -47,6 +51,7 @@ impl Task {
         status: Status,
         priority: Priority,
         tags: Vec<Tag>,
+        due_date: Option<NaiveDate>,
     ) -> Self {
         let now = Utc::now();
         Self {
@@ -58,6 +63,8 @@ impl Task {
             tags,
             created_at: now,
             updated_at: now,
+            due_date,
+            completed_at: None,
         }
     }
 }
@@ -189,6 +196,12 @@ impl TryFrom<(tasks::Model, Vec<tags::Model>)> for Task {
             tags,
             created_at: model.created_at.into(),
             updated_at: model.updated_at.into(),
+            due_date: model.due_date,
+            // completed_at は Option<DateTimeWithTimeZone> のため、
+            // Option の中身 (DateTimeWithTimeZone) だけを DateTime<Utc> に変換する必要がある。
+            // Option<T> -> Option<U> は自動変換されないため、map を使って
+            // Some の場合のみ dt.into() を適用し、None はそのまま None にする。
+            completed_at: model.completed_at.map(|dt| dt.into()),
         })
     }
 }
@@ -214,6 +227,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             tags.clone(),
+            None,
         );
 
         assert_eq!(task.tags.len(), 2);
@@ -231,6 +245,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![tag],
+            None,
         );
 
         let json = serde_json::to_string(&task).unwrap();
@@ -251,6 +266,8 @@ mod tests {
             priority: "Medium".to_string(),
             created_at: now,
             updated_at: now,
+            due_date: None,
+            completed_at: None,
         };
 
         let tag_models: Vec<tags::Model> = vec![];
@@ -278,6 +295,8 @@ mod tests {
             priority: "High".to_string(),
             created_at: now,
             updated_at: now,
+            due_date: None,
+            completed_at: None,
         };
 
         let tag_models = vec![
@@ -323,6 +342,8 @@ mod tests {
             priority: "Medium".to_string(),
             created_at: now,
             updated_at: now,
+            due_date: None,
+            completed_at: None,
         };
 
         let tag_models: Vec<tags::Model> = vec![];
@@ -342,11 +363,75 @@ mod tests {
             priority: "InvalidPriority".to_string(),
             created_at: now,
             updated_at: now,
+            due_date: None,
+            completed_at: None,
         };
 
         let tag_models: Vec<tags::Model> = vec![];
 
         let result = Task::try_from((task_model, tag_models));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_task_new_with_due_date() {
+        let due_date = NaiveDate::from_ymd_opt(2026, 12, 31).unwrap();
+        let task = Task::new(
+            1,
+            "期限付きタスク",
+            "",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            Some(due_date),
+        );
+
+        assert_eq!(task.due_date, Some(due_date));
+        assert_eq!(task.completed_at, None);
+    }
+
+    #[test]
+    fn test_task_new_without_due_date() {
+        let task = Task::new(
+            1,
+            "期限なしタスク",
+            "",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        assert_eq!(task.due_date, None);
+        assert_eq!(task.completed_at, None);
+    }
+
+    #[test]
+    fn test_try_from_tasks_model_with_due_date_and_completed_at() {
+        use chrono::NaiveDate;
+
+        let now: DateTimeWithTimeZone = Utc::now().into();
+        let due_date = NaiveDate::from_ymd_opt(2026, 12, 31);
+
+        let task_model = tasks::Model {
+            id: 1,
+            title: "完了タスク".to_string(),
+            description: "".to_string(),
+            status: "Completed".to_string(),
+            priority: "Medium".to_string(),
+            created_at: now,
+            updated_at: now,
+            due_date,
+            completed_at: Some(now),
+        };
+
+        let tag_models: Vec<tags::Model> = vec![];
+
+        let result = Task::try_from((task_model, tag_models));
+        assert!(result.is_ok());
+
+        let task = result.unwrap();
+        assert_eq!(task.due_date, due_date);
+        assert!(task.completed_at.is_some());
     }
 }

@@ -14,10 +14,7 @@ pub async fn add_tag(
     description: Option<String>,
 ) -> Result<()> {
     let (name, description) = match name {
-        Some(name) => {
-            anyhow::ensure!(!name.is_empty(), "名前は空にできません");
-            (name, description.unwrap_or_default())
-        }
+        Some(name) => (name, description.unwrap_or_default()),
         None => {
             let name = Text::new("タグの名前を入力してください")
                 .with_validator(validator::MinLengthValidator::new(1))

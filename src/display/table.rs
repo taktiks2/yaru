@@ -1,5 +1,8 @@
 use crate::{
-    display::format::{format_local_time, truncate_text},
+    display::format::{
+        format_date, format_local_time, format_optional_datetime, format_optional_text,
+        format_tags, truncate_text,
+    },
     domain::tag::Tag,
     domain::task::Task,
 };
@@ -14,6 +17,8 @@ pub fn create_task_table(tasks: &[Task]) -> Table {
         "ステータス",
         "優先度",
         "タグ",
+        "期限",
+        "完了日時",
         "作成日",
         "更新日",
     ];
@@ -49,21 +54,10 @@ fn build_table_with_preset(headers: Vec<&str>, rows: Vec<Vec<String>>) -> Table 
 /// # 戻り値
 /// タスクの1行分のデータ（文字列のベクタ）
 fn create_task_row(task: &Task) -> Vec<String> {
-    let tags_str = if task.tags.is_empty() {
-        "-".to_string()
-    } else {
-        task.tags
-            .iter()
-            .map(|tag| tag.name.clone())
-            .collect::<Vec<_>>()
-            .join(",")
-    };
-
-    let description = if task.description.is_empty() {
-        "-".to_string()
-    } else {
-        truncate_text(&task.description, 20)
-    };
+    let tags_str = format_tags(&task.tags, ",");
+    let description = truncate_text(&format_optional_text(&task.description), 20);
+    let due_date_str = format_date(&task.due_date);
+    let completed_at_str = format_optional_datetime(task.completed_at);
 
     vec![
         task.id.to_string(),
@@ -72,6 +66,8 @@ fn create_task_row(task: &Task) -> Vec<String> {
         task.status.to_string(),
         task.priority.to_string(),
         tags_str,
+        due_date_str,
+        completed_at_str,
         format_local_time(&task.created_at),
         format_local_time(&task.updated_at),
     ]
@@ -85,11 +81,7 @@ fn create_task_row(task: &Task) -> Vec<String> {
 /// # 戻り値
 /// タグの1行分のデータ（文字列のベクタ）
 fn create_tag_row(tag: &Tag) -> Vec<String> {
-    let description = if tag.description.is_empty() {
-        "-".to_string()
-    } else {
-        truncate_text(&tag.description, 20)
-    };
+    let description = truncate_text(&format_optional_text(&tag.description), 20);
 
     vec![
         tag.id.to_string(),
@@ -126,11 +118,7 @@ pub fn create_tag_detail_table(tag: &Tag) -> Table {
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
 
-    let description = if tag.description.is_empty() {
-        "-".to_string()
-    } else {
-        tag.description.clone()
-    };
+    let description = format_optional_text(&tag.description);
 
     table.add_row(vec!["ID", &tag.id.to_string()]);
     table.add_row(vec!["名前", &tag.name]);
@@ -154,21 +142,10 @@ pub fn create_task_detail_table(task: &Task) -> Table {
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
 
-    let description = if task.description.is_empty() {
-        "-".to_string()
-    } else {
-        task.description.clone()
-    };
-
-    let tags_str = if task.tags.is_empty() {
-        "-".to_string()
-    } else {
-        task.tags
-            .iter()
-            .map(|tag| tag.name.clone())
-            .collect::<Vec<_>>()
-            .join(", ")
-    };
+    let description = format_optional_text(&task.description);
+    let tags_str = format_tags(&task.tags, ", ");
+    let due_date_str = format_date(&task.due_date);
+    let completed_at_str = format_optional_datetime(task.completed_at);
 
     table.add_row(vec!["ID", &task.id.to_string()]);
     table.add_row(vec!["タイトル", &task.title]);
@@ -176,6 +153,8 @@ pub fn create_task_detail_table(task: &Task) -> Table {
     table.add_row(vec!["ステータス", &task.status.to_string()]);
     table.add_row(vec!["優先度", &task.priority.to_string()]);
     table.add_row(vec!["タグ", &tags_str]);
+    table.add_row(vec!["期限", &due_date_str]);
+    table.add_row(vec!["完了日時", &completed_at_str]);
     table.add_row(vec!["作成日", &format_local_time(&task.created_at)]);
     table.add_row(vec!["更新日", &format_local_time(&task.updated_at)]);
 
@@ -209,6 +188,7 @@ mod tests {
                 Status::Pending,
                 Priority::Medium,
                 vec![],
+                None,
             ),
             Task::new(
                 2,
@@ -217,6 +197,7 @@ mod tests {
                 Status::Completed,
                 Priority::Medium,
                 vec![],
+                None,
             ),
         ];
         let table = create_task_table(&tasks);
@@ -238,6 +219,7 @@ mod tests {
                 Status::Pending,
                 Priority::Medium,
                 vec![],
+                None,
             ),
             Task::new(
                 2,
@@ -246,6 +228,7 @@ mod tests {
                 Status::InProgress,
                 Priority::Medium,
                 vec![],
+                None,
             ),
             Task::new(
                 3,
@@ -254,6 +237,7 @@ mod tests {
                 Status::Completed,
                 Priority::Medium,
                 vec![],
+                None,
             ),
         ];
         let table = create_task_table(&tasks);
@@ -274,6 +258,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![],
+            None,
         )];
         let table = create_task_table(&tasks);
 
@@ -293,6 +278,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![],
+            None,
         )];
         let table = create_task_table(&tasks);
 
@@ -313,6 +299,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![],
+            None,
         )];
         let table = create_task_table(&tasks);
 
@@ -331,6 +318,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![Tag::new(1, "タグ", "")], // タグありにして、空文字列の"-"と区別
+            None,
         )];
         let _table = create_task_table(&tasks);
 
@@ -350,6 +338,7 @@ mod tests {
             Status::Pending,
             Priority::Medium,
             vec![],
+            None,
         )];
         let table = create_task_table(&tasks);
 
@@ -464,6 +453,7 @@ mod tests_task_with_tags {
             Status::Pending,
             Priority::Medium,
             vec![tag1, tag2],
+            None,
         );
 
         let row = create_task_row(&task);
@@ -485,6 +475,7 @@ mod tests_task_with_tags {
             Status::Pending,
             Priority::Medium,
             vec![tag],
+            None,
         );
 
         // all_tagsパラメータなしで呼び出せることを確認
