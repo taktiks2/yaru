@@ -10,8 +10,14 @@ use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use command::{
-    tag::{add_tag, delete_tag, edit_tag, list_tags, show_tag, AddTagParams, DeleteTagParams, EditTagParams, ShowTagParams},
-    task::{add_task, delete_task, edit_task, list_tasks, show_task, AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams},
+    tag::{
+        AddTagParams, DeleteTagParams, EditTagParams, ShowTagParams, add_tag, delete_tag, edit_tag,
+        list_tags, show_tag,
+    },
+    task::{
+        AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams, add_task,
+        delete_task, edit_task, list_tasks, show_task,
+    },
 };
 use config::load_config;
 use migration::MigratorTrait;
@@ -68,9 +74,7 @@ async fn handle_task_command(
     db: &sea_orm::DatabaseConnection,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => {
-            list_tasks(db, ListTasksParams { filters: filter }).await
-        }
+        TaskCommands::List { filter } => list_tasks(db, ListTasksParams { filters: filter }).await,
         TaskCommands::Show { id } => show_task(db, ShowTaskParams { id }).await,
         TaskCommands::Add {
             title,
@@ -135,6 +139,16 @@ async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnecti
             id,
             name,
             description,
-        } => edit_tag(db, EditTagParams { id, name, description }).await,
+        } => {
+            edit_tag(
+                db,
+                EditTagParams {
+                    id,
+                    name,
+                    description,
+                },
+            )
+            .await
+        }
     }
 }

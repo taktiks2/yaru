@@ -5,11 +5,11 @@ pub mod task {
     mod list;
     mod show;
 
-    pub use add::{add_task, AddTaskParams};
-    pub use delete::{delete_task, DeleteTaskParams};
-    pub use edit::{edit_task, EditTaskParams};
-    pub use list::{list_tasks, ListTasksParams};
-    pub use show::{show_task, ShowTaskParams};
+    pub use add::{AddTaskParams, add_task};
+    pub use delete::{DeleteTaskParams, delete_task};
+    pub use edit::{EditTaskParams, edit_task};
+    pub use list::{ListTasksParams, list_tasks};
+    pub use show::{ShowTaskParams, show_task};
 }
 
 pub mod tag {
@@ -19,9 +19,9 @@ pub mod tag {
     mod list;
     mod show;
 
-    pub use add::{add_tag, AddTagParams};
-    pub use delete::{delete_tag, DeleteTagParams};
-    pub use edit::{edit_tag, EditTagParams};
+    pub use add::{AddTagParams, add_tag};
+    pub use delete::{DeleteTagParams, delete_tag};
+    pub use edit::{EditTagParams, edit_tag};
     pub use list::list_tags;
-    pub use show::{show_tag, ShowTagParams};
+    pub use show::{ShowTagParams, show_tag};
 }

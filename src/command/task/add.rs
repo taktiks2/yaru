@@ -28,6 +28,22 @@ pub async fn add_task(db: &DatabaseConnection, params: AddTaskParams) -> Result<
     // 引数モードか対話モードか判定
     let is_interactive = params.title.is_none();
 
+    // ユーザーからタグIDが指定されている場合、存在チェックを行い、該当するタグを取得
+    let validated_tags = if let Some(ref tag_ids) = params.tag_ids {
+        tag_ids
+            .iter()
+            .map(|id| {
+                available_tags
+                    .iter()
+                    .find(|t| t.id == *id)
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("存在しないタグID: {}", id))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+    } else {
+        vec![]
+    };
+
     let (title, description, status, priority, tags, due_date) = if is_interactive {
         // 対話モード
         let t = Text::new("タスクのタイトルを入力してください")
@@ -59,62 +75,38 @@ pub async fn add_task(db: &DatabaseConnection, params: AddTaskParams) -> Result<
         });
 
         // タグ選択
-        let tags = if available_tags.is_empty() {
+        let tags = if !validated_tags.is_empty() {
+            // 引数でタグIDが指定されていた場合はそれを使用
+            validated_tags
+        } else if available_tags.is_empty() {
             // タグが0件の場合は空のVecを返す
             Vec::new()
         } else {
-            match params.tag_ids {
-                Some(ref ids) => ids
-                    .iter()
-                    .map(|id| {
-                        available_tags
-                            .iter()
-                            .find(|t| t.id == *id)
-                            .cloned()
-                            .ok_or_else(|| anyhow::anyhow!("存在しないタグID: {}", id))
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-                None => {
-                    // MultiSelectでタグを選択
-                    MultiSelect::new(
-                        "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
-                        available_tags.clone(),
-                    )
-                    .with_vim_mode(true)
-                    .prompt()
-                    .unwrap_or_default()
-                }
-            }
+            // MultiSelectでタグを選択
+            MultiSelect::new(
+                "タスクに紐づけるタグを選択してください（スペースで選択、Enterで確定）",
+                available_tags.clone(),
+            )
+            .with_vim_mode(true)
+            .prompt()
+            .unwrap_or_default()
         };
 
         // 期限の入力
-        let due = DateSelect::new("期限を選択してください（Escでスキップ）")
-            .prompt()
-            .ok();
+        let due = params.due_date.or_else(|| {
+            DateSelect::new("期限を選択してください（Escでスキップ）")
+                .prompt()
+                .ok()
+        });
 
         (t, d, s, p, tags, due)
     } else {
-        // 引数モード
-        let tags = match params.tag_ids {
-            Some(ref ids) => ids
-                .iter()
-                .map(|id| {
-                    available_tags
-                        .iter()
-                        .find(|t| t.id == *id)
-                        .cloned()
-                        .ok_or_else(|| anyhow::anyhow!("存在しないタグID: {}", id))
-                })
-                .collect::<Result<Vec<_>, _>>()?,
-            None => vec![],
-        };
-
         (
             params.title.unwrap_or_default(),
             params.description.unwrap_or_default(),
             params.status.unwrap_or(Status::Pending),
             params.priority.unwrap_or(Priority::Medium),
-            tags,
+            validated_tags,
             params.due_date,
         )
     };
