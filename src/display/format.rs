@@ -30,12 +30,8 @@ pub fn format_date(date: &Option<NaiveDate>) -> String {
 /// # 戻り値
 /// - 空文字列の場合: "-"
 /// - それ以外の場合: 元の文字列
-pub fn format_optional_text(text: &str) -> String {
-    if text.is_empty() {
-        "-".to_string()
-    } else {
-        text.to_string()
-    }
+pub fn format_optional_text(text: &str) -> &str {
+    if text.is_empty() { "-" } else { text }
 }
 
 /// Option<DateTime<Utc>>をフォーマット
