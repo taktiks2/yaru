@@ -19,6 +19,9 @@ pub trait Repository<T> {
 
     /// IDでエンティティを削除
     async fn delete(&self, id: i32) -> Result<bool>;
+
+    /// エンティティを更新
+    async fn update(&self, item: &T) -> Result<T>;
 }
 
 // サブモジュールをエクスポート

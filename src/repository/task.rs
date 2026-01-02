@@ -7,7 +7,7 @@ use chrono::Utc;
 use entity::{prelude::*, task_tags, tasks};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, DatabaseConnection, EntityTrait,
-    QueryFilter, Set, TransactionTrait,
+    IntoActiveModel, QueryFilter, Set, TransactionTrait,
 };
 
 /// Task用のリポジトリ実装
@@ -109,26 +109,34 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .await
             .context("タスクの挿入に失敗しました")?;
 
-        // タグの関連付けを保存
-        let mut tag_models = Vec::new();
-        for tag in &item.tags {
-            let task_tag = task_tags::ActiveModel {
-                task_id: Set(inserted_task.id),
-                tag_id: Set(tag.id),
-            };
-            task_tag
-                .insert(&txn)
+        // タグの関連付けを保存（バッチインサート）
+        let tag_ids: Vec<i32> = item.tags.iter().map(|t| t.id).collect();
+
+        if !tag_ids.is_empty() {
+            let task_tags: Vec<task_tags::ActiveModel> = tag_ids
+                .iter()
+                .map(|&tag_id| task_tags::ActiveModel {
+                    task_id: Set(inserted_task.id),
+                    tag_id: Set(tag_id),
+                })
+                .collect();
+
+            TaskTags::insert_many(task_tags)
+                .exec(&txn)
                 .await
                 .context("タスクタグの挿入に失敗しました")?;
+        }
 
-            // タグのモデルを取得
-            let tag_model = Tags::find_by_id(tag.id)
-                .one(&txn)
+        // タグを一括取得
+        let tag_models = if !tag_ids.is_empty() {
+            Tags::find()
+                .filter(entity::tags::Column::Id.is_in(tag_ids))
+                .all(&txn)
                 .await
                 .context("タグの取得に失敗しました")?
-                .context("タグが存在しません")?;
-            tag_models.push(tag_model);
-        }
+        } else {
+            Vec::new()
+        };
 
         txn.commit()
             .await
@@ -158,6 +166,89 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .context("トランザクションのコミットに失敗しました")?;
 
         Ok(result.rows_affected > 0)
+    }
+
+    async fn update(&self, item: &Task) -> Result<Task> {
+        let txn = self.db.begin().await?;
+
+        // 現在のタスクを取得
+        let current_task = Tasks::find_by_id(item.id)
+            .one(&txn)
+            .await
+            .context("タスクの取得に失敗しました")?
+            .context("タスクが存在しません")?;
+
+        let current_status = current_task.status.clone();
+        let new_status = item.status.as_ref().to_string();
+
+        // ActiveModelに変換
+        let mut active_model = current_task.into_active_model();
+
+        // フィールドを更新
+        active_model.title = Set(item.title.clone());
+        active_model.description = Set(item.description.clone());
+        active_model.status = Set(new_status.clone());
+        active_model.priority = Set(item.priority.as_ref().to_string());
+        active_model.due_date = Set(item.due_date);
+
+        // completed_atの制御ロジック
+        // ケース1: Completedへの変更 -> completed_atを現在時刻に設定
+        // ケース2: Completedから他への変更 -> completed_atをNoneにクリア
+        // ケース3: それ以外 -> completed_atを変更しない
+        let completed_at = match (current_status.as_str(), new_status.as_str()) {
+            (old, "Completed") if old != "Completed" => Set(Some(Utc::now().into())),
+            ("Completed", new) if new != "Completed" => Set(None),
+            _ => NotSet, // 変更なし
+        };
+        active_model.completed_at = completed_at;
+
+        // タスクを更新
+        let updated_task = active_model
+            .update(&txn)
+            .await
+            .context("タスクの更新に失敗しました")?;
+
+        // 既存のタグ関連付けを削除
+        TaskTags::delete_many()
+            .filter(task_tags::Column::TaskId.eq(item.id))
+            .exec(&txn)
+            .await
+            .context("タスクタグの削除に失敗しました")?;
+
+        // 新しいタグ関連付けを作成（バッチインサート）
+        let tag_ids: Vec<i32> = item.tags.iter().map(|t| t.id).collect();
+
+        if !tag_ids.is_empty() {
+            let task_tags: Vec<task_tags::ActiveModel> = tag_ids
+                .iter()
+                .map(|&tag_id| task_tags::ActiveModel {
+                    task_id: Set(item.id),
+                    tag_id: Set(tag_id),
+                })
+                .collect();
+
+            TaskTags::insert_many(task_tags)
+                .exec(&txn)
+                .await
+                .context("タスクタグの挿入に失敗しました")?;
+        }
+
+        // タグを一括取得
+        let tag_models = if !tag_ids.is_empty() {
+            Tags::find()
+                .filter(entity::tags::Column::Id.is_in(tag_ids))
+                .all(&txn)
+                .await
+                .context("タグの取得に失敗しました")?
+        } else {
+            Vec::new()
+        };
+
+        txn.commit()
+            .await
+            .context("トランザクションのコミットに失敗しました")?;
+
+        Task::try_from((updated_task, tag_models)).map_err(anyhow::Error::msg)
     }
 }
 
@@ -469,6 +560,315 @@ mod tests {
             completed_tasks
                 .iter()
                 .all(|t| t.status == Status::Completed)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_task_basic() {
+        let db = setup_test_db().await;
+        let repo = TaskRepository::new(&db);
+
+        // タスクを作成
+        let new_task = Task::new(
+            0,
+            "元のタイトル",
+            "元の説明",
+            Status::Pending,
+            Priority::Low,
+            vec![],
+            None,
+        );
+        let created_task = repo.create(&new_task).await.unwrap();
+
+        // タスクを更新
+        let mut updated_task = created_task.clone();
+        updated_task.title = "新しいタイトル".to_string();
+        updated_task.description = "新しい説明".to_string();
+        updated_task.priority = Priority::High;
+
+        let result = repo.update(&updated_task).await.unwrap();
+
+        // 更新内容を検証
+        assert_eq!(result.id, created_task.id);
+        assert_eq!(result.title, "新しいタイトル");
+        assert_eq!(result.description, "新しい説明");
+        assert_eq!(result.priority, Priority::High);
+        assert_eq!(result.status, Status::Pending);
+    }
+
+    #[tokio::test]
+    async fn test_update_task_status_to_completed() {
+        let db = setup_test_db().await;
+        let repo = TaskRepository::new(&db);
+
+        // Pendingのタスクを作成
+        let new_task = Task::new(
+            0,
+            "テストタスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let created_task = repo.create(&new_task).await.unwrap();
+
+        // completed_atがNoneであることを確認
+        assert!(created_task.completed_at.is_none());
+
+        // StatusをCompletedに変更
+        let mut updated_task = created_task.clone();
+        updated_task.status = Status::Completed;
+
+        let result = repo.update(&updated_task).await.unwrap();
+
+        // StatusがCompletedになり、completed_atが設定されていることを確認
+        assert_eq!(result.status, Status::Completed);
+        assert!(result.completed_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_update_task_status_from_completed() {
+        let db = setup_test_db().await;
+        let repo = TaskRepository::new(&db);
+
+        // Completedのタスクを作成
+        let new_task = Task::new(
+            0,
+            "テストタスク",
+            "説明",
+            Status::Completed,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let created_task = repo.create(&new_task).await.unwrap();
+
+        // completed_atが設定されていることを確認
+        assert!(created_task.completed_at.is_some());
+
+        // StatusをPendingに変更
+        let mut updated_task = created_task.clone();
+        updated_task.status = Status::Pending;
+
+        let result = repo.update(&updated_task).await.unwrap();
+
+        // StatusがPendingになり、completed_atがNoneになっていることを確認
+        assert_eq!(result.status, Status::Pending);
+        assert!(result.completed_at.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_update_task_status_completed_to_completed() {
+        let db = setup_test_db().await;
+        let repo = TaskRepository::new(&db);
+
+        // Completedのタスクを作成
+        let new_task = Task::new(
+            0,
+            "テストタスク",
+            "説明",
+            Status::Completed,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let created_task = repo.create(&new_task).await.unwrap();
+
+        let original_completed_at = created_task.completed_at;
+        assert!(original_completed_at.is_some());
+
+        // StatusをCompletedのまま、タイトルだけ変更
+        let mut updated_task = created_task.clone();
+        updated_task.title = "新しいタイトル".to_string();
+
+        let result = repo.update(&updated_task).await.unwrap();
+
+        // StatusがCompletedのままで、completed_atが維持されていることを確認
+        assert_eq!(result.status, Status::Completed);
+        assert_eq!(result.completed_at, original_completed_at);
+    }
+
+    #[tokio::test]
+    async fn test_update_task_tags() {
+        let db = setup_test_db().await;
+        let task_repo = TaskRepository::new(&db);
+
+        // タグを作成
+        use crate::domain::tag::Tag;
+        use entity::tags;
+        use sea_orm::ActiveValue::NotSet;
+
+        let tag1 = tags::ActiveModel {
+            id: NotSet,
+            name: Set("タグ1".to_string()),
+            description: Set("説明1".to_string()),
+            created_at: Set(chrono::Utc::now().into()),
+            updated_at: Set(chrono::Utc::now().into()),
+        };
+        let inserted_tag1: tags::Model = tag1.insert(&db).await.unwrap();
+
+        let tag2 = tags::ActiveModel {
+            id: NotSet,
+            name: Set("タグ2".to_string()),
+            description: Set("説明2".to_string()),
+            created_at: Set(chrono::Utc::now().into()),
+            updated_at: Set(chrono::Utc::now().into()),
+        };
+        let inserted_tag2: tags::Model = tag2.insert(&db).await.unwrap();
+
+        // タグなしのタスクを作成
+        let new_task = Task::new(
+            0,
+            "テストタスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let created_task = task_repo.create(&new_task).await.unwrap();
+
+        assert_eq!(created_task.tags.len(), 0);
+
+        // タグを追加
+        let mut updated_task = created_task.clone();
+        updated_task.tags = vec![
+            Tag::from(inserted_tag1.clone()),
+            Tag::from(inserted_tag2.clone()),
+        ];
+
+        let result = task_repo.update(&updated_task).await.unwrap();
+
+        // タグが追加されたことを確認
+        assert_eq!(result.tags.len(), 2);
+        assert!(result.tags.iter().any(|t| t.id == inserted_tag1.id));
+        assert!(result.tags.iter().any(|t| t.id == inserted_tag2.id));
+    }
+
+    #[tokio::test]
+    async fn test_update_task_replace_tags() {
+        let db = setup_test_db().await;
+        let task_repo = TaskRepository::new(&db);
+
+        // タグを3つ作成
+        use crate::domain::tag::Tag;
+        use entity::tags;
+        use sea_orm::ActiveValue::NotSet;
+
+        let tag1 = tags::ActiveModel {
+            id: NotSet,
+            name: Set("タグ1".to_string()),
+            description: Set("".to_string()),
+            created_at: Set(chrono::Utc::now().into()),
+            updated_at: Set(chrono::Utc::now().into()),
+        };
+        let inserted_tag1: tags::Model = tag1.insert(&db).await.unwrap();
+
+        let tag2 = tags::ActiveModel {
+            id: NotSet,
+            name: Set("タグ2".to_string()),
+            description: Set("".to_string()),
+            created_at: Set(chrono::Utc::now().into()),
+            updated_at: Set(chrono::Utc::now().into()),
+        };
+        let inserted_tag2: tags::Model = tag2.insert(&db).await.unwrap();
+
+        let tag3 = tags::ActiveModel {
+            id: NotSet,
+            name: Set("タグ3".to_string()),
+            description: Set("".to_string()),
+            created_at: Set(chrono::Utc::now().into()),
+            updated_at: Set(chrono::Utc::now().into()),
+        };
+        let inserted_tag3: tags::Model = tag3.insert(&db).await.unwrap();
+
+        // タグ1,2付きのタスクを作成
+        let new_task = Task::new(
+            0,
+            "テストタスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![
+                Tag::from(inserted_tag1.clone()),
+                Tag::from(inserted_tag2.clone()),
+            ],
+            None,
+        );
+        let created_task = task_repo.create(&new_task).await.unwrap();
+
+        assert_eq!(created_task.tags.len(), 2);
+
+        // タグをタグ3のみに置換
+        let mut updated_task = created_task.clone();
+        updated_task.tags = vec![Tag::from(inserted_tag3.clone())];
+
+        let result = task_repo.update(&updated_task).await.unwrap();
+
+        // タグが置換されたことを確認
+        assert_eq!(result.tags.len(), 1);
+        assert_eq!(result.tags[0].id, inserted_tag3.id);
+    }
+
+    #[tokio::test]
+    async fn test_update_task_due_date() {
+        let db = setup_test_db().await;
+        let repo = TaskRepository::new(&db);
+
+        // 期限なしのタスクを作成
+        let new_task = Task::new(
+            0,
+            "テストタスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let created_task = repo.create(&new_task).await.unwrap();
+
+        assert!(created_task.due_date.is_none());
+
+        // 期限を追加
+        let mut updated_task = created_task.clone();
+        updated_task.due_date = Some(chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap());
+
+        let result = repo.update(&updated_task).await.unwrap();
+
+        // 期限が追加されたことを確認
+        assert!(result.due_date.is_some());
+        assert_eq!(
+            result.due_date.unwrap(),
+            chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_task_not_existing() {
+        let db = setup_test_db().await;
+        let repo = TaskRepository::new(&db);
+
+        // 存在しないタスクを更新しようとする
+        let non_existing_task = Task::new(
+            999,
+            "タスク",
+            "説明",
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        let result = repo.update(&non_existing_task).await;
+
+        // エラーが返されることを確認
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("タスクが存在しません")
         );
     }
 }

@@ -1,7 +1,9 @@
 use crate::{domain::tag::Tag, repository::Repository};
 use anyhow::{Context, Result};
 use entity::{prelude::*, tags};
-use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, Set};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, EntityTrait, IntoActiveModel, Set,
+};
 
 /// Tag用のリポジトリ実装
 pub struct TagRepository<'a> {
@@ -65,6 +67,27 @@ impl<'a> Repository<Tag> for TagRepository<'a> {
             .context("タグの削除に失敗しました")?;
 
         Ok(result.rows_affected > 0)
+    }
+
+    async fn update(&self, item: &Tag) -> Result<Tag> {
+        // タグが存在するか確認
+        let current_tag = Tags::find_by_id(item.id)
+            .one(self.db)
+            .await
+            .context("タグの取得に失敗しました")? // Resultのエラー処理
+            .context("タグが存在しません")?; // OptionのNone処理
+
+        // ActiveModelに変換して更新
+        let mut active_model = current_tag.into_active_model();
+        active_model.name = Set(item.name.clone());
+        active_model.description = Set(item.description.clone());
+
+        let updated = active_model
+            .update(self.db)
+            .await
+            .context("タグの更新に失敗しました")?;
+
+        Ok(updated.into())
     }
 }
 
@@ -198,5 +221,88 @@ mod tests {
 
         assert_eq!(important_tags.len(), 1);
         assert_eq!(important_tags[0].name, "重要");
+    }
+
+    #[tokio::test]
+    async fn test_update_tag_basic() {
+        let db = setup_test_db().await;
+        let repo = TagRepository::new(&db);
+
+        // タグを作成
+        let new_tag = Tag::new(0, "元の名前", "元の説明");
+        let created_tag = repo.create(&new_tag).await.unwrap();
+
+        // タグを更新
+        let updated_tag = Tag {
+            id: created_tag.id,
+            name: "新しい名前".to_string(),
+            description: "新しい説明".to_string(),
+            created_at: created_tag.created_at,
+            updated_at: created_tag.updated_at,
+        };
+
+        let result = repo.update(&updated_tag).await.unwrap();
+
+        // 更新内容を検証
+        assert_eq!(result.id, created_tag.id);
+        assert_eq!(result.name, "新しい名前");
+        assert_eq!(result.description, "新しい説明");
+        assert_eq!(result.created_at, created_tag.created_at); // 作成日時は変わらない
+    }
+
+    #[tokio::test]
+    async fn test_update_tag_updated_at_changes() {
+        let db = setup_test_db().await;
+        let repo = TagRepository::new(&db);
+
+        // タグを作成
+        let new_tag = Tag::new(0, "テストタグ", "説明");
+        let created_tag = repo.create(&new_tag).await.unwrap();
+        println!("作成時のupdated_at: {:?}", created_tag.updated_at);
+
+        // 少し待機してからタグを更新
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+        let updated_tag = Tag {
+            id: created_tag.id,
+            name: "更新後の名前".to_string(),
+            description: created_tag.description.clone(),
+            created_at: created_tag.created_at,
+            updated_at: created_tag.updated_at,
+        };
+
+        repo.update(&updated_tag).await.unwrap();
+
+        // AFTER UPDATEトリガーによる変更を確認するため、再度取得
+        let result = repo.find_by_id(created_tag.id).await.unwrap().unwrap();
+        println!("更新後のupdated_at: {:?}", result.updated_at);
+
+        // updated_atが更新されたことを確認
+        assert!(
+            result.updated_at > created_tag.updated_at,
+            "updated_atが更新されていません: created={:?}, updated={:?}",
+            created_tag.updated_at,
+            result.updated_at
+        );
+    }
+
+    #[tokio::test]
+    async fn test_update_tag_not_existing() {
+        let db = setup_test_db().await;
+        let repo = TagRepository::new(&db);
+
+        // 存在しないタグを更新しようとする
+        let non_existing_tag = Tag::new(999, "名前", "説明");
+
+        let result = repo.update(&non_existing_tag).await;
+
+        // エラーが返されることを確認
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("タグが存在しません")
+        );
     }
 }
