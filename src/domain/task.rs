@@ -72,8 +72,8 @@ impl Task {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
 pub enum Status {
     Pending,
-    Completed,
     InProgress,
+    Completed,
 }
 
 impl Status {
@@ -88,8 +88,8 @@ impl Status {
     pub fn from_filter_value(value: &str) -> Result<Self, String> {
         match value.to_lowercase().as_str() {
             "pending" | "todo" => Ok(Status::Pending),
-            "completed" | "done" => Ok(Status::Completed),
             "inprogress" | "in_progress" | "progress" => Ok(Status::InProgress),
+            "completed" | "done" => Ok(Status::Completed),
             _ => Err(format!("Invalid status value: '{}'", value)),
         }
     }
@@ -102,8 +102,8 @@ impl TryFrom<&str> for Status {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "Pending" => Ok(Status::Pending),
-            "Completed" => Ok(Status::Completed),
             "InProgress" => Ok(Status::InProgress),
+            "Completed" => Ok(Status::Completed),
             _ => Err(format!("Invalid status in database: '{}'", value)),
         }
     }
@@ -114,8 +114,8 @@ impl AsRef<str> for Status {
     fn as_ref(&self) -> &str {
         match self {
             Status::Pending => "Pending",
-            Status::Completed => "Completed",
             Status::InProgress => "InProgress",
+            Status::Completed => "Completed",
         }
     }
 }
@@ -124,8 +124,8 @@ impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Status::Pending => write!(f, "保留中"),
-            Status::Completed => write!(f, "完了"),
             Status::InProgress => write!(f, "進行中"),
+            Status::Completed => write!(f, "完了"),
         }
     }
 }
