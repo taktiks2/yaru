@@ -55,7 +55,7 @@ fn build_table_with_preset(headers: Vec<&str>, rows: Vec<Vec<String>>) -> Table 
 /// タスクの1行分のデータ（文字列のベクタ）
 fn create_task_row(task: &Task) -> Vec<String> {
     let tags_str = format_tags(&task.tags, ",");
-    let description = truncate_text(&format_optional_text(&task.description), 20);
+    let description = truncate_text(format_optional_text(&task.description), 20);
     let due_date_str = format_date(&task.due_date);
     let completed_at_str = format_optional_datetime(task.completed_at);
 
@@ -81,7 +81,7 @@ fn create_task_row(task: &Task) -> Vec<String> {
 /// # 戻り値
 /// タグの1行分のデータ（文字列のベクタ）
 fn create_tag_row(tag: &Tag) -> Vec<String> {
-    let description = truncate_text(&format_optional_text(&tag.description), 20);
+    let description = truncate_text(format_optional_text(&tag.description), 20);
 
     vec![
         tag.id.to_string(),
