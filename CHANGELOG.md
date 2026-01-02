@@ -2,6 +2,24 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.7.0](https://github.com/taktiks2/yaru/compare/534ad58dcde0667e20279ea314987d2a6bdb6f31..0.7.0) - 2026-01-02
+#### Features
+- タスクにdue_dateとcompleted_atフィールドを追加 - ([af84cc2](https://github.com/taktiks2/yaru/commit/af84cc27626599e717873a897255618a2a58de17)) - taktiks2
+#### Documentation
+- clippy実行時に-D warningsオプションを追加 - ([d1fcbcb](https://github.com/taktiks2/yaru/commit/d1fcbcba5c1b5bc8373ea5fd416e3add68bec609)) - taktiks2
+- due_dateとcompleted_at機能に関する依存関係とドキュメントを更新 - ([bdcf3ca](https://github.com/taktiks2/yaru/commit/bdcf3ca2fe637a87361e046a82d984431e9dd1ca)) - taktiks2
+#### Build System
+- tasksテーブルにdue_dateとcompleted_atカラムを追加するマイグレーション - ([534ad58](https://github.com/taktiks2/yaru/commit/534ad58dcde0667e20279ea314987d2a6bdb6f31)) - taktiks2
+#### Refactoring
+- 不要な参照を削除してclippy警告を修正 - ([f3dd789](https://github.com/taktiks2/yaru/commit/f3dd7899e1589ed3ceb161e34e501bc0a9632855)) - taktiks2
+- completed_at設定ロジックをor_elseで簡潔に記述 - ([745da67](https://github.com/taktiks2/yaru/commit/745da676a9fc9d8dc854a75399d8748c1ee74289)) - taktiks2
+- format_optional_text関数の戻り値を&strに変更 - ([e31fb28](https://github.com/taktiks2/yaru/commit/e31fb284b9ebb55d4f7724fef35cf37cdb2da930)) - taktiks2
+- マイグレーションファイル名をdue_date機能を含む名前に変更 - ([edc0ecf](https://github.com/taktiks2/yaru/commit/edc0ecfe19ed9f4e13db72137b992208cd678d30)) - taktiks2
+- テーブル表示の"-"処理をヘルパー関数に集約 - ([57cb432](https://github.com/taktiks2/yaru/commit/57cb432041e5b6ebd65a707ec93e5061d693f347)) - taktiks2
+- CLI引数のバリデーションをvalue_parserに統一 - ([aa152cb](https://github.com/taktiks2/yaru/commit/aa152cbb9beae1eeeb2d9f4e213fa1cce74d7139)) - taktiks2
+
+- - -
+
 ## [0.6.0](https://github.com/taktiks2/yaru/compare/d91298401fdcad5e389fbf456cd66f5f4ea753e7..0.6.0) - 2026-01-01
 #### Features
 - タスク追加時の対話モードでVimモードを有効化 - ([62de22b](https://github.com/taktiks2/yaru/commit/62de22b4e9d2fa315683b7cddd59cfa8c6963c33)) - taktiks2
