@@ -109,26 +109,34 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .await
             .context("タスクの挿入に失敗しました")?;
 
-        // タグの関連付けを保存
-        let mut tag_models = Vec::new();
-        for tag in &item.tags {
-            let task_tag = task_tags::ActiveModel {
-                task_id: Set(inserted_task.id),
-                tag_id: Set(tag.id),
-            };
-            task_tag
-                .insert(&txn)
+        // タグの関連付けを保存（バッチインサート）
+        let tag_ids: Vec<i32> = item.tags.iter().map(|t| t.id).collect();
+
+        if !tag_ids.is_empty() {
+            let task_tags: Vec<task_tags::ActiveModel> = tag_ids
+                .iter()
+                .map(|&tag_id| task_tags::ActiveModel {
+                    task_id: Set(inserted_task.id),
+                    tag_id: Set(tag_id),
+                })
+                .collect();
+
+            TaskTags::insert_many(task_tags)
+                .exec(&txn)
                 .await
                 .context("タスクタグの挿入に失敗しました")?;
+        }
 
-            // タグのモデルを取得
-            let tag_model = Tags::find_by_id(tag.id)
-                .one(&txn)
+        // タグを一括取得
+        let tag_models = if !tag_ids.is_empty() {
+            Tags::find()
+                .filter(entity::tags::Column::Id.is_in(tag_ids))
+                .all(&txn)
                 .await
                 .context("タグの取得に失敗しました")?
-                .context("タグが存在しません")?;
-            tag_models.push(tag_model);
-        }
+        } else {
+            Vec::new()
+        };
 
         txn.commit()
             .await
@@ -207,26 +215,34 @@ impl<'a> Repository<Task> for TaskRepository<'a> {
             .await
             .context("タスクタグの削除に失敗しました")?;
 
-        // 新しいタグ関連付けを作成
-        let mut tag_models = Vec::new();
-        for tag in &item.tags {
-            let task_tag = task_tags::ActiveModel {
-                task_id: Set(item.id),
-                tag_id: Set(tag.id),
-            };
-            task_tag
-                .insert(&txn)
+        // 新しいタグ関連付けを作成（バッチインサート）
+        let tag_ids: Vec<i32> = item.tags.iter().map(|t| t.id).collect();
+
+        if !tag_ids.is_empty() {
+            let task_tags: Vec<task_tags::ActiveModel> = tag_ids
+                .iter()
+                .map(|&tag_id| task_tags::ActiveModel {
+                    task_id: Set(item.id),
+                    tag_id: Set(tag_id),
+                })
+                .collect();
+
+            TaskTags::insert_many(task_tags)
+                .exec(&txn)
                 .await
                 .context("タスクタグの挿入に失敗しました")?;
+        }
 
-            // タグのモデルを取得
-            let tag_model = Tags::find_by_id(tag.id)
-                .one(&txn)
+        // タグを一括取得
+        let tag_models = if !tag_ids.is_empty() {
+            Tags::find()
+                .filter(entity::tags::Column::Id.is_in(tag_ids))
+                .all(&txn)
                 .await
                 .context("タグの取得に失敗しました")?
-                .context("タグが存在しません")?;
-            tag_models.push(tag_model);
-        }
+        } else {
+            Vec::new()
+        };
 
         txn.commit()
             .await
