@@ -163,6 +163,33 @@ pub enum TaskCommands {
         #[arg(value_parser = parse_positive_id)]
         id: i32,
     },
+    /// タスクを編集
+    Edit {
+        /// 編集するタスクのID
+        #[arg(value_parser = parse_positive_id)]
+        id: i32,
+        /// タスクのタイトル
+        #[arg(short, long, value_parser = parse_non_empty_string)]
+        title: Option<String>,
+        /// タスクの説明
+        #[arg(short, long, value_parser = parse_non_empty_string)]
+        description: Option<String>,
+        /// タスクの状態
+        #[arg(short, long)]
+        status: Option<Status>,
+        /// タスクの優先度
+        #[arg(short, long)]
+        priority: Option<Priority>,
+        /// タスクに紐づけるタグのID（カンマ区切り、完全置換）
+        #[arg(long, value_delimiter = ',')]
+        tags: Option<Vec<i32>>,
+        /// タスクの期限（YYYY-MM-DD形式）
+        #[arg(long, value_parser = parse_date)]
+        due_date: Option<NaiveDate>,
+        /// 期限をクリア
+        #[arg(long, conflicts_with = "due_date")]
+        clear_due_date: bool,
+    },
 }
 
 /// タグ管理用のサブコマンド
@@ -190,5 +217,17 @@ pub enum TagCommands {
         /// 削除するタグのID
         #[arg(value_parser = parse_positive_id)]
         id: i32,
+    },
+    /// タグを編集
+    Edit {
+        /// 編集するタグのID
+        #[arg(value_parser = parse_positive_id)]
+        id: i32,
+        /// タグの名前
+        #[arg(short, long, value_parser = parse_non_empty_string)]
+        name: Option<String>,
+        /// タグの説明
+        #[arg(short, long, value_parser = parse_non_empty_string)]
+        description: Option<String>,
     },
 }

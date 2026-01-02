@@ -10,8 +10,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, error::ErrorKind};
 use cli::{Args, Commands, TagCommands, TaskCommands};
 use command::{
-    tag::{add_tag, delete_tag, list_tags, show_tag},
-    task::{add_task, delete_task, list_tasks, show_task},
+    tag::{add_tag, delete_tag, edit_tag, list_tags, show_tag},
+    task::{add_task, delete_task, edit_task, list_tasks, show_task},
 };
 use config::load_config;
 use migration::MigratorTrait;
@@ -79,6 +79,29 @@ async fn handle_task_command(
             due_date,
         } => add_task(db, title, description, status, priority, tags, due_date).await,
         TaskCommands::Delete { id } => delete_task(db, id).await,
+        TaskCommands::Edit {
+            id,
+            title,
+            description,
+            status,
+            priority,
+            tags,
+            due_date,
+            clear_due_date,
+        } => {
+            edit_task(
+                db,
+                id,
+                title,
+                description,
+                status,
+                priority,
+                tags,
+                due_date,
+                clear_due_date,
+            )
+            .await
+        }
     }
 }
 
@@ -89,5 +112,10 @@ async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnecti
         TagCommands::Show { id } => show_tag(db, id).await,
         TagCommands::List => list_tags(db).await,
         TagCommands::Delete { id } => delete_tag(db, id).await,
+        TagCommands::Edit {
+            id,
+            name,
+            description,
+        } => edit_tag(db, id, name, description).await,
     }
 }
