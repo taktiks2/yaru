@@ -1,32 +1,35 @@
-mod cli;
-mod command;
-mod config;
-mod display;
+// TDDのため一時的に既存のモジュールをコメントアウト
+// mod cli;
+// mod command;
+// mod config;
+// mod display;
 mod domain;
-mod json;
-mod repository;
+// mod json;
+// mod repository;
 
 use anyhow::{Context, Result};
-use clap::{Parser, error::ErrorKind};
-use cli::{Args, Commands, TagCommands, TaskCommands};
-use command::{
-    tag::{
-        AddTagParams, DeleteTagParams, EditTagParams, ShowTagParams, add_tag, delete_tag, edit_tag,
-        list_tags, show_tag,
-    },
-    task::{
-        AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams, add_task,
-        delete_task, edit_task, list_tasks, show_stats, show_task,
-    },
-};
-use config::load_config;
-use migration::MigratorTrait;
-use sea_orm::Database;
+// use clap::{Parser, error::ErrorKind};
+// use cli::{Args, Commands, TagCommands, TaskCommands};
+// use command::{
+//     tag::{
+//         AddTagParams, DeleteTagParams, EditTagParams, ShowTagParams, add_tag, delete_tag, edit_tag,
+//         list_tags, show_tag,
+//     },
+//     task::{
+//         AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams, add_task,
+//         delete_task, edit_task, list_tasks, show_stats, show_task,
+//     },
+// };
+// use config::load_config;
+// use migration::MigratorTrait;
+// use sea_orm::Database;
 
 /// アプリケーションのエントリーポイント
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
 pub async fn run() -> Result<()> {
+    unimplemented!("リファクタリング中のため一時的に無効化")
+    /*
     let args = match Args::try_parse() {
         Ok(args) => args,
         Err(e) => {
@@ -152,4 +155,5 @@ async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnecti
             .await
         }
     }
+    */
 }
