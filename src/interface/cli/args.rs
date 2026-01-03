@@ -105,7 +105,7 @@ fn parse_non_empty_string(s: &str) -> Result<String, String> {
 )]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
 
 /// 実行可能なコマンド
@@ -234,4 +234,27 @@ pub enum TagCommands {
         #[arg(short, long, value_parser = parse_non_empty_string)]
         description: Option<String>,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_args_without_subcommand() {
+        // 引数なしでパース可能
+        let args = Args::try_parse_from(vec!["yaru"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        assert!(args.command.is_none());
+    }
+
+    #[test]
+    fn test_args_with_subcommand() {
+        // 引数ありでパース可能
+        let args = Args::try_parse_from(vec!["yaru", "task", "list"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        assert!(args.command.is_some());
+    }
 }
