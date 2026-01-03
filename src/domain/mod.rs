@@ -1,3 +1,4 @@
+pub mod tag;
 pub mod task;
 
 // // 既存のコードとの互換性のため一時的にエクスポート
