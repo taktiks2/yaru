@@ -1,0 +1,265 @@
+use anyhow::{Result, bail};
+use std::sync::Arc;
+
+use crate::application::dto::{CreateTaskDTO, TaskDTO};
+use crate::domain::tag::repository::TagRepository;
+use crate::domain::task::{
+    aggregate::TaskAggregate,
+    repository::TaskRepository,
+    value_objects::{Priority, Status, TaskDescription, TaskTitle},
+};
+
+/// AddTaskUseCase - タスク追加のユースケース
+///
+/// 新しいタスクを作成してリポジトリに保存します。
+pub struct AddTaskUseCase {
+    task_repository: Arc<dyn TaskRepository>,
+    tag_repository: Arc<dyn TagRepository>,
+}
+
+impl AddTaskUseCase {
+    /// 新しいAddTaskUseCaseを作成
+    pub fn new(
+        task_repository: Arc<dyn TaskRepository>,
+        tag_repository: Arc<dyn TagRepository>,
+    ) -> Self {
+        Self {
+            task_repository,
+            tag_repository,
+        }
+    }
+
+    /// タスクを追加する
+    ///
+    /// # Arguments
+    /// * `dto` - タスク作成時の入力DTO
+    ///
+    /// # Returns
+    /// * `Ok(TaskDTO)` - 作成されたタスク
+    /// * `Err` - エラーが発生した場合
+    pub async fn execute(&self, dto: CreateTaskDTO) -> Result<TaskDTO> {
+        // タイトルのバリデーション
+        let title = TaskTitle::new(dto.title)?;
+
+        // 説明のバリデーション
+        let description = if let Some(desc) = dto.description {
+            TaskDescription::new(desc)?
+        } else {
+            TaskDescription::new("")?
+        };
+
+        // ステータスの変換（デフォルト: Pending）
+        let status = if let Some(status_str) = dto.status {
+            Status::from_filter_value(&status_str)?
+        } else {
+            Status::Pending
+        };
+
+        // 優先度の変換（デフォルト: Medium）
+        let priority = if let Some(priority_str) = dto.priority {
+            parse_priority(&priority_str)?
+        } else {
+            Priority::Medium
+        };
+
+        // タグの存在確認
+        for tag_id in &dto.tags {
+            use crate::domain::tag::value_objects::TagId;
+            let tag_id_vo = TagId::new(*tag_id)?;
+            if self.tag_repository.find_by_id(&tag_id_vo).await?.is_none() {
+                bail!("タグID {}は存在しません", tag_id);
+            }
+        }
+
+        // タグIDのValue Objectに変換
+        let tag_ids: Result<Vec<_>> = dto
+            .tags
+            .iter()
+            .map(|id| {
+                use crate::domain::tag::value_objects::TagId;
+                TagId::new(*id)
+            })
+            .collect();
+        let tag_ids = tag_ids?;
+
+        // 期限日の変換
+        let due_date = if let Some(date) = dto.due_date {
+            use crate::domain::task::value_objects::DueDate;
+            Some(DueDate::new(date)?)
+        } else {
+            None
+        };
+
+        // TaskAggregateを作成
+        let task = TaskAggregate::new(title, description, status, priority, tag_ids, due_date);
+
+        // リポジトリに保存
+        let saved_task = self.task_repository.save(task).await?;
+
+        // DTOに変換して返す
+        Ok(TaskDTO::from(saved_task))
+    }
+}
+
+// ヘルパー関数: 文字列からPriorityに変換
+fn parse_priority(priority_str: &str) -> Result<Priority> {
+    match priority_str.to_lowercase().as_str() {
+        "low" => Ok(Priority::Low),
+        "medium" => Ok(Priority::Medium),
+        "high" => Ok(Priority::High),
+        "critical" => Ok(Priority::Critical),
+        _ => bail!("無効な優先度: {}", priority_str),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::tag::{
+        aggregate::TagAggregate, value_objects::TagDescription, value_objects::TagName,
+    };
+    use crate::interface::persistence::in_memory::{InMemoryTagRepository, InMemoryTaskRepository};
+
+    #[tokio::test]
+    async fn test_add_task_minimal() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+        let use_case = AddTaskUseCase::new(task_repo.clone(), tag_repo);
+
+        let dto = CreateTaskDTO {
+            title: "新しいタスク".to_string(),
+            description: None,
+            status: None,
+            priority: None,
+            tags: vec![],
+            due_date: None,
+        };
+
+        // Act
+        let result = use_case.execute(dto).await;
+
+        // Assert
+        assert!(result.is_ok());
+        let task = result.unwrap();
+        assert_eq!(task.title, "新しいタスク");
+        assert_eq!(task.description, None);
+        assert_eq!(task.status, "pending");
+        assert_eq!(task.priority, "medium");
+        assert!(task.tags.is_empty());
+        assert!(task.due_date.is_none());
+
+        // リポジトリに保存されていることを確認
+        let all_tasks = task_repo.find_all().await.unwrap();
+        assert_eq!(all_tasks.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_add_task_full() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+
+        // タグを事前に作成
+        let tag = TagAggregate::new(
+            TagName::new("重要").unwrap(),
+            TagDescription::new("重要なタスク").unwrap(),
+        );
+        let saved_tag = tag_repo.save(tag).await.unwrap();
+
+        let use_case = AddTaskUseCase::new(task_repo.clone(), tag_repo);
+
+        let dto = CreateTaskDTO {
+            title: "詳細タスク".to_string(),
+            description: Some("詳細な説明".to_string()),
+            status: Some("in_progress".to_string()),
+            priority: Some("high".to_string()),
+            tags: vec![saved_tag.id().value()],
+            due_date: Some(chrono::NaiveDate::from_ymd_opt(2026, 12, 31).unwrap()),
+        };
+
+        // Act
+        let result = use_case.execute(dto).await;
+
+        // Assert
+        assert!(result.is_ok());
+        let task = result.unwrap();
+        assert_eq!(task.title, "詳細タスク");
+        assert_eq!(task.description, Some("詳細な説明".to_string()));
+        assert_eq!(task.status, "in_progress");
+        assert_eq!(task.priority, "high");
+        assert_eq!(task.tags, vec![saved_tag.id().value()]);
+        assert!(task.due_date.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_add_task_with_invalid_tag() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+        let use_case = AddTaskUseCase::new(task_repo, tag_repo);
+
+        let dto = CreateTaskDTO {
+            title: "タスク".to_string(),
+            description: None,
+            status: None,
+            priority: None,
+            tags: vec![999], // 存在しないタグID
+            due_date: None,
+        };
+
+        // Act
+        let result = use_case.execute(dto).await;
+
+        // Assert
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("存在しません"));
+    }
+
+    #[tokio::test]
+    async fn test_add_task_with_empty_title() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+        let use_case = AddTaskUseCase::new(task_repo, tag_repo);
+
+        let dto = CreateTaskDTO {
+            title: "".to_string(),
+            description: None,
+            status: None,
+            priority: None,
+            tags: vec![],
+            due_date: None,
+        };
+
+        // Act
+        let result = use_case.execute(dto).await;
+
+        // Assert
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_add_task_with_invalid_priority() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+        let use_case = AddTaskUseCase::new(task_repo, tag_repo);
+
+        let dto = CreateTaskDTO {
+            title: "タスク".to_string(),
+            description: None,
+            status: None,
+            priority: Some("invalid".to_string()),
+            tags: vec![],
+            due_date: None,
+        };
+
+        // Act
+        let result = use_case.execute(dto).await;
+
+        // Assert
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("無効な優先度"));
+    }
+}
