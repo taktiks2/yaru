@@ -1,251 +1,154 @@
 # yaru
 
-シンプルで使いやすい日本語対応のCLI Todoアプリケーション
+Rust製のタスク管理CLIアプリケーション
+
+## 概要
+
+yaruは、コマンドラインで使える軽量で高速なタスク管理ツールです。TUI（Terminal User Interface）モードとCLIモードの2つの動作モードを提供し、用途に応じて使い分けることができます。
 
 ## 特徴
 
-- **シンプルなインターフェース**: 直感的なコマンドでタスク管理
-- **日本語対応**: 完全日本語対応のUI
-- **軽量**: Rustで実装され、高速に動作
-- **JSONベース**: 人間が読めるJSON形式でデータを保存
-- **フィルタ機能**: ステータスでタスクをフィルタリング
-- **対話モード**: タイトルや状態を対話的に入力可能
-- **タグ機能**: タスクにタグを付けて整理
+- **2つの動作モード**
+  - **TUIモード**: 対話的なターミナルインターフェース（引数なしで起動）
+  - **CLIモード**: コマンドライン引数による操作（スクリプトやCI/CDに最適）
+- **軽量・高速**: Rust製で高パフォーマンス
+- **タグ管理**: タスクにタグを付けて分類・検索
+- **優先度・ステータス管理**: タスクの優先度と進捗状態を管理
+- **ローカルストレージ**: SQLiteによるデータ永続化
 
 ## インストール
 
-### 前提条件
+### ビルド要件
 
-- Rust 1.70以降
+- Rust 1.80以上（edition 2024対応）
 
-### ビルドとインストール
+### ソースからビルド
 
 ```bash
 # リポジトリをクローン
-git clone <repository-url>
+git clone https://github.com/yourusername/yaru.git
 cd yaru
 
-# ビルドとインストール
-cargo install --path .
+# ビルド
+cargo build --release
+
+# バイナリは target/release/yaru に生成されます
 ```
 
 ## 使い方
 
-### タスク管理
+### TUIモード
 
-#### タスクの追加
-
-```bash
-# コマンドラインオプションで追加
-yaru task add --title "買い物に行く" --status pending
-
-# 対話モードで追加（オプション省略時）
-yaru task add
-
-# タグを指定して追加
-yaru task add --title "タスク名" --tags 1,2
-```
-
-利用可能なステータス:
-- `pending`: 保留中（デフォルト）
-- `in-progress`: 進行中
-- `completed`: 完了
-
-#### タスクの一覧表示
+引数なしで起動すると、対話的なTUIインターフェースが立ち上がります。
 
 ```bash
-# 全てのタスクを表示
-yaru task list
-
-# ステータスでフィルタリング
-yaru task list --filter status:pending
-yaru task list --filter status:completed
-yaru task list --filter status:in-progress
-
-# エイリアスも使用可能
-yaru task list --filter status:todo      # pending と同じ
-yaru task list --filter status:done      # completed と同じ
-yaru task list --filter status:progress  # in-progress と同じ
+cargo run
+# または
+./target/release/yaru
 ```
 
-#### タスクの削除
+### CLIモード
+
+コマンドライン引数を指定して実行します。
+
+#### タスク操作
 
 ```bash
-# IDを指定して削除
-yaru task delete --id 1
+# タスク一覧を表示
+cargo run -- task list
 
-# 確認ダイアログが表示されます
+# タスクを追加
+cargo run -- task add "新しいタスク"
+
+# タスクを完了
+cargo run -- task complete <タスクID>
+
+# タスクを削除
+cargo run -- task delete <タスクID>
 ```
 
-### タグ管理
-
-#### タグの追加
+#### タグ操作
 
 ```bash
-# コマンドラインオプションで追加
-yaru tag add --name "重要" --description "重要なタスク"
+# タグ一覧を表示
+cargo run -- tag list
 
-# 対話モードで追加（オプション省略時）
-yaru tag add
+# タグを追加
+cargo run -- tag add "タグ名"
+
+# タグを削除
+cargo run -- tag delete <タグID>
 ```
 
-#### タグの一覧表示
+## データベース
 
-```bash
-# 全てのタグを表示
-yaru tag list
-```
+タスクデータは以下の場所に保存されます：
 
-#### タグの削除
-
-```bash
-# IDを指定して削除
-yaru tag delete --id 1
-
-# タグを使用しているタスクがある場合は警告が表示されます
-```
-
-### ヘルプ
-
-```bash
-# 全体のヘルプ
-yaru --help
-
-# サブコマンドのヘルプ
-yaru task --help
-yaru task list --help
-yaru task add --help
-yaru task delete --help
-yaru tag --help
-yaru tag list --help
-yaru tag add --help
-yaru tag delete --help
-```
-
-## 設定
-
-### 設定ファイル
-
-設定ファイルは `~/.config/yaru/config.toml` に配置されます。
-
-```toml
-[storage]
-task_file = "/path/to/your/tasks.json"
-tag_file = "/path/to/your/tags.json"
-```
-
-設定ファイルが存在しない場合、デフォルトで以下のパスが使用されます:
-- タスク: `~/.config/yaru/tasks.json`
-- タグ: `~/.config/yaru/tags.json`
-
-### データファイル
-
-#### タスクデータ
-
-タスクデータは以下の形式でJSON形式で保存されます:
-
-```json
-[
-  {
-    "id": 1,
-    "title": "買い物に行く",
-    "description": "スーパーで食材を購入",
-    "status": "Pending",
-    "priority": "Medium",
-    "tags": [1, 2],
-    "created_at": "2025-12-27T10:00:00+00:00",
-    "updated_at": "2025-12-27T10:00:00+00:00"
-  }
-]
-```
-
-#### タグデータ
-
-タグデータは以下の形式でJSON形式で保存されます:
-
-```json
-[
-  {
-    "id": 1,
-    "name": "重要",
-    "description": "重要なタスク",
-    "created_at": "2025-12-27T10:00:00+00:00",
-    "updated_at": "2025-12-27T10:00:00+00:00"
-  }
-]
-```
+- `~/.config/yaru/yaru.db` (SQLite)
 
 ## 開発
 
-### 前提条件
-
-このプロジェクトではConventional Commitsを採用しています。
-コミットメッセージの検証にcocogittoを使用します。
+### セットアップ
 
 ```bash
-# cocogittoのインストール
-cargo install --locked cocogitto
+# 依存関係のインストール
+cargo build
 
-# Git Hooksのインストール（コミット時の自動検証）
-# プロジェクトルートで実行
-cog install-hook commit-msg
-```
-
-### コミットメッセージのルール
-
-以下のprefixを使用してください：
-
-- `feat:` - 新機能の追加
-- `fix:` - バグ修正
-- `docs:` - ドキュメントの変更
-- `style:` - コードの意味に影響しない変更（フォーマットなど）
-- `refactor:` - リファクタリング
-- `perf:` - パフォーマンス改善
-- `test:` - テストの追加・修正
-- `chore:` - ビルドプロセスやツールの変更
-- `ci:` - CI設定の変更
-- `build:` - ビルドシステムの変更
-
-例:
-```bash
-git commit -m "feat: タスクの優先度機能を追加"
-git commit -m "fix: リスト表示時のソート順を修正"
-git commit -m "docs: READMEにインストール手順を追加"
-```
-
-### テストの実行
-
-```bash
-# 全てのテストを実行
+# テスト実行
 cargo test
 
-# 特定のモジュールのテストを実行
-cargo test repository
-
-# 標準出力を表示してテスト
-cargo test -- --nocapture
-```
-
-### コードフォーマット
-
-```bash
+# フォーマット
 cargo fmt
+
+# リント
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
-### Lintチェック
+### justを使用したタスクランナー
 
 ```bash
-cargo clippy
+# コードフォーマット
+just fmt
+
+# リント（自動修正）
+just lint
+
+# フォーマット + リント
+just check
+
+# データベースのリセット
+just db-reset
+
+# エンティティの再生成
+just db-generate
 ```
 
-## アーキテクチャ
+### アーキテクチャ
 
-yaruはクリーンなアーキテクチャを採用しています:
+yaruはドメイン駆動設計（DDD）のレイヤードアーキテクチャを採用しています。
 
-- **リポジトリパターン**: データアクセスを抽象化し、将来的な拡張性を確保
-- **コマンドパターン**: 各サブコマンドを独立したモジュールとして実装
-- **トレイトベース**: テスタビリティとモジュール性を重視
+```
+src/
+├── domain/          # ドメイン層（ビジネスロジック）
+├── application/     # アプリケーション層（ユースケース）
+├── infrastructure/  # インフラストラクチャ層
+└── interface/       # インターフェース層（CLI/TUI/永続化）
+```
+
+詳細な開発ガイドラインは [CLAUDE.md](./CLAUDE.md) を参照してください。
+
+## 技術スタック
+
+- **言語**: Rust (edition 2024)
+- **CLI**: clap
+- **TUI**: ratatui
+- **ORM**: SeaORM (SQLite)
+- **非同期**: Tokio
 
 ## ライセンス
 
-このプロジェクトのライセンスについては、リポジトリのライセンスファイルを参照してください。
+未定
+
+## 貢献
+
+イシューやプルリクエストを歓迎します。開発に参加する際は [CLAUDE.md](./CLAUDE.md) のコーディングルールを確認してください。

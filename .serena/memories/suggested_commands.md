@@ -1,6 +1,6 @@
-# 推奨コマンド
+# よく使うコマンド
 
-## ビルドとテスト
+## 基本的なビルドと実行
 
 ### ビルド
 ```bash
@@ -11,138 +11,147 @@ cargo build
 cargo build --release
 ```
 
-### テスト
+### 実行
 ```bash
-# 全てのテストを実行
-cargo test
+# TUIモード（対話的インターフェース）
+cargo run
 
-# 特定のモジュールのテストを実行
-cargo test repository
-cargo test <module_name>
+# CLIモード - タスク操作
+cargo run -- task list              # タスク一覧
+cargo run -- task add "タスク名"    # タスク追加
+cargo run -- task complete <ID>     # タスク完了
+cargo run -- task delete <ID>       # タスク削除
 
-# 特定のテスト関数を実行
-cargo test test_save_json
-cargo test <test_name>
-
-# テスト実行時に標準出力を表示
-cargo test -- --nocapture
+# CLIモード - タグ操作
+cargo run -- tag list               # タグ一覧
+cargo run -- tag add "タグ名"       # タグ追加
+cargo run -- tag delete <ID>        # タグ削除
 ```
 
-### コード品質チェック
+## コード品質（just使用）
 
-#### justコマンドを使用（推奨）
+### フォーマット
 ```bash
-# コードフォーマット
 just fmt
+# または
+cargo fmt
+```
 
-# リントチェック
+### リント（警告をエラーとして扱う）
+```bash
 just lint
+# または
+cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings
+```
 
-# フォーマット + リント
+### フォーマット + リント
+```bash
 just check
 ```
 
-#### Cargoコマンドを直接使用
-```bash
-# コードフォーマット
-cargo fmt
+## テスト
 
-# リントチェック
-cargo clippy
+```bash
+# 全テスト実行
+cargo test
+
+# 特定のテスト実行
+cargo test <テスト名>
+
+# テスト出力を表示
+cargo test -- --nocapture
 ```
 
-## アプリケーション実行
+## データベース管理（just使用）
 
-### インストール
+### マイグレーションとシーダー
 ```bash
-cargo install --path .
-```
-
-### 開発中の実行
-```bash
-# タスク管理
-cargo run -- task list
-cargo run -- task add --title "タスク" --status pending
-cargo run -- task delete --id 1
-cargo run -- task show --id 1
-
-# タグ管理
-cargo run -- tag list
-cargo run -- tag add --name "重要"
-cargo run -- tag delete --id 1
-cargo run -- tag show --id 1
-```
-
-## データベース管理
-
-### マイグレーション
-```bash
-# データベースのリセット（down -> up）
+# データベースリセット（down -> up）+ シーダー実行
 just db-reset
 
-# エンティティファイルの再生成
+# エンティティファイルの再生成（SeaORM）
 just db-generate
 
-# リセット + エンティティ再生成
+# データベースリセット + エンティティ再生成
 just db-refresh
+```
 
-# データベースに接続（SQLite CLI）
+### データベース接続
+```bash
+# SQLite CLIで接続
 just db-connect
+# または
+sqlite3 ~/.config/yaru/yaru.db
 ```
 
-### データのクリーンアップ
+### 全データ削除
 ```bash
-# 全ての設定とデータを削除
+# 設定ディレクトリごと削除
 just clean-all
+# これは ~/.config/yaru/ を削除します
 ```
 
-## Git/コミット関連
+## マイグレーション作成
 
-### Conventional Commits
 ```bash
-# Git Hooksのインストール
-cog install-hook commit-msg
-
-# コミット例
-git commit -m "feat: 新機能を追加"
-git commit -m "fix: バグを修正"
-git commit -m "docs: ドキュメントを更新"
+# 新しいマイグレーションファイルを作成
+cd migration
+sea-orm-cli migrate generate <マイグレーション名>
 ```
 
-## Darwin（macOS）システム固有のコマンド
+## システムコマンド（Darwin/macOS）
 
-### 一般的なコマンド
+### ファイル操作
 ```bash
-# ファイル検索
-find . -name "*.rs"
-
-# 内容検索
-grep -r "pattern" src/
-
-# ディレクトリサイズ確認
-du -sh ~/.config/yaru/
-
-# ディスク使用量
-df -h
+ls -la          # ファイル一覧（詳細）
+find . -name    # ファイル検索
+grep -r         # ファイル内容検索
 ```
 
-### Homebrewパッケージ管理
+### Git操作
 ```bash
-# パッケージのインストール
-brew install <package>
-
-# パッケージの更新
-brew upgrade <package>
-
-# インストール済みパッケージの確認
-brew list
+git status      # 状態確認
+git add .       # ステージング
+git commit -m   # コミット
+git push        # プッシュ
+git log         # ログ確認
 ```
+
+### その他のツール
+```bash
+cargo tree      # 依存関係ツリー表示
+cargo clean     # ビルド成果物削除
+```
+
+## 環境変数（データベース操作時）
+
+マイグレーション実行時は以下の環境変数が自動設定されます（justfile経由）:
+```bash
+DATABASE_URL="sqlite://$HOME/.config/yaru/yaru.db?mode=rwc"
+RUN_SEEDER=1
+```
+
+## 開発ワークフロー
+
+### 通常の開発フロー
+1. コードを修正
+2. `just check` でフォーマット+リント
+3. `cargo test` でテスト
+4. `cargo run` で動作確認
+5. コミット
+
+### データベース変更を伴う開発
+1. マイグレーション作成: `cd migration && sea-orm-cli migrate generate <名前>`
+2. マイグレーション実装
+3. `just db-reset` でマイグレーション適用
+4. `just db-generate` でエンティティ再生成
+5. リポジトリ実装を更新
+6. テスト実行
 
 ## Serena関連
 
-### Serenaのセットアップ
 ```bash
-# Serenaの初期化
+# Serenaのセットアップ（初回のみ）
 just serena-setup
 
 # プロジェクトのインデックス作成

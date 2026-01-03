@@ -2,246 +2,332 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## プロジェクト概要
 
-`yaru` は日本語対応のシンプルなCLIタスク管理アプリケーションです。Rustで実装されており、JSONファイルにデータを永続化します。
+yaruは、Rust製のタスク管理CLIアプリケーションです。TUIモード（コマンド引数なし）とCLIモード（コマンド引数あり）の2つの動作モードを持ちます。
 
-## Common Commands
+- **TUIモード**: `cargo run`で起動し、ratatuiベースの対話的なインターフェースを提供
+- **CLIモード**: `cargo run -- task add "タスク名"`のようにコマンドライン引数を指定して実行
+
+## 開発コマンド
 
 ### ビルドとテスト
+
 ```bash
-# ビルド
+# プロジェクトのビルド
 cargo build
 
 # リリースビルド
 cargo build --release
 
-# 全てのテストを実行
+# 実行（TUIモード）
+cargo run
+
+# 実行（CLIモード）
+cargo run -- task list
+cargo run -- task add "タスク名"
+cargo run -- tag list
+
+# テスト実行
 cargo test
 
-# 特定のモジュールのテストを実行
-cargo test <module_name>  # 例: cargo test repository
+# 特定のテストのみ実行
+cargo test <テスト名>
+```
 
-# 特定のテスト関数を実行
-cargo test <test_name>    # 例: cargo test test_save_json
+### コード品質
 
-# テスト実行時に標準出力を表示
-cargo test -- --nocapture
+justfileを使用したタスクランナーが利用可能です：
 
+```bash
 # コードフォーマット
+just fmt
+# または
 cargo fmt
 
-# コードチェック
-cargo clippy
+# リント実行（自動修正あり）
+just lint
+# または
+cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings
+
+# フォーマット + リント
+just check
 ```
 
-### アプリケーション実行
+**重要**: リントは`-D warnings`オプション付きで実行され、警告をエラーとして扱います。
+
+### データベース管理
+
+データベースは`~/.config/yaru/yaru.db` (SQLite) に配置されます。
+
 ```bash
-# インストール
-cargo install --path .
+# マイグレーションのリセット（down -> up）とシーダー実行
+just db-reset
 
-# 実行（開発中）
-cargo run -- <subcommand>
+# エンティティファイルの再生成（SeaORM）
+just db-generate
 
-# 例:
-cargo run -- task list
-cargo run -- task add "タスク" --status pending --due-date 2026-12-31
-cargo run -- task delete --id 1
-cargo run -- tag list
-cargo run -- tag add --name "重要"
-cargo run -- tag delete --id 1
+# データベースリセット + エンティティ再生成
+just db-refresh
+
+# SQLite CLIで接続
+just db-connect
+
+# 全データ削除（設定ディレクトリごと削除）
+just clean-all
 ```
 
-## Architecture
+マイグレーション実行時は環境変数`DATABASE_URL`と`RUN_SEEDER`が自動設定されます。
 
-### モジュール構成
+## アーキテクチャ
 
-- **lib.rs**: アプリケーションのエントリーポイント。`run()` 関数でCLI引数をパース、設定を読み込み、コマンドを実行
-- **main.rs**: バイナリのエントリーポイント。`run()` を呼び出しエラーハンドリングのみ行う
+プロジェクトは**ドメイン駆動設計（DDD）のレイヤードアーキテクチャ**を採用しています：
 
-### コアモジュール
-
-#### CLI層 (`cli.rs`)
-- `Args`: CLIの引数をパース
-- `Commands`: トップレベルコマンド（Task, Tag）を定義
-- `TaskCommands`: タスク管理サブコマンド（List, Add, Delete）を定義
-- `TagCommands`: タグ管理サブコマンド（List, Add, Delete）を定義
-- `Filter`: フィルタ機能（例: `status:done`）のパース
-
-#### コマンド層 (`commands/`)
-各サブコマンドの実装。リポジトリを受け取り、ビジネスロジックを実行:
-
-タスク管理:
-- `add.rs`: タスクの追加（対話モード対応、タグ存在確認）
-- `list.rs`: タスクの一覧表示（フィルタ機能付き）
-- `delete.rs`: タスクの削除（確認ダイアログ付き）
-
-タグ管理:
-- `tag_add.rs`: タグの追加（対話モード対応）
-- `tag_list.rs`: タグの一覧表示
-- `tag_delete.rs`: タグの削除（参照整合性チェック付き）
-
-#### ドメイン層
-`task.rs`:
-- `Task`: タスクの構造体（id, title, description, status, priority, tags, created_at, updated_at, due_date, completed_at）
-  - `due_date`: タスクの期限（Option<NaiveDate>）
-  - `completed_at`: タスクの完了日時（Option<DateTime<Utc>>）
-    - ステータスがCompletedになった時に自動的に現在時刻が設定される
-- `Status`: タスクのステータス（Pending, Completed, InProgress）
-  - `from_filter_value()`: フィルタ文字列からStatusへの変換
-- `Priority`: タスクの優先度（Low, Medium, High, Critical）
-
-`tag.rs`:
-- `Tag`: タグの構造体（id, name, description, created_at, updated_at）
-
-#### データアクセス層 (`repository/`)
-リポジトリパターンを採用:
-- `Repository<T>` トレイト: データ永続化の抽象インターフェース（ジェネリック）
-- `JsonRepository<T>`: JSON形式の汎用実装
-  - `load()`: JSONファイルからデータを読み込み
-  - `save()`: データをJSONファイルに保存
-  - `find_next_id()`: 次のIDを生成
-  - `ensure_data_exists()`: データファイルの初期化
-  - `Task` と `Tag` の両方に使用可能
-
-#### ユーティリティ層
-- `json.rs`: JSONファイル操作の汎用関数
-  - `load_json<T>()`: HRTB（Higher-Rank Trait Bounds）を使用した柔軟な読み込み
-  - `save_json<T>()`: `?Sized` トレイト境界でサイズ不定型に対応
-- `config.rs`: TOML形式の設定ファイル管理
-  - デフォルトパス: `~/.config/yaru/config.toml`
-  - データファイル: `~/.config/yaru/tasks.json`
-- `display/`: テーブル表示（comfy-tableを使用）
-
-### 設計パターン
-
-#### リポジトリパターン
-データアクセスをトレイトで抽象化し、異なる実装を切り替え可能:
-```rust
-pub trait Repository<T> {
-    /// IDでエンティティを検索
-    async fn find_by_id(&self, id: i32) -> Result<Option<T>>;
-
-    /// 全エンティティを取得
-    async fn find_all(&self) -> Result<Vec<T>>;
-
-    /// 条件でエンティティを検索
-    ///
-    /// **注意**: 現在の実装では全データを読み込んでメモリ上でフィルタリングします。
-    /// データ量が多い場合（数千件以上）はパフォーマンスが低下する可能性があります。
-    /// 将来的にはクエリビルダーパターンの導入を検討してください。
-    async fn search<F>(&self, predicate: F) -> Result<Vec<T>>
-    where
-        F: Fn(&T) -> bool;
-
-    /// 新しいエンティティを作成
-    async fn create(&self, item: &T) -> Result<T>;
-
-    /// IDでエンティティを削除
-    async fn delete(&self, id: i32) -> Result<bool>;
-}
+```
+src/
+├── domain/          # ドメイン層（ビジネスロジック）
+│   ├── task/        # タスク集約ルート、値オブジェクト、リポジトリインターフェース
+│   ├── tag/         # タグ集約ルート、リポジトリインターフェース
+│   └── services/    # ドメインサービス
+├── application/     # アプリケーション層（ユースケース）
+│   ├── use_cases/   # タスク・タグのユースケース実装
+│   └── dto/         # データ転送オブジェクト
+├── infrastructure/  # インフラストラクチャ層
+│   ├── database/    # SeaORMによるDB接続管理
+│   └── config/      # 設定ファイル管理
+└── interface/       # インターフェース層
+    ├── cli/         # CLIコマンドハンドラ（clap）
+    ├── tui/         # TUIインターフェース（ratatui）
+    └── persistence/ # リポジトリ実装（SeaORM, in-memory）
 ```
 
-#### コマンド関数の統一インターフェース
-全てのコマンド関数は非同期でデータベース接続を引数として受け取る:
+### 依存関係の方向
 
-タスク管理:
-```rust
-pub async fn add_task(db: &DatabaseConnection, ...) -> Result<()>
-pub async fn list_tasks(db: &DatabaseConnection, ...) -> Result<()>
-pub async fn delete_task(db: &DatabaseConnection, id: i32) -> Result<()>
+- **domain** ← application ← infrastructure
+- **domain** ← application ← interface
+- インフラストラクチャ層とインターフェース層は相互に依存しない
+- ドメイン層は他のどの層にも依存しない（依存性逆転の原則）
+
+### 重要なパターン
+
+1. **Repository パターン**: ドメイン層でインターフェースを定義し、interface/persistence層で実装
+   - `SeaOrmTaskRepository`: SQLiteを使用した永続化
+   - `InMemoryTaskRepository`: テスト用のメモリ実装
+
+2. **Aggregate Root**: Task, Tagがそれぞれ集約ルート
+   - `domain/task/aggregate.rs`: Task集約ルート
+   - `domain/tag/aggregate.rs`: Tag集約ルート
+
+3. **Value Object**: ドメイン概念を値オブジェクトとして表現
+   - Status, Priority, TaskName, TaskDescription, TagNameなど
+
+4. **Use Case**: アプリケーション層でビジネスロジックを組み立て
+   - `application/use_cases/task/`: タスク関連ユースケース
+   - `application/use_cases/tag/`: タグ関連ユースケース
+
+## SeaORM とマイグレーション
+
+- ORMとして**SeaORM 1.1.2**を使用
+- マイグレーションは`migration/`ディレクトリで管理
+- エンティティは`entity/`ディレクトリに自動生成（`sea-orm-cli`使用）
+- Workspaceとして構成: ルート, migration, entity
+
+新しいマイグレーションの作成:
+```bash
+cd migration
+sea-orm-cli migrate generate <マイグレーション名>
 ```
 
-タグ管理:
-```rust
-pub async fn add_tag(db: &DatabaseConnection, ...) -> Result<()>
-pub async fn list_tags(db: &DatabaseConnection) -> Result<()>
-pub async fn delete_tag(db: &DatabaseConnection, id: i32) -> Result<()>
-```
+## TUI と CLI の統合
+
+エントリーポイント（`src/lib.rs::run()`）で分岐:
+- コマンド引数あり → `run_cli_with_command()` → CLIハンドラ実行
+- コマンド引数なし → `run_tui()` → TUIモード起動
+
+両モードともリポジトリパターンを通じて同一のドメインロジックを使用。
+
+## テスト
+
+テストは各モジュール内に`#[cfg(test)]`モジュールとして配置されています。以下のファイルにテストが含まれています：
+
+- `src/interface/tui/event.rs`
+- `src/interface/tui/app.rs`
+- `src/interface/cli/args.rs`
+- `src/interface/persistence/in_memory/task_repository.rs`
+- `src/interface/persistence/sea_orm/mapper.rs`
+
+InMemoryRepositoryを使用したユニットテストが可能です。
+
+## 使用技術スタック
+
+- **言語**: Rust (edition 2024)
+- **非同期ランタイム**: Tokio
+- **CLI**: clap (derive機能)
+- **TUI**: ratatui
+- **ORM**: SeaORM (SQLite)
+- **対話的入力**: inquire
+- **テーブル表示**: comfy-table
+- **進捗表示**: indicatif
+- **日付時刻**: chrono (serde対応)
+- **設定**: TOML
+
+## コーディングルール
+
+### コードスタイル
+
+- **インデント**: スペース4つ（Rustファイル）、`.editorconfig`に定義
+- **改行**: LF（Unix-style）
+- **文字コード**: UTF-8
+- **末尾の空白**: 削除する
+- **ファイル末尾**: 改行を追加する
+
+### 命名規則
+
+- **関数・変数**: `snake_case`
+- **構造体・Enum・トレイト**: `PascalCase`
+- **定数**: `SCREAMING_SNAKE_CASE`
 
 ### エラーハンドリング
 
-- `anyhow::Result` を使用した統一的なエラーハンドリング
-- `.context()` でエラーメッセージに文脈を追加
-- ユーザーフレンドリーな日本語エラーメッセージ
-- エラーを返す際は `anyhow::bail!` を使用する（`anyhow::anyhow!` + `return Err()` の代わり）
+- `anyhow::Result<T>`を戻り値の型として使用
+- エラーメッセージは**日本語**で記述
+- `.context("日本語のエラーメッセージ")`でコンテキストを追加
+- 早期リターンには`anyhow::bail!("日本語のエラーメッセージ")`を使用
 
-### テスト戦略
-
-- ユニットテスト: 各モジュールの `#[cfg(test)]` モジュール内に配置
-- `tempfile` クレートで一時ディレクトリを使用してファイル操作をテスト
-- リポジトリパターンによりモック実装が容易
-
-## Development Notes
-
-### モジュール構成のベストプラクティス
-
-**重要: `mod.rs` は使用しない**
-
-Rustの現代的なモジュール構成では、`mod.rs` は非推奨です。以下のパターンを使用してください：
-
-#### 推奨パターン
-```
-src/
-├── lib.rs
-├── commands.rs          # commandsモジュールの定義とエクスポート
-├── commands/            # サブモジュールの実装
-│   ├── add.rs
-│   ├── list.rs
-│   └── delete.rs
-├── repository.rs        # repositoryモジュールの定義とエクスポート
-└── repository/          # サブモジュールの実装
-    ├── json.rs
-    └── sqlite.rs
-```
-
-#### 非推奨パターン（使用しないこと）
-```
-src/
-├── lib.rs
-├── commands/
-│   ├── mod.rs          # ❌ 使用しない
-│   ├── add.rs
-│   └── list.rs
-```
-
-#### モジュール宣言の例
-`commands.rs`:
 ```rust
-// サブモジュールの宣言
-pub mod add;
-pub mod list;
-pub mod delete;
+// 良い例
+let config = load_config()
+    .context("設定ファイルの読み込みに失敗しました")?;
 
-// 必要に応じて公開
-pub use add::add_task;
-pub use list::list_tasks;
-pub use delete::delete_task;
+if invalid_state {
+    anyhow::bail!("無効な状態です: {}", details);
+}
 ```
 
-### 新しいコマンドの追加手順
+### ドキュメントとコメント
 
-#### タスクサブコマンドの追加
-1. `cli.rs` の `TaskCommands` enum に新しいバリアントを追加
-2. `commands/` に新しいモジュールファイルを作成
-3. `commands.rs` でエクスポート
-4. `lib.rs` の `handle_task_command()` で新しいコマンドを処理
+- **ドキュメントコメント**: `///`を使用し、**日本語**で記述
+- 構造体、Enum、関数、モジュールには必ずドキュメントコメントを記載
+- **インラインコメント**: `//`を使用し、**日本語**で記述
+- 処理の意図が自明でない箇所にのみコメントを記載
 
-#### タグサブコマンドの追加
-1. `cli.rs` の `TagCommands` enum に新しいバリアントを追加
-2. `commands/` に新しいモジュールファイルを作成（例: `tag_xxx.rs`）
-3. `commands.rs` でエクスポート
-4. `lib.rs` の `handle_tag_command()` で新しいコマンドを処理
+```rust
+/// タスクのステータスを表すValue Object
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Status {
+    /// 保留中
+    Pending,
+    /// 進行中
+    InProgress,
+    /// 完了
+    Completed,
+}
 
-#### 新しいトップレベルコマンドの追加
-1. `cli.rs` の `Commands` enum に新しいバリアントを追加
-2. 対応する `XxxCommands` enum を作成
-3. `commands/` に関連するモジュールを作成
-4. `lib.rs` に `handle_xxx_command()` 関数を追加
-5. `lib.rs` の `handle_command()` で新しいコマンドを処理
+// domain_eventsはクローン時には空にする
+domain_events: Vec::new(),
+```
 
-### JSON形式の特殊なトレイト境界
+### 値オブジェクト（Value Object）
 
-`json.rs` のコメントに詳細な説明あり:
-- `load_json`: HRTB（`for<'de> Deserialize<'de>`）を使用
-- `save_json`: `?Sized` を使用してサイズ不定型に対応
+- **Newtype パターン**を使用（例: `TaskTitle(String)`）
+- コンストラクタ（`new`メソッド）でバリデーションを実施
+- バリデーションエラーは日本語で`anyhow::bail!`
+- 適切なトレイトを`derive`（`Debug`, `Clone`, `PartialEq`, `Eq`など）
+- `value()`メソッドで内部の値にアクセス
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TaskTitle(String);
+
+impl TaskTitle {
+    pub fn new(value: impl Into<String>) -> Result<Self> {
+        let value = value.into();
+        if value.trim().is_empty() {
+            anyhow::bail!("タイトルは空にできません");
+        }
+        if value.len() > 100 {
+            anyhow::bail!("タイトルは100文字以内にしてください");
+        }
+        Ok(Self(value))
+    }
+
+    pub fn value(&self) -> &str {
+        &self.0
+    }
+}
+```
+
+### モジュール構成
+
+- 値オブジェクトなどの概念は**個別ファイル**として定義
+- **`mod.rs`は非推奨**: モジュールを定義する際は`mod.rs`ではなく、**モジュール名.rs**を使用する
+  - 例: `src/domain/task/value_objects/mod.rs` ❌ → `src/domain/task/value_objects.rs` ✅
+- モジュール名.rsで`pub use`により再エクスポート
+- `use`文はクレートルートからの**絶対パス**を使用
+- `use`文は層ごとにグループ化（`domain`, `application`, `infrastructure`, `interface`）
+
+```rust
+// src/domain/task/value_objects.rs (mod.rsではない)
+pub mod task_title;
+pub mod task_description;
+
+pub use task_title::TaskTitle;
+pub use task_description::TaskDescription;
+```
+
+### トレイトとデリベーション
+
+- 必要なトレイトを適切に`derive`する
+- 非同期トレイトには`#[async_trait]`を使用
+- よく使うトレイト: `Debug`, `Clone`, `PartialEq`, `Eq`, `Hash`, `Serialize`, `Deserialize`
+
+```rust
+use async_trait::async_trait;
+
+#[async_trait]
+impl TaskRepository for SeaOrmTaskRepository {
+    async fn find_by_id(&self, id: &TaskId) -> Result<Option<TaskAggregate>> {
+        // ...
+    }
+}
+```
+
+### テスト
+
+- **TDD（テスト駆動開発）**を原則とする
+- テストは`#[cfg(test)] mod tests`内に記述
+- エッジケースを含む包括的なテストを作成
+- テスト関数名は`test_<対象>_<条件>`の形式
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_task_title_valid() {
+        let title = TaskTitle::new("有効なタイトル").unwrap();
+        assert_eq!(title.value(), "有効なタイトル");
+    }
+
+    #[test]
+    fn test_task_title_empty() {
+        let result = TaskTitle::new("");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("空"));
+    }
+}
+```
+
+### コード品質
+
+- **Clippy警告を厳格に扱う**: `-D warnings`オプションでコンパイル
+- 不要な参照、未使用の変数は削除
+- N+1問題などのパフォーマンス問題に注意
+- バリデーションロジックは一箇所にまとめる
+
+## その他の注意事項
+
+- **Copilot/Claude**: 日本語でのレビューと会話を基本とする（`.github/copilot-instructions.md`参照）
+- **変更履歴**: Conventional Commitsに従い、`CHANGELOG.md`に記録
+- **バージョン管理**: cog.tomlを使用した自動バージョニング
