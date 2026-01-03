@@ -2,6 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.9.0](https://github.com/taktiks2/yaru/compare/825930222ba3f5a8e5c2b303f6513f19365b3209..0.9.0) - 2026-01-03
+#### Features
+- タスク統計情報表示機能を追加 - ([cf91a41](https://github.com/taktiks2/yaru/commit/cf91a419c4b063c71ce227df64983efb9a0aa96a)) - taktiks2
+#### Refactoring
+- calculate_stats関数を単一ループに最適化 - ([e09360c](https://github.com/taktiks2/yaru/commit/e09360c02729f427af32ca83c7b47a5491e768bc)) - taktiks2
+- StatusとPriorityにCopyトレイトを追加 - ([5a8e09e](https://github.com/taktiks2/yaru/commit/5a8e09e27c8c01625d79e114891a344c270cf0c0)) - taktiks2
+- StatusとPriorityにEq, Hashトレイトを追加 - ([8259302](https://github.com/taktiks2/yaru/commit/825930222ba3f5a8e5c2b303f6513f19365b3209)) - taktiks2
+#### Miscellaneous Chores
+- clippyによるリントを厳密にする - ([30bd23a](https://github.com/taktiks2/yaru/commit/30bd23a4aa2ef630749fb9a5629400160d9da611)) - taktiks2
+#### Styling
+- フォーマット - ([6e9e93f](https://github.com/taktiks2/yaru/commit/6e9e93fe21e7ad895702fa91b3fc1e285c53c934)) - taktiks2
+
+- - -
+
 ## [0.8.0](https://github.com/taktiks2/yaru/compare/c315337765dfa6f5a73de78606c332493ef6067f..0.8.0) - 2026-01-02
 #### Features
 - editコマンドの実装を追加 - ([c315337](https://github.com/taktiks2/yaru/commit/c315337765dfa6f5a73de78606c332493ef6067f)) - taktiks2
