@@ -44,15 +44,15 @@ pub struct TaskAggregate {
 impl Clone for TaskAggregate {
     fn clone(&self) -> Self {
         Self {
-            id: self.id.clone(),
+            id: self.id,
             title: self.title.clone(),
             description: self.description.clone(),
-            status: self.status.clone(),
-            priority: self.priority.clone(),
+            status: self.status,
+            priority: self.priority,
             tags: self.tags.clone(),
             created_at: self.created_at,
             updated_at: self.updated_at,
-            due_date: self.due_date.clone(),
+            due_date: self.due_date,
             completed_at: self.completed_at,
             // domain_eventsはクローン時には空にする
             domain_events: Vec::new(),
@@ -154,7 +154,7 @@ impl TaskAggregate {
             self.updated_at = now;
 
             // Domain Event発行
-            let event = TaskCompleted::new(self.id.clone(), now);
+            let event = TaskCompleted::new(self.id, now);
             self.domain_events.push(Box::new(event));
         }
         Ok(())
@@ -186,7 +186,7 @@ impl TaskAggregate {
         self.updated_at = Utc::now();
 
         // Domain Event発行
-        let event = TaskTitleChanged::new(self.id.clone(), old_title, new_title);
+        let event = TaskTitleChanged::new(self.id, old_title, new_title);
         self.domain_events.push(Box::new(event));
 
         Ok(())
@@ -238,11 +238,11 @@ impl TaskAggregate {
         if self.tags.contains(&tag_id) {
             bail!("タグID {} は既に追加されています", tag_id.value());
         }
-        self.tags.push(tag_id.clone());
+        self.tags.push(tag_id);
         self.updated_at = Utc::now();
 
         // Domain Event発行
-        let event = TaskTagAdded::new(self.id.clone(), tag_id);
+        let event = TaskTagAdded::new(self.id, tag_id);
         self.domain_events.push(Box::new(event));
 
         Ok(())
@@ -262,7 +262,7 @@ impl TaskAggregate {
         self.updated_at = Utc::now();
 
         // Domain Event発行
-        let event = TaskTagRemoved::new(self.id.clone(), tag_id.clone());
+        let event = TaskTagRemoved::new(self.id, *tag_id);
         self.domain_events.push(Box::new(event));
 
         Ok(())
