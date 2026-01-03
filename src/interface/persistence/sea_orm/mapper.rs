@@ -4,11 +4,11 @@ use entity::{tags, tasks};
 use sea_orm::ActiveValue::Set;
 
 use crate::domain::tag::{
-    aggregate::TagAggregate,
+    aggregate::{TagAggregate, TagReconstructParams},
     value_objects::{TagDescription, TagId, TagName},
 };
 use crate::domain::task::{
-    aggregate::TaskAggregate,
+    aggregate::{TaskAggregate, TaskReconstructParams},
     value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle},
 };
 
@@ -55,18 +55,20 @@ impl TaskMapper {
             .transpose()?;
 
         // Aggregateを再構築
-        Ok(TaskAggregate::reconstruct(
-            TaskId::new(task_model.id)?,
-            TaskTitle::new(task_model.title)?,
-            TaskDescription::new(task_model.description)?,
+        let params = TaskReconstructParams {
+            id: TaskId::new(task_model.id)?,
+            title: TaskTitle::new(task_model.title)?,
+            description: TaskDescription::new(task_model.description)?,
             status,
             priority,
-            tag_id_vos?,
-            task_model.created_at.into(),
-            task_model.updated_at.into(),
+            tags: tag_id_vos?,
+            created_at: task_model.created_at.into(),
+            updated_at: task_model.updated_at.into(),
             due_date,
-            task_model.completed_at.map(|dt| dt.into()),
-        ))
+            completed_at: task_model.completed_at.map(|dt| dt.into()),
+        };
+
+        Ok(TaskAggregate::reconstruct(params))
     }
 
     /// TaskAggregateからSeaORM ActiveModelに変換（新規作成用）
@@ -123,13 +125,15 @@ pub struct TagMapper;
 impl TagMapper {
     /// SeaORM ModelからTagAggregateに変換
     pub fn to_domain(tag_model: tags::Model) -> Result<TagAggregate> {
-        Ok(TagAggregate::reconstruct(
-            TagId::new(tag_model.id)?,
-            TagName::new(tag_model.name)?,
-            TagDescription::new(tag_model.description)?,
-            tag_model.created_at.into(),
-            tag_model.updated_at.into(),
-        ))
+        let params = TagReconstructParams {
+            id: TagId::new(tag_model.id)?,
+            name: TagName::new(tag_model.name)?,
+            description: TagDescription::new(tag_model.description)?,
+            created_at: tag_model.created_at.into(),
+            updated_at: tag_model.updated_at.into(),
+        };
+
+        Ok(TagAggregate::reconstruct(params))
     }
 
     /// TagAggregateからSeaORM ActiveModelに変換（新規作成用）

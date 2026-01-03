@@ -5,6 +5,23 @@ use super::events::{TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChange
 use super::value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle};
 use crate::domain::tag::value_objects::TagId;
 
+/// TaskAggregate の再構築用パラメータ
+///
+/// リポジトリからTaskAggregateを再構築する際に使用するパラメータをまとめた構造体です。
+#[derive(Debug)]
+pub struct TaskReconstructParams {
+    pub id: TaskId,
+    pub title: TaskTitle,
+    pub description: TaskDescription,
+    pub status: Status,
+    pub priority: Priority,
+    pub tags: Vec<TagId>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub due_date: Option<DueDate>,
+    pub completed_at: Option<DateTime<Utc>>,
+}
+
 /// TaskAggregate - タスクのAggregate Root
 ///
 /// タスクのビジネスルールを実装し、不変条件を保護します。
@@ -89,29 +106,18 @@ impl TaskAggregate {
     ///
     /// データベースから読み込んだデータをTaskAggregateに変換する際に使用します。
     /// ドメインイベントは空の状態で作成されます。
-    pub fn reconstruct(
-        id: TaskId,
-        title: TaskTitle,
-        description: TaskDescription,
-        status: Status,
-        priority: Priority,
-        tags: Vec<TagId>,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-        due_date: Option<DueDate>,
-        completed_at: Option<DateTime<Utc>>,
-    ) -> Self {
+    pub fn reconstruct(params: TaskReconstructParams) -> Self {
         Self {
-            id,
-            title,
-            description,
-            status,
-            priority,
-            tags,
-            created_at,
-            updated_at,
-            due_date,
-            completed_at,
+            id: params.id,
+            title: params.title,
+            description: params.description,
+            status: params.status,
+            priority: params.priority,
+            tags: params.tags,
+            created_at: params.created_at,
+            updated_at: params.updated_at,
+            due_date: params.due_date,
+            completed_at: params.completed_at,
             domain_events: Vec::new(),
         }
     }

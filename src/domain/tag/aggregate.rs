@@ -3,6 +3,18 @@ use chrono::{DateTime, Utc};
 
 use super::value_objects::{TagDescription, TagId, TagName};
 
+/// TagAggregate の再構築用パラメータ
+///
+/// リポジトリからTagAggregateを再構築する際に使用するパラメータをまとめた構造体です。
+#[derive(Debug)]
+pub struct TagReconstructParams {
+    pub id: TagId,
+    pub name: TagName,
+    pub description: TagDescription,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 /// TagAggregate - タグのAggregate Root
 ///
 /// タグのビジネスルールを実装し、不変条件を保護します。
@@ -31,19 +43,13 @@ impl TagAggregate {
     /// リポジトリからの再構築用ファクトリメソッド
     ///
     /// データベースから読み込んだデータをTagAggregateに変換する際に使用します。
-    pub fn reconstruct(
-        id: TagId,
-        name: TagName,
-        description: TagDescription,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-    ) -> Self {
+    pub fn reconstruct(params: TagReconstructParams) -> Self {
         Self {
-            id,
-            name,
-            description,
-            created_at,
-            updated_at,
+            id: params.id,
+            name: params.name,
+            description: params.description,
+            created_at: params.created_at,
+            updated_at: params.updated_at,
         }
     }
 
