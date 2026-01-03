@@ -116,7 +116,9 @@ fn calculate_stats(tasks: &[Task], today: chrono::NaiveDate) -> TaskStats {
         }
 
         // 優先度×ステータス クロス集計
-        *priority_status_matrix.entry((task.priority, task.status)).or_default() += 1;
+        *priority_status_matrix
+            .entry((task.priority, task.status))
+            .or_default() += 1;
     }
 
     TaskStats {
@@ -482,27 +484,99 @@ mod tests {
         let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks = vec![
             // 期限切れ
-            Task::new(1, "t1", "", Status::Pending, Priority::Medium, vec![], Some(today - chrono::Duration::days(1))),
+            Task::new(
+                1,
+                "t1",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+                Some(today - chrono::Duration::days(1)),
+            ),
             // 今日が期限
-            Task::new(2, "t2", "", Status::Pending, Priority::Medium, vec![], Some(today)),
+            Task::new(
+                2,
+                "t2",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+                Some(today),
+            ),
             // 今週が期限
-            Task::new(3, "t3", "", Status::Pending, Priority::Medium, vec![], Some(today + chrono::Duration::days(3))),
+            Task::new(
+                3,
+                "t3",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+                Some(today + chrono::Duration::days(3)),
+            ),
             // 今週が期限 (7日後)
-            Task::new(4, "t4", "", Status::Pending, Priority::Medium, vec![], Some(today + chrono::Duration::days(7))),
+            Task::new(
+                4,
+                "t4",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+                Some(today + chrono::Duration::days(7)),
+            ),
             // 期限なし
             Task::new(5, "t5", "", Status::Pending, Priority::Medium, vec![], None),
             // 期限切れだが完了済み
-            Task::new(6, "t6", "", Status::Completed, Priority::Medium, vec![], Some(today - chrono::Duration::days(1))),
+            Task::new(
+                6,
+                "t6",
+                "",
+                Status::Completed,
+                Priority::Medium,
+                vec![],
+                Some(today - chrono::Duration::days(1)),
+            ),
             // 期限がまだ先
-            Task::new(7, "t7", "", Status::Pending, Priority::Medium, vec![], Some(today + chrono::Duration::days(8))),
+            Task::new(
+                7,
+                "t7",
+                "",
+                Status::Pending,
+                Priority::Medium,
+                vec![],
+                Some(today + chrono::Duration::days(8)),
+            ),
         ];
 
         let stats = calculate_stats(&tasks, today);
 
-        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::Overdue).unwrap_or(&0), 1);
-        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::DueToday).unwrap_or(&0), 1);
-        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::DueThisWeek).unwrap_or(&0), 2);
-        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::NoDueDate).unwrap_or(&0), 1);
+        assert_eq!(
+            *stats
+                .due_date_stats
+                .get(&DueDateStatus::Overdue)
+                .unwrap_or(&0),
+            1
+        );
+        assert_eq!(
+            *stats
+                .due_date_stats
+                .get(&DueDateStatus::DueToday)
+                .unwrap_or(&0),
+            1
+        );
+        assert_eq!(
+            *stats
+                .due_date_stats
+                .get(&DueDateStatus::DueThisWeek)
+                .unwrap_or(&0),
+            2
+        );
+        assert_eq!(
+            *stats
+                .due_date_stats
+                .get(&DueDateStatus::NoDueDate)
+                .unwrap_or(&0),
+            1
+        );
         // 完了済みと期限がまだ先のタスクはカウントされない
         assert_eq!(stats.due_date_stats.values().sum::<usize>(), 5);
     }
@@ -843,10 +917,22 @@ mod tests {
         ];
 
         let stats = calculate_stats(&tasks, today);
-        assert_eq!(stats.priority_status_matrix.get(&(Priority::High, Status::Pending)), Some(&2));
-        assert_eq!(stats.priority_status_matrix.get(&(Priority::High, Status::Completed)), Some(&1));
         assert_eq!(
-            stats.priority_status_matrix.get(&(Priority::Medium, Status::InProgress)),
+            stats
+                .priority_status_matrix
+                .get(&(Priority::High, Status::Pending)),
+            Some(&2)
+        );
+        assert_eq!(
+            stats
+                .priority_status_matrix
+                .get(&(Priority::High, Status::Completed)),
+            Some(&1)
+        );
+        assert_eq!(
+            stats
+                .priority_status_matrix
+                .get(&(Priority::Medium, Status::InProgress)),
             Some(&1)
         );
     }
