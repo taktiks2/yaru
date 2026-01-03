@@ -1,6 +1,7 @@
 use anyhow::{bail, Result};
 use chrono::{DateTime, Utc};
 
+use super::events::{TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChanged};
 use super::value_objects::{
     DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle,
 };
@@ -9,7 +10,7 @@ use crate::domain::tag::value_objects::TagId;
 /// TaskAggregate - タスクのAggregate Root
 ///
 /// タスクのビジネスルールを実装し、不変条件を保護します。
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub struct TaskAggregate {
     id: TaskId,
     title: TaskTitle,
@@ -21,6 +22,43 @@ pub struct TaskAggregate {
     updated_at: DateTime<Utc>,
     due_date: Option<DueDate>,
     completed_at: Option<DateTime<Utc>>,
+    // Domain Events
+    domain_events: Vec<Box<dyn std::any::Any + Send + Sync>>,
+}
+
+impl Clone for TaskAggregate {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            title: self.title.clone(),
+            description: self.description.clone(),
+            status: self.status.clone(),
+            priority: self.priority.clone(),
+            tags: self.tags.clone(),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            due_date: self.due_date.clone(),
+            completed_at: self.completed_at,
+            // domain_eventsはクローン時には空にする
+            domain_events: Vec::new(),
+        }
+    }
+}
+
+impl PartialEq for TaskAggregate {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.title == other.title
+            && self.description == other.description
+            && self.status == other.status
+            && self.priority == other.priority
+            && self.tags == other.tags
+            && self.created_at == other.created_at
+            && self.updated_at == other.updated_at
+            && self.due_date == other.due_date
+            && self.completed_at == other.completed_at
+        // domain_eventsは比較しない
+    }
 }
 
 impl TaskAggregate {
@@ -45,6 +83,7 @@ impl TaskAggregate {
             updated_at: now,
             due_date,
             completed_at: None,
+            domain_events: Vec::new(),
         }
     }
 
@@ -55,8 +94,13 @@ impl TaskAggregate {
     pub fn complete(&mut self) -> Result<()> {
         if self.status != Status::Completed {
             self.status = Status::Completed;
-            self.completed_at = Some(Utc::now());
-            self.updated_at = Utc::now();
+            let now = Utc::now();
+            self.completed_at = Some(now);
+            self.updated_at = now;
+
+            // Domain Event発行
+            let event = TaskCompleted::new(self.id.clone(), now);
+            self.domain_events.push(Box::new(event));
         }
         Ok(())
     }
@@ -82,8 +126,14 @@ impl TaskAggregate {
 
     /// タスクのタイトルを変更します
     pub fn change_title(&mut self, new_title: TaskTitle) -> Result<()> {
-        self.title = new_title;
+        let old_title = self.title.clone();
+        self.title = new_title.clone();
         self.updated_at = Utc::now();
+
+        // Domain Event発行
+        let event = TaskTitleChanged::new(self.id.clone(), old_title, new_title);
+        self.domain_events.push(Box::new(event));
+
         Ok(())
     }
 
@@ -94,8 +144,13 @@ impl TaskAggregate {
         if self.tags.contains(&tag_id) {
             bail!("タグID {} は既に追加されています", tag_id.value());
         }
-        self.tags.push(tag_id);
+        self.tags.push(tag_id.clone());
         self.updated_at = Utc::now();
+
+        // Domain Event発行
+        let event = TaskTagAdded::new(self.id.clone(), tag_id);
+        self.domain_events.push(Box::new(event));
+
         Ok(())
     }
 
@@ -111,6 +166,11 @@ impl TaskAggregate {
         }
 
         self.updated_at = Utc::now();
+
+        // Domain Event発行
+        let event = TaskTagRemoved::new(self.id.clone(), tag_id.clone());
+        self.domain_events.push(Box::new(event));
+
         Ok(())
     }
 
@@ -153,6 +213,18 @@ impl TaskAggregate {
 
     pub fn completed_at(&self) -> &Option<DateTime<Utc>> {
         &self.completed_at
+    }
+
+    /// ドメインイベントを取得します
+    pub fn domain_events(&self) -> &Vec<Box<dyn std::any::Any + Send + Sync>> {
+        &self.domain_events
+    }
+
+    /// ドメインイベントをクリアします
+    ///
+    /// イベントハンドラで処理した後に呼び出されることを想定しています。
+    pub fn clear_events(&mut self) {
+        self.domain_events.clear();
     }
 }
 
@@ -432,5 +504,119 @@ mod tests {
         // Assert
         assert!(result.is_err());
         assert_eq!(task.tags().len(), 0);
+    }
+
+    #[test]
+    fn test_complete_emits_event() {
+        // Arrange
+        let title = TaskTitle::new("イベント発行テスト").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act
+        task.complete().unwrap();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 1);
+        assert!(task.domain_events()[0].downcast_ref::<TaskCompleted>().is_some());
+    }
+
+    #[test]
+    fn test_change_title_emits_event() {
+        // Arrange
+        let title = TaskTitle::new("元のタイトル").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let new_title = TaskTitle::new("新しいタイトル").unwrap();
+
+        // Act
+        task.change_title(new_title).unwrap();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 1);
+        assert!(task.domain_events()[0].downcast_ref::<TaskTitleChanged>().is_some());
+    }
+
+    #[test]
+    fn test_add_tag_emits_event() {
+        // Arrange
+        let title = TaskTitle::new("タグ追加イベントテスト").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let tag_id = TagId::new(1).unwrap();
+
+        // Act
+        task.add_tag(tag_id).unwrap();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 1);
+        assert!(task.domain_events()[0].downcast_ref::<TaskTagAdded>().is_some());
+    }
+
+    #[test]
+    fn test_remove_tag_emits_event() {
+        // Arrange
+        let title = TaskTitle::new("タグ削除イベントテスト").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let tag_id = TagId::new(1).unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![tag_id.clone()],
+            None,
+        );
+
+        // Act
+        task.remove_tag(&tag_id).unwrap();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 1);
+        assert!(task.domain_events()[0].downcast_ref::<TaskTagRemoved>().is_some());
+    }
+
+    #[test]
+    fn test_clear_events() {
+        // Arrange
+        let title = TaskTitle::new("イベントクリアテスト").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        task.complete().unwrap();
+        assert_eq!(task.domain_events().len(), 1);
+
+        // Act
+        task.clear_events();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 0);
     }
 }
