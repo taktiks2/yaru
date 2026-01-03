@@ -55,6 +55,7 @@ mod tests {
 
 impl DueDateStatus {
     /// 表示用の日本語名を取得
+    #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
             DueDateStatus::Overdue => "期限切れ",

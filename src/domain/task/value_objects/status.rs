@@ -49,6 +49,7 @@ impl Status {
     }
 
     /// 日本語表示名を取得
+    #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
             Status::Pending => "保留中",

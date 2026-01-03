@@ -126,6 +126,7 @@ impl TaskAggregate {
     ///
     /// リポジトリがタスクを保存する際に新しいIDを割り当てるために使用します。
     /// 元のインスタンスは変更せず、新しいインスタンスを返します。
+    #[allow(dead_code)]
     pub fn with_id(self, id: TaskId) -> Self {
         Self {
             id,
@@ -146,6 +147,7 @@ impl TaskAggregate {
     ///
     /// ステータスをCompletedに変更し、completed_atを現在時刻に設定します。
     /// 既に完了している場合は、何もしません。
+    #[allow(dead_code)]
     pub fn complete(&mut self) -> Result<()> {
         if self.status != Status::Completed {
             self.status = Status::Completed;
@@ -166,6 +168,7 @@ impl TaskAggregate {
     /// - 期限が設定されている
     /// - 現在の日付が期限を過ぎている
     /// - タスクが完了していない
+    #[allow(dead_code)]
     pub fn is_overdue(&self) -> bool {
         if self.status == Status::Completed {
             return false;
@@ -234,6 +237,7 @@ impl TaskAggregate {
     /// タスクにタグを追加します
     ///
     /// 既に同じタグが存在する場合はエラーを返します。
+    #[allow(dead_code)]
     pub fn add_tag(&mut self, tag_id: TagId) -> Result<()> {
         if self.tags.contains(&tag_id) {
             bail!("タグID {} は既に追加されています", tag_id.value());
@@ -251,6 +255,7 @@ impl TaskAggregate {
     /// タスクからタグを削除します
     ///
     /// 指定したタグが存在しない場合はエラーを返します。
+    #[allow(dead_code)]
     pub fn remove_tag(&mut self, tag_id: &TagId) -> Result<()> {
         let original_len = self.tags.len();
         self.tags.retain(|t| t != tag_id);
@@ -310,6 +315,7 @@ impl TaskAggregate {
     }
 
     /// ドメインイベントを取得します
+    #[allow(dead_code)]
     pub fn domain_events(&self) -> &Vec<Box<dyn std::any::Any + Send + Sync>> {
         &self.domain_events
     }
@@ -317,6 +323,7 @@ impl TaskAggregate {
     /// ドメインイベントをクリアします
     ///
     /// イベントハンドラで処理した後に呼び出されることを想定しています。
+    #[allow(dead_code)]
     pub fn clear_events(&mut self) {
         self.domain_events.clear();
     }

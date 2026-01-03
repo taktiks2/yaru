@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use entity::{tags, task_tags};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, ModelTrait, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
 
 use crate::domain::tag::{aggregate::TagAggregate, repository::TagRepository, value_objects::TagId};
 use super::mapper::TagMapper;

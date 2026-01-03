@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use chrono::NaiveDate;
-use clap::ValueEnum;
 use inquire::{DateSelect, Editor, MultiSelect, Select, Text, validator};
 use std::sync::Arc;
 
@@ -11,7 +10,7 @@ use crate::application::use_cases::task::{
 };
 use crate::domain::tag::repository::TagRepository;
 use crate::domain::task::value_objects::{Priority, Status};
-use crate::interface::cli::args::{Filter, FilterKey, TaskCommands};
+use crate::interface::cli::args::{Filter, TaskCommands};
 use crate::interface::cli::display::{create_stats_table, create_task_detail_table, create_task_table};
 
 /// タスクコマンドを処理

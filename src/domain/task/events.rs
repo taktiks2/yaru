@@ -4,6 +4,7 @@ use super::value_objects::{TaskId, TaskTitle};
 use crate::domain::tag::value_objects::TagId;
 
 /// DomainEvent trait - ドメインイベントの基底トレイト
+#[allow(dead_code)]
 pub trait DomainEvent: Send + Sync {
     /// イベントが発生した日時を取得
     fn occurred_at(&self) -> DateTime<Utc>;
@@ -14,6 +15,7 @@ pub trait DomainEvent: Send + Sync {
 
 /// TaskCreated - タスク作成イベント
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub struct TaskCreated {
     pub task_id: TaskId,
     pub title: TaskTitle,
@@ -21,6 +23,7 @@ pub struct TaskCreated {
 }
 
 impl TaskCreated {
+    #[allow(dead_code)]
     pub fn new(task_id: TaskId, title: TaskTitle) -> Self {
         Self {
             task_id,

@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::Result;
 use std::sync::Arc;
 
 use crate::application::dto::TaskDTO;

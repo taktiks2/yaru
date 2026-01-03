@@ -56,6 +56,7 @@ impl TagAggregate {
     /// IDを設定した新しいインスタンスを返す
     ///
     /// リポジトリがタグを保存する際に新しいIDを割り当てるために使用します。
+    #[allow(dead_code)]
     pub fn with_id(self, id: TagId) -> Self {
         Self {
             id,

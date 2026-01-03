@@ -51,7 +51,7 @@ impl TaskMapper {
         // DueDate変換
         let due_date = task_model
             .due_date
-            .map(|date| DueDate::new(date))
+            .map(DueDate::new)
             .transpose()?;
 
         // Aggregateを再構築

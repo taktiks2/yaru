@@ -3,7 +3,7 @@ use anyhow::Result;
 /// タグの説明を表すValue Object
 ///
 /// 説明は任意の文字列です。空文字列も許可されます。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TagDescription(String);
 
 // テストのみを先に作成（TDD）
@@ -73,11 +73,5 @@ impl TagDescription {
     /// 説明の値を取得
     pub fn value(&self) -> &str {
         &self.0
-    }
-}
-
-impl Default for TagDescription {
-    fn default() -> Self {
-        Self(String::new())
     }
 }

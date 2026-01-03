@@ -6,6 +6,7 @@ use crate::domain::task::value_objects::{Priority, Status};
 
 /// フィルタ条件を表す構造体
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Filter {
     pub key: FilterKey,
     pub value: String,

@@ -22,6 +22,7 @@ impl std::fmt::Display for Priority {
 
 impl Priority {
     /// 文字列から変換
+    #[allow(dead_code)]
     pub fn from_str(s: &str) -> Result<Self> {
         match s {
             "Low" => Ok(Priority::Low),
@@ -43,6 +44,7 @@ impl Priority {
     }
 
     /// 日本語表示名を取得
+    #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
             Priority::Low => "低",

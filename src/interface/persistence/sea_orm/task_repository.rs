@@ -2,8 +2,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use entity::{task_tags, tasks};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait,
-    QueryFilter, QuerySelect, RelationTrait,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait,
+    QueryFilter,
 };
 
 use crate::domain::task::{

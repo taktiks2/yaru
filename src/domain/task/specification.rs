@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::aggregate::TaskAggregate;
 use super::value_objects::{Priority, Status, TaskId};
 use crate::domain::tag::value_objects::TagId;

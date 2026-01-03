@@ -20,11 +20,13 @@ impl DueDate {
     }
 
     /// 指定された日付より前かチェック
+    #[allow(dead_code)]
     pub fn is_before(&self, other: NaiveDate) -> bool {
         self.0 < other
     }
 
     /// 指定された日付より後かチェック
+    #[allow(dead_code)]
     pub fn is_after(&self, other: NaiveDate) -> bool {
         self.0 > other
     }

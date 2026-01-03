@@ -46,7 +46,7 @@ pub fn format_optional_text(text: &Option<String>) -> String {
 /// - DateTimeが存在しない場合: "-"
 pub fn format_optional_datetime(dt: &Option<DateTime<Utc>>) -> String {
     dt.as_ref()
-        .map(|d| format_local_time(d))
+        .map(format_local_time)
         .unwrap_or_else(|| "-".to_string())
 }
 

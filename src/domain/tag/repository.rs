@@ -69,5 +69,6 @@ pub trait TagRepository: Send + Sync {
     /// * `Ok(Some(TagAggregate))` - タグが見つかった場合
     /// * `Ok(None)` - タグが見つからなかった場合
     /// * `Err` - エラーが発生した場合
+    #[allow(dead_code)]
     async fn find_by_name(&self, name: &str) -> Result<Option<TagAggregate>>;
 }

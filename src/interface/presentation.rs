@@ -5,6 +5,7 @@ use crate::application::dto::{stats_dto::StatsDTO, tag_dto::TagDTO, task_dto::Ta
 /// プレゼンテーション層の抽象トレイト
 ///
 /// CLI/TUIの両方に対応できるよう、プレゼンテーションロジックを抽象化します。
+#[allow(dead_code)]
 pub trait Presenter: Send + Sync {
     /// タスク一覧を表示
     fn present_task_list(&self, tasks: &[TaskDTO]) -> Result<()>;
@@ -35,9 +36,11 @@ pub trait Presenter: Send + Sync {
 ///
 /// コマンドラインインターフェース用のプレゼンター実装。
 /// テーブル形式でデータを表示します。
+#[allow(dead_code)]
 pub struct CliPresenter;
 
 impl CliPresenter {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self
     }
