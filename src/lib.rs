@@ -11,152 +11,54 @@ mod interface;
 // mod repository;
 
 use anyhow::{Context, Result};
-// use clap::{Parser, error::ErrorKind};
-// use cli::{Args, Commands, TagCommands, TaskCommands};
-// use command::{
-//     tag::{
-//         AddTagParams, DeleteTagParams, EditTagParams, ShowTagParams, add_tag, delete_tag, edit_tag,
-//         list_tags, show_tag,
-//     },
-//     task::{
-//         AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams, add_task,
-//         delete_task, edit_task, list_tasks, show_stats, show_task,
-//     },
-// };
-// use config::load_config;
-// use migration::MigratorTrait;
-// use sea_orm::Database;
+use clap::Parser;
+use std::sync::Arc;
+
+use infrastructure::{load_config, DatabaseConnectionManager};
+use interface::cli::args::{Args, Commands};
+use interface::cli::{task_handler, tag_handler};
+use interface::persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository};
+use migration::MigratorTrait;
 
 /// アプリケーションのエントリーポイント
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
 pub async fn run() -> Result<()> {
-    unimplemented!("リファクタリング中のため一時的に無効化")
-    /*
-        let args = match Args::try_parse() {
-            Ok(args) => args,
-            Err(e) => {
-                if e.kind() == ErrorKind::InvalidSubcommand {
-                    anyhow::bail!("無効なサブコマンドです。使用可能なコマンド: task, tag");
-                } else {
-                    return Err(e.into());
-                }
-            }
-        };
+    run_cli().await
+}
 
-        // 設定を読み込む
-        let config = load_config()?;
+/// CLIモードで実行
+async fn run_cli() -> Result<()> {
+    // CLI引数をパース
+    let args = Args::parse();
 
-        // データベース接続を確立
-        let db = Database::connect(&config.storage.database_url)
-            .await
-            .context("データベース接続に失敗しました")?;
+    // 設定を読み込む
+    let config = load_config()?;
 
-        // マイグレーション実行
-        migration::Migrator::up(&db, None)
-            .await
-            .context("マイグレーション実行に失敗しました")?;
+    // データベース接続を確立
+    let db = DatabaseConnectionManager::connect_from_config(&config)
+        .await
+        .context("データベース接続に失敗しました")?;
 
-        // コマンド実行（DB接続を直接渡す）
-        handle_command(args, &db).await?;
+    // マイグレーション実行
+    migration::Migrator::up(&db, None)
+        .await
+        .context("マイグレーション実行に失敗しました")?;
 
-        // 接続を明示的に閉じる
-        db.close().await?;
+    // リポジトリを初期化
+    let task_repo = Arc::new(SeaOrmTaskRepository::new(db.clone()));
+    let tag_repo = Arc::new(SeaOrmTagRepository::new(db.clone()));
 
-        Ok(())
+    // コマンド実行
+    match args.command {
+        Commands::Task { command } => {
+            task_handler::handle_task_command(command, task_repo, tag_repo).await?
+        }
+        Commands::Tag { command } => tag_handler::handle_tag_command(command, tag_repo).await?,
     }
 
-    /// コマンドを実行
-    async fn handle_command(args: Args, db: &sea_orm::DatabaseConnection) -> Result<()> {
-        match args.command {
-            Commands::Task { command } => handle_task_command(command, db).await,
-            Commands::Tag { command } => handle_tag_command(command, db).await,
-        }
-    }
+    // 接続を明示的に閉じる
+    db.close().await?;
 
-    /// タスクコマンドを実行
-    async fn handle_task_command(
-        command: TaskCommands,
-        db: &sea_orm::DatabaseConnection,
-    ) -> Result<()> {
-        match command {
-            TaskCommands::List { filter } => list_tasks(db, ListTasksParams { filters: filter }).await,
-            TaskCommands::Show { id } => show_task(db, ShowTaskParams { id }).await,
-            TaskCommands::Add {
-                title,
-                description,
-                status,
-                priority,
-                tags,
-                due_date,
-            } => {
-                add_task(
-                    db,
-                    AddTaskParams {
-                        title,
-                        description,
-                        status,
-                        priority,
-                        tag_ids: tags,
-                        due_date,
-                    },
-                )
-                .await
-            }
-            TaskCommands::Delete { id } => delete_task(db, DeleteTaskParams { id }).await,
-            TaskCommands::Edit {
-                id,
-                title,
-                description,
-                status,
-                priority,
-                tags,
-                due_date,
-                clear_due_date,
-            } => {
-                edit_task(
-                    db,
-                    EditTaskParams {
-                        id,
-                        title,
-                        description,
-                        status,
-                        priority,
-                        tag_ids: tags,
-                        due_date,
-                        clear_due_date,
-                    },
-                )
-                .await
-            }
-            TaskCommands::Stats => show_stats(db).await,
-        }
-    }
-
-    /// タグコマンドを実行
-    async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnection) -> Result<()> {
-        match command {
-            TagCommands::Add { name, description } => {
-                add_tag(db, AddTagParams { name, description }).await
-            }
-            TagCommands::Show { id } => show_tag(db, ShowTagParams { id }).await,
-            TagCommands::List => list_tags(db).await,
-            TagCommands::Delete { id } => delete_tag(db, DeleteTagParams { id }).await,
-            TagCommands::Edit {
-                id,
-                name,
-                description,
-            } => {
-                edit_tag(
-                    db,
-                    EditTagParams {
-                        id,
-                        name,
-                        description,
-                    },
-                )
-                .await
-            }
-        }
-        */
+    Ok(())
 }
