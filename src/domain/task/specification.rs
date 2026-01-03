@@ -1,8 +1,12 @@
 #![allow(dead_code)]
 
-use super::aggregate::TaskAggregate;
-use super::value_objects::{Priority, Status, TaskId};
-use crate::domain::tag::value_objects::TagId;
+use crate::domain::{
+    tag::value_objects::TagId,
+    task::{
+        aggregate::TaskAggregate,
+        value_objects::{Priority, Status, TaskId},
+    },
+};
 
 /// TaskSpecification trait - タスクの検索条件を抽象化
 ///

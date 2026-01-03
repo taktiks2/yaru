@@ -1,10 +1,10 @@
+use crate::{
+    application::dto::StatsDTO,
+    domain::{services::TaskStatisticsService, task::repository::TaskRepository},
+};
 use anyhow::Result;
 use chrono::Utc;
 use std::sync::Arc;
-
-use crate::application::dto::StatsDTO;
-use crate::domain::services::TaskStatisticsService;
-use crate::domain::task::repository::TaskRepository;
 
 /// ShowStatsUseCase - タスク統計表示のユースケース
 ///

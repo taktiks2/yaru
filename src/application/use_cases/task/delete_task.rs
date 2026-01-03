@@ -1,7 +1,6 @@
+use crate::domain::task::{repository::TaskRepository, value_objects::TaskId};
 use anyhow::{Result, bail};
 use std::sync::Arc;
-
-use crate::domain::task::{repository::TaskRepository, value_objects::TaskId};
 
 /// DeleteTaskUseCase - タスク削除のユースケース
 ///

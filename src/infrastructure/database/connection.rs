@@ -1,3 +1,4 @@
+use crate::infrastructure::config::Config;
 use anyhow::{Context, Result};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::time::Duration;
@@ -36,9 +37,7 @@ impl DatabaseConnectionManager {
     ///
     /// # 戻り値
     /// データベース接続オブジェクト
-    pub async fn connect_from_config(
-        config: &crate::infrastructure::config::Config,
-    ) -> Result<DatabaseConnection> {
+    pub async fn connect_from_config(config: &Config) -> Result<DatabaseConnection> {
         Self::connect(&config.storage.database_url).await
     }
 }
@@ -46,8 +45,7 @@ impl DatabaseConnectionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::config::Config;
-    use crate::infrastructure::config::app_config::StorageConfig;
+    use crate::infrastructure::config::{Config, app_config::StorageConfig};
 
     #[tokio::test]
     async fn test_connect_with_valid_url() {

@@ -1,8 +1,9 @@
+use crate::{
+    application::dto::TaskDTO,
+    domain::task::{repository::TaskRepository, value_objects::TaskId},
+};
 use anyhow::Result;
 use std::sync::Arc;
-
-use crate::application::dto::TaskDTO;
-use crate::domain::task::{repository::TaskRepository, value_objects::TaskId};
 
 /// ShowTaskUseCase - タスク詳細取得のユースケース
 ///

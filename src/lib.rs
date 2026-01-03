@@ -3,15 +3,17 @@ mod domain;
 mod infrastructure;
 mod interface;
 
+use crate::{
+    infrastructure::{load_config, DatabaseConnectionManager},
+    interface::{
+        cli::{args::{Args, Commands}, tag_handler, task_handler},
+        persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository},
+    },
+};
 use anyhow::{Context, Result};
 use clap::Parser;
-use std::sync::Arc;
-
-use infrastructure::{DatabaseConnectionManager, load_config};
-use interface::cli::args::{Args, Commands};
-use interface::cli::{tag_handler, task_handler};
-use interface::persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository};
 use migration::MigratorTrait;
+use std::sync::Arc;
 
 /// アプリケーションのエントリーポイント
 ///

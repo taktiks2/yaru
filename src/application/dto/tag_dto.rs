@@ -1,7 +1,6 @@
+use crate::domain::tag::aggregate::TagAggregate;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-use crate::domain::tag::aggregate::TagAggregate;
 
 /// タグの読み取り専用表現（DTO）
 ///

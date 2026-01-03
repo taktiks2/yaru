@@ -1,12 +1,13 @@
+use crate::{
+    application::dto::{CreateTagDTO, TagDTO},
+    domain::tag::{
+        aggregate::TagAggregate,
+        repository::TagRepository,
+        value_objects::{TagDescription, TagName},
+    },
+};
 use anyhow::Result;
 use std::sync::Arc;
-
-use crate::application::dto::{CreateTagDTO, TagDTO};
-use crate::domain::tag::{
-    aggregate::TagAggregate,
-    repository::TagRepository,
-    value_objects::{TagDescription, TagName},
-};
 
 /// AddTagUseCase - タグ作成のユースケース
 ///

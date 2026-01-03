@@ -1,6 +1,5 @@
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-
 use crate::interface::tui::app::App;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// キーイベントを処理する
 pub fn handle_key_event(app: &mut App, key: KeyEvent) {

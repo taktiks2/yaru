@@ -1,9 +1,12 @@
+use crate::domain::{
+    tag::value_objects::TagId,
+    task::{
+        events::{TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChanged},
+        value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle},
+    },
+};
 use anyhow::{Result, bail};
 use chrono::{DateTime, Utc};
-
-use super::events::{TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChanged};
-use super::value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle};
-use crate::domain::tag::value_objects::TagId;
 
 /// TaskAggregate の再構築用パラメータ
 ///

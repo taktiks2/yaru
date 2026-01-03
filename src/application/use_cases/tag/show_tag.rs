@@ -1,8 +1,9 @@
+use crate::{
+    application::dto::TagDTO,
+    domain::tag::{repository::TagRepository, value_objects::TagId},
+};
 use anyhow::Result;
 use std::sync::Arc;
-
-use crate::application::dto::TagDTO;
-use crate::domain::tag::{repository::TagRepository, value_objects::TagId};
 
 /// ShowTagUseCase - タグ詳細取得のユースケース
 ///

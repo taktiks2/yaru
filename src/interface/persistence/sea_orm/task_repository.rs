@@ -1,15 +1,17 @@
+use crate::{
+    domain::task::{
+        aggregate::TaskAggregate,
+        repository::TaskRepository,
+        specification::TaskSpecification,
+        value_objects::TaskId,
+    },
+    interface::persistence::sea_orm::mapper::TaskMapper,
+};
 use anyhow::Result;
 use async_trait::async_trait;
-use entity::prelude::{TaskTags, Tasks};
-use entity::task_tags;
+use entity::{prelude::{TaskTags, Tasks}, task_tags};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-};
-
-use super::mapper::TaskMapper;
-use crate::domain::task::{
-    aggregate::TaskAggregate, repository::TaskRepository, specification::TaskSpecification,
-    value_objects::TaskId,
 };
 
 /// SeaORM実装のTaskRepository

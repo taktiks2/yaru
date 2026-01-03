@@ -1,8 +1,9 @@
+use crate::domain::task::{
+    aggregate::TaskAggregate,
+    value_objects::{Priority, Status},
+};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
-
-use crate::domain::task::aggregate::TaskAggregate;
-use crate::domain::task::value_objects::{Priority, Status};
 
 /// タスクの読み取り専用表現（DTO）
 ///

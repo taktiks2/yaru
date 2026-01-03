@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
-use chrono::NaiveDate;
-
 use crate::domain::task::{
     aggregate::TaskAggregate,
     value_objects::{DueDateStatus, Priority, Status, TaskStats},
 };
+use chrono::NaiveDate;
+use std::collections::HashMap;
 
 /// TaskStatisticsService - タスクの統計情報を計算するドメインサービス
 ///

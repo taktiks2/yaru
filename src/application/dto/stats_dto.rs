@@ -1,7 +1,6 @@
+use crate::domain::task::value_objects::{DueDateStatus, Priority, Status, TaskStats};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-use crate::domain::task::value_objects::{DueDateStatus, Priority, Status, TaskStats};
 
 /// 統計情報の読み取り専用表現（DTO）
 ///

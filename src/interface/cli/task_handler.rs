@@ -1,24 +1,32 @@
+use crate::{
+    application::{
+        dto::task_dto::{CreateTaskDTO, UpdateTaskDTO},
+        use_cases::task::{
+            add_task::AddTaskUseCase, delete_task::DeleteTaskUseCase, edit_task::EditTaskUseCase,
+            list_tasks::ListTasksUseCase, show_stats::ShowStatsUseCase, show_task::ShowTaskUseCase,
+        },
+    },
+    domain::{
+        tag::{repository::TagRepository, value_objects::TagId},
+        task::{
+            repository::TaskRepository,
+            value_objects::{Priority, Status},
+        },
+    },
+    interface::cli::{
+        args::{Filter, TaskCommands},
+        display::{create_stats_table, create_task_detail_table, create_task_table},
+    },
+};
 use anyhow::{Context, Result};
 use chrono::NaiveDate;
 use inquire::{DateSelect, Editor, MultiSelect, Select, Text, validator};
 use std::sync::Arc;
 
-use crate::application::dto::task_dto::{CreateTaskDTO, UpdateTaskDTO};
-use crate::application::use_cases::task::{
-    add_task::AddTaskUseCase, delete_task::DeleteTaskUseCase, edit_task::EditTaskUseCase,
-    list_tasks::ListTasksUseCase, show_stats::ShowStatsUseCase, show_task::ShowTaskUseCase,
-};
-use crate::domain::tag::repository::TagRepository;
-use crate::domain::task::value_objects::{Priority, Status};
-use crate::interface::cli::args::{Filter, TaskCommands};
-use crate::interface::cli::display::{
-    create_stats_table, create_task_detail_table, create_task_table,
-};
-
 /// タスクコマンドを処理
 pub async fn handle_task_command(
     command: TaskCommands,
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
+    task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
 ) -> Result<()> {
     match command {
@@ -75,7 +83,7 @@ pub async fn handle_task_command(
 
 /// タスク一覧を表示
 async fn handle_list(
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
+    task_repo: Arc<dyn TaskRepository>,
     _filter: Option<Vec<Filter>>,
 ) -> Result<()> {
     let use_case = ListTasksUseCase::new(task_repo);
@@ -94,10 +102,7 @@ async fn handle_list(
 }
 
 /// タスクの詳細を表示
-async fn handle_show(
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
-    id: i32,
-) -> Result<()> {
+async fn handle_show(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()> {
     let use_case = ShowTaskUseCase::new(task_repo);
     let task = use_case.execute(id).await?;
 
@@ -110,7 +115,7 @@ async fn handle_show(
 /// 新しいタスクを追加
 #[allow(clippy::too_many_arguments)]
 async fn handle_add(
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
+    task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
     title: Option<String>,
     description: Option<String>,
@@ -125,9 +130,7 @@ async fn handle_add(
     // タグIDの検証（指定されている場合）
     if let Some(ref ids) = tag_ids {
         for id in ids {
-            let tag = tag_repo
-                .find_by_id(&crate::domain::tag::value_objects::TagId::new(*id)?)
-                .await?;
+            let tag = tag_repo.find_by_id(&TagId::new(*id)?).await?;
             if tag.is_none() {
                 anyhow::bail!("存在しないタグID: {}", id);
             }
@@ -257,10 +260,7 @@ async fn handle_add(
 }
 
 /// タスクを削除
-async fn handle_delete(
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
-    id: i32,
-) -> Result<()> {
+async fn handle_delete(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()> {
     // 確認
     let confirm = inquire::Confirm::new(&format!("タスクID {}を削除しますか？", id))
         .with_default(false)
@@ -283,7 +283,7 @@ async fn handle_delete(
 /// タスクを編集
 #[allow(clippy::too_many_arguments)]
 async fn handle_edit(
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
+    task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
     id: i32,
     title: Option<String>,
@@ -297,9 +297,7 @@ async fn handle_edit(
     // タグIDの検証（指定されている場合）
     if let Some(ref ids) = tags {
         for tag_id in ids {
-            let tag = tag_repo
-                .find_by_id(&crate::domain::tag::value_objects::TagId::new(*tag_id)?)
-                .await?;
+            let tag = tag_repo.find_by_id(&TagId::new(*tag_id)?).await?;
             if tag.is_none() {
                 anyhow::bail!("存在しないタグID: {}", tag_id);
             }
@@ -338,9 +336,7 @@ async fn handle_edit(
 }
 
 /// タスクの統計情報を表示
-async fn handle_stats(
-    task_repo: Arc<dyn crate::domain::task::repository::TaskRepository>,
-) -> Result<()> {
+async fn handle_stats(task_repo: Arc<dyn TaskRepository>) -> Result<()> {
     let use_case = ShowStatsUseCase::new(task_repo);
     let stats = use_case.execute().await?;
 

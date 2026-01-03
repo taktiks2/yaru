@@ -1,11 +1,12 @@
+use crate::{
+    application::dto::{TagDTO, UpdateTagDTO},
+    domain::tag::{
+        repository::TagRepository,
+        value_objects::{TagDescription, TagId, TagName},
+    },
+};
 use anyhow::Result;
 use std::sync::Arc;
-
-use crate::application::dto::{TagDTO, UpdateTagDTO};
-use crate::domain::tag::{
-    repository::TagRepository,
-    value_objects::{TagDescription, TagId, TagName},
-};
 
 /// EditTagUseCase - タグ更新のユースケース
 ///

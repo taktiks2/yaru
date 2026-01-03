@@ -1,8 +1,7 @@
+use crate::domain::task::{
+    aggregate::TaskAggregate, specification::TaskSpecification, value_objects::TaskId,
+};
 use anyhow::Result;
-
-use super::aggregate::TaskAggregate;
-use super::specification::TaskSpecification;
-use super::value_objects::TaskId;
 
 /// TaskRepository trait - タスクの永続化を抽象化
 ///

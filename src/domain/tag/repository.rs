@@ -1,7 +1,5 @@
+use crate::domain::tag::{aggregate::TagAggregate, value_objects::TagId};
 use anyhow::Result;
-
-use super::aggregate::TagAggregate;
-use super::value_objects::TagId;
 
 /// TagRepository trait - タグの永続化を抽象化
 ///

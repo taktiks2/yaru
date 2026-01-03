@@ -1,12 +1,15 @@
+use crate::{
+    application::dto::{TaskDTO, UpdateTaskDTO},
+    domain::{
+        tag::{repository::TagRepository, value_objects::TagId},
+        task::{
+            repository::TaskRepository,
+            value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle},
+        },
+    },
+};
 use anyhow::{Result, bail};
 use std::sync::Arc;
-
-use crate::application::dto::{TaskDTO, UpdateTaskDTO};
-use crate::domain::tag::repository::TagRepository;
-use crate::domain::task::{
-    repository::TaskRepository,
-    value_objects::{Priority, Status, TaskDescription, TaskId, TaskTitle},
-};
 
 /// EditTaskUseCase - タスク更新のユースケース
 ///
@@ -77,21 +80,14 @@ impl EditTaskUseCase {
         if let Some(tag_ids) = dto.tags {
             // タグの存在確認
             for tag_id in &tag_ids {
-                use crate::domain::tag::value_objects::TagId as TagIdVO;
-                let tag_id_vo = TagIdVO::new(*tag_id)?;
+                let tag_id_vo = TagId::new(*tag_id)?;
                 if self.tag_repository.find_by_id(&tag_id_vo).await?.is_none() {
                     bail!("タグID {}は存在しません", tag_id);
                 }
             }
 
             // タグIDのValue Objectに変換
-            let tag_id_vos: Result<Vec<_>> = tag_ids
-                .iter()
-                .map(|id| {
-                    use crate::domain::tag::value_objects::TagId as TagIdVO;
-                    TagIdVO::new(*id)
-                })
-                .collect();
+            let tag_id_vos: Result<Vec<_>> = tag_ids.iter().map(|id| TagId::new(*id)).collect();
             let tag_id_vos = tag_id_vos?;
 
             // 既存のタグをすべて削除して新しいタグを追加
@@ -100,7 +96,6 @@ impl EditTaskUseCase {
 
         // 期限日の更新
         if let Some(due_date) = dto.due_date {
-            use crate::domain::task::value_objects::DueDate;
             let due_date_vo = Some(DueDate::new(due_date)?);
             task.change_due_date(due_date_vo)?;
         }
@@ -127,11 +122,13 @@ fn parse_priority(priority_str: &str) -> Result<Priority> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::task::{
-        aggregate::TaskAggregate,
-        value_objects::{Priority, Status, TaskDescription, TaskTitle},
+    use crate::{
+        domain::task::{
+            aggregate::TaskAggregate,
+            value_objects::{Priority, Status, TaskDescription, TaskTitle},
+        },
+        interface::persistence::in_memory::{InMemoryTagRepository, InMemoryTaskRepository},
     };
-    use crate::interface::persistence::in_memory::{InMemoryTagRepository, InMemoryTaskRepository};
 
     #[tokio::test]
     async fn test_edit_task_title() {

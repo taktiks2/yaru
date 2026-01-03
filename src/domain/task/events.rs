@@ -1,7 +1,8 @@
+use crate::domain::{
+    tag::value_objects::TagId,
+    task::value_objects::{TaskId, TaskTitle},
+};
 use chrono::{DateTime, Utc};
-
-use super::value_objects::{TaskId, TaskTitle};
-use crate::domain::tag::value_objects::TagId;
 
 /// DomainEvent trait - ドメインイベントの基底トレイト
 #[allow(dead_code)]

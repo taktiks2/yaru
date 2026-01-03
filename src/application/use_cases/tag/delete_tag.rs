@@ -1,7 +1,6 @@
+use crate::domain::tag::{repository::TagRepository, value_objects::TagId};
 use anyhow::Result;
 use std::sync::Arc;
-
-use crate::domain::tag::{repository::TagRepository, value_objects::TagId};
 
 /// DeleteTagUseCase - タグ削除のユースケース
 ///

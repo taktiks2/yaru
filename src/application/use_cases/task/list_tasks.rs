@@ -1,8 +1,6 @@
+use crate::{application::dto::TaskDTO, domain::task::repository::TaskRepository};
 use anyhow::Result;
 use std::sync::Arc;
-
-use crate::application::dto::TaskDTO;
-use crate::domain::task::repository::TaskRepository;
 
 /// ListTasksUseCase - タスク一覧取得のユースケース
 ///

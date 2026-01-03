@@ -1,7 +1,6 @@
+use crate::domain::tag::value_objects::{TagDescription, TagId, TagName};
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-
-use super::value_objects::{TagDescription, TagId, TagName};
 
 /// TagAggregate の再構築用パラメータ
 ///
