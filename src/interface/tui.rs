@@ -3,15 +3,16 @@ pub mod event;
 pub mod ui;
 
 use anyhow::Result;
-use ratatui::crossterm::{
-    event as crossterm_event,
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use ratatui::{backend::CrosstermBackend, Terminal};
-use std::{io, time::Duration};
-
 use app::App;
+use ratatui::{
+    Terminal,
+    backend::CrosstermBackend,
+    crossterm::{
+        self, execute,
+        terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    },
+};
+use std::{io, time::Duration};
 
 /// TUIモードで実行する
 pub async fn run_tui() -> Result<()> {
@@ -31,13 +32,13 @@ pub async fn run_tui() -> Result<()> {
     // イベントループ
     loop {
         // 画面描画
-        terminal.draw(|f| ui::render(f))?;
+        terminal.draw(ui::render)?;
 
         // イベント処理（100msタイムアウト）
-        if crossterm_event::poll(Duration::from_millis(100))? {
-            if let crossterm_event::Event::Key(key) = crossterm_event::read()? {
-                event::handle_key_event(&mut app, key);
-            }
+        if crossterm::event::poll(Duration::from_millis(100))?
+            && let crossterm::event::Event::Key(key) = crossterm::event::read()?
+        {
+            event::handle_key_event(&mut app, key);
         }
 
         // 終了チェック
