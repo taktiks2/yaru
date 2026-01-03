@@ -1,6 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use entity::{task_tags, tasks};
+use entity::prelude::{TaskTags, Tasks};
+use entity::task_tags;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
@@ -24,7 +25,7 @@ impl SeaOrmTaskRepository {
 
     /// タスクに紐づくタグIDのリストを取得
     async fn get_tag_ids(&self, task_id: i32) -> Result<Vec<i32>> {
-        let tag_ids = task_tags::Entity::find()
+        let tag_ids = TaskTags::find()
             .filter(task_tags::Column::TaskId.eq(task_id))
             .all(&self.db)
             .await?
@@ -38,7 +39,7 @@ impl SeaOrmTaskRepository {
     /// タスクのタグ関連付けを更新（既存を削除して新規作成）
     async fn update_task_tags(&self, task_id: i32, tag_ids: &[i32]) -> Result<()> {
         // 既存のタグ関連付けを削除
-        task_tags::Entity::delete_many()
+        TaskTags::delete_many()
             .filter(task_tags::Column::TaskId.eq(task_id))
             .exec(&self.db)
             .await?;
@@ -59,7 +60,7 @@ impl SeaOrmTaskRepository {
 #[async_trait]
 impl TaskRepository for SeaOrmTaskRepository {
     async fn find_by_id(&self, id: &TaskId) -> Result<Option<TaskAggregate>> {
-        let task_model = tasks::Entity::find_by_id(id.value()).one(&self.db).await?;
+        let task_model = Tasks::find_by_id(id.value()).one(&self.db).await?;
 
         match task_model {
             Some(model) => {
@@ -72,7 +73,7 @@ impl TaskRepository for SeaOrmTaskRepository {
     }
 
     async fn find_all(&self) -> Result<Vec<TaskAggregate>> {
-        let task_models = tasks::Entity::find().all(&self.db).await?;
+        let task_models = Tasks::find().all(&self.db).await?;
 
         let mut aggregates = Vec::new();
         for model in task_models {
@@ -100,22 +101,9 @@ impl TaskRepository for SeaOrmTaskRepository {
     }
 
     async fn save(&self, task: TaskAggregate) -> Result<TaskAggregate> {
-        // タスクの保存（IDが0の場合は新規作成、それ以外はそのまま使う）
+        // タスクの保存（IDが0の場合は新規作成、それ以外は更新）
         let task_to_save = if task.id().value() == 0 {
-            // 新規作成の場合、データベースに任せるためにIDを無視
-            let mut active_model = TaskMapper::to_active_model_for_insert(&task);
-            active_model.id = sea_orm::ActiveValue::NotSet;
-            let saved_model = active_model.insert(&self.db).await?;
-
-            // タグの関連付けを保存
-            let tag_ids: Vec<i32> = task.tags().iter().map(|tag_id| tag_id.value()).collect();
-            self.update_task_tags(saved_model.id, &tag_ids).await?;
-
-            // 保存されたタスクを取得して返す
-            let tag_ids = self.get_tag_ids(saved_model.id).await?;
-            TaskMapper::to_domain(saved_model, tag_ids)?
-        } else {
-            // 既存IDがある場合はそのまま使用
+            // 新規作成
             let active_model = TaskMapper::to_active_model_for_insert(&task);
             let saved_model = active_model.insert(&self.db).await?;
 
@@ -126,6 +114,9 @@ impl TaskRepository for SeaOrmTaskRepository {
             // 保存されたタスクを取得して返す
             let tag_ids = self.get_tag_ids(saved_model.id).await?;
             TaskMapper::to_domain(saved_model, tag_ids)?
+        } else {
+            // 既存IDがある場合は更新
+            self.update(task).await?
         };
 
         Ok(task_to_save)
@@ -133,7 +124,7 @@ impl TaskRepository for SeaOrmTaskRepository {
 
     async fn update(&self, task: TaskAggregate) -> Result<TaskAggregate> {
         // 既存のタスクを取得
-        let existing = tasks::Entity::find_by_id(task.id().value())
+        let existing = Tasks::find_by_id(task.id().value())
             .one(&self.db)
             .await?;
 
@@ -157,7 +148,7 @@ impl TaskRepository for SeaOrmTaskRepository {
     }
 
     async fn delete(&self, id: &TaskId) -> Result<bool> {
-        let result = tasks::Entity::delete_by_id(id.value())
+        let result = Tasks::delete_by_id(id.value())
             .exec(&self.db)
             .await?;
 

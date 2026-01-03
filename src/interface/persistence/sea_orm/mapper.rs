@@ -1,5 +1,4 @@
 use anyhow::Result;
-use chrono::Utc;
 use entity::{tags, tasks};
 use sea_orm::ActiveValue::Set;
 
@@ -71,13 +70,13 @@ impl TaskMapper {
     /// TaskAggregateからSeaORM ActiveModelに変換（新規作成用）
     pub fn to_active_model_for_insert(aggregate: &TaskAggregate) -> tasks::ActiveModel {
         tasks::ActiveModel {
-            id: Set(aggregate.id().value()),
+            id: sea_orm::ActiveValue::NotSet,
             title: Set(aggregate.title().value().to_string()),
             description: Set(aggregate.description().value().to_string()),
             status: Set(Self::status_to_string(aggregate.status())),
             priority: Set(Self::priority_to_string(aggregate.priority())),
-            created_at: Set((*aggregate.created_at()).into()),
-            updated_at: Set((*aggregate.updated_at()).into()),
+            created_at: sea_orm::ActiveValue::NotSet,
+            updated_at: sea_orm::ActiveValue::NotSet,
             due_date: Set(aggregate.due_date().as_ref().map(|dd| dd.value())),
             completed_at: Set(aggregate.completed_at().map(|dt| dt.into())),
         }
@@ -91,8 +90,8 @@ impl TaskMapper {
             description: Set(aggregate.description().value().to_string()),
             status: Set(Self::status_to_string(aggregate.status())),
             priority: Set(Self::priority_to_string(aggregate.priority())),
-            created_at: Set((*aggregate.created_at()).into()),
-            updated_at: Set(Utc::now().into()),
+            created_at: sea_orm::ActiveValue::NotSet,
+            updated_at: sea_orm::ActiveValue::NotSet,
             due_date: Set(aggregate.due_date().as_ref().map(|dd| dd.value())),
             completed_at: Set(aggregate.completed_at().map(|dt| dt.into())),
         }
@@ -136,11 +135,11 @@ impl TagMapper {
     /// TagAggregateからSeaORM ActiveModelに変換（新規作成用）
     pub fn to_active_model_for_insert(aggregate: &TagAggregate) -> tags::ActiveModel {
         tags::ActiveModel {
-            id: Set(aggregate.id().value()),
+            id: sea_orm::ActiveValue::NotSet,
             name: Set(aggregate.name().value().to_string()),
             description: Set(aggregate.description().value().to_string()),
-            created_at: Set((*aggregate.created_at()).into()),
-            updated_at: Set((*aggregate.updated_at()).into()),
+            created_at: sea_orm::ActiveValue::NotSet,
+            updated_at: sea_orm::ActiveValue::NotSet,
         }
     }
 
@@ -150,8 +149,8 @@ impl TagMapper {
             id: Set(aggregate.id().value()),
             name: Set(aggregate.name().value().to_string()),
             description: Set(aggregate.description().value().to_string()),
-            created_at: Set((*aggregate.created_at()).into()),
-            updated_at: Set(Utc::now().into()),
+            created_at: sea_orm::ActiveValue::NotSet,
+            updated_at: sea_orm::ActiveValue::NotSet,
         }
     }
 }
@@ -159,7 +158,7 @@ impl TagMapper {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::NaiveDate;
+    use chrono::{NaiveDate, Utc};
 
     #[test]
     fn test_task_mapper_to_domain() {
