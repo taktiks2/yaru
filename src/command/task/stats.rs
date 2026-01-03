@@ -41,7 +41,7 @@ pub async fn show_stats(db: &DatabaseConnection) -> Result<()> {
         .await
         .context("タスクの読み込みに失敗しました")?;
 
-    let stats = calculate_stats(&tasks);
+    let stats = calculate_stats(&tasks, Local::now().date_naive());
 
     // セクションごとに表示
     println!("\n{}", style("=== タスク統計 ===").bold().cyan());
@@ -70,51 +70,54 @@ pub async fn show_stats(db: &DatabaseConnection) -> Result<()> {
 }
 
 /// タスクリストから統計情報を計算
-fn calculate_stats(tasks: &[Task]) -> TaskStats {
-    let today = Local::now().date_naive();
+fn calculate_stats(tasks: &[Task], today: chrono::NaiveDate) -> TaskStats {
     let total_count = tasks.len();
 
-    // ステータス別カウント
     let mut status_stats: HashMap<Status, usize> = HashMap::new();
-    for task in tasks {
-        *status_stats.entry(task.status.clone()).or_insert(0) += 1;
-    }
-
-    // 優先度別カウント
     let mut priority_stats: HashMap<Priority, usize> = HashMap::new();
-    for task in tasks {
-        *priority_stats.entry(task.priority.clone()).or_insert(0) += 1;
-    }
-
-    // 期限関連カウント
     let mut due_date_stats: HashMap<DueDateStatus, usize> = HashMap::new();
+    let mut tag_stats: HashMap<String, usize> = HashMap::new();
+    let mut priority_status_matrix: HashMap<(Priority, Status), usize> = HashMap::new();
+
     for task in tasks {
-        // 完了済みタスクは期限統計から除外
-        if task.status == Status::Completed {
-            continue;
-        }
+        // ステータス別カウント
+        *status_stats.entry(task.status).or_default() += 1;
 
-        if let Some(due) = task.due_date {
-            if due < today {
-                *due_date_stats.entry(DueDateStatus::Overdue).or_insert(0) += 1;
-            } else if due == today {
-                *due_date_stats.entry(DueDateStatus::DueToday).or_insert(0) += 1;
-            } else {
-                let week_later = today + chrono::Duration::days(7);
-                if due <= week_later {
-                    *due_date_stats
-                        .entry(DueDateStatus::DueThisWeek)
-                        .or_insert(0) += 1;
+        // 優先度別カウント
+        *priority_stats.entry(task.priority).or_default() += 1;
+
+        // 期限関連カウント (完了済みタスクは除外)
+        if task.status != Status::Completed {
+            if let Some(due) = task.due_date {
+                if due < today {
+                    *due_date_stats.entry(DueDateStatus::Overdue).or_default() += 1;
+                } else if due == today {
+                    *due_date_stats.entry(DueDateStatus::DueToday).or_default() += 1;
+                } else {
+                    let week_later = today + chrono::Duration::days(7);
+                    if due <= week_later {
+                        *due_date_stats
+                            .entry(DueDateStatus::DueThisWeek)
+                            .or_default() += 1;
+                    }
                 }
+            } else {
+                *due_date_stats.entry(DueDateStatus::NoDueDate).or_default() += 1;
             }
-        } else {
-            *due_date_stats.entry(DueDateStatus::NoDueDate).or_insert(0) += 1;
         }
-    }
 
-    // タグ別統計とクロス集計を計算
-    let tag_stats = calculate_tag_stats(tasks);
-    let priority_status_matrix = calculate_priority_status_matrix(tasks);
+        // タグ別統計
+        if task.tags.is_empty() {
+            *tag_stats.entry("(タグなし)".to_string()).or_default() += 1;
+        } else {
+            for tag in &task.tags {
+                *tag_stats.entry(tag.name.clone()).or_default() += 1;
+            }
+        }
+
+        // 優先度×ステータス クロス集計
+        *priority_status_matrix.entry((task.priority, task.status)).or_default() += 1;
+    }
 
     TaskStats {
         status_stats,
@@ -253,18 +256,18 @@ fn create_priority_status_matrix_table(stats: &TaskStats) -> Table {
         Priority::Low,
     ];
 
-    for priority in &priorities {
+    for &priority in &priorities {
         let pending = stats
             .priority_status_matrix
-            .get(&(priority.clone(), Status::Pending))
+            .get(&(priority, Status::Pending))
             .unwrap_or(&0);
         let in_progress = stats
             .priority_status_matrix
-            .get(&(priority.clone(), Status::InProgress))
+            .get(&(priority, Status::InProgress))
             .unwrap_or(&0);
         let completed = stats
             .priority_status_matrix
-            .get(&(priority.clone(), Status::Completed))
+            .get(&(priority, Status::Completed))
             .unwrap_or(&0);
         let total = pending + in_progress + completed;
 
@@ -321,48 +324,6 @@ fn create_progress_bar(current: usize, total: usize) -> String {
     )
 }
 
-/// タグ別のタスク数を集計
-///
-/// # 引数
-/// - `tasks`: タスクのスライス
-///
-/// # 戻り値
-/// タグ名をキーとして、タスク数を値とするHashMap
-/// タグが無いタスクは "(タグなし)" というキーでカウントされる
-fn calculate_tag_stats(tasks: &[Task]) -> HashMap<String, usize> {
-    let mut tag_counts: HashMap<String, usize> = HashMap::new();
-
-    for task in tasks {
-        if task.tags.is_empty() {
-            *tag_counts.entry("(タグなし)".to_string()).or_insert(0) += 1;
-        } else {
-            for tag in &task.tags {
-                *tag_counts.entry(tag.name.clone()).or_insert(0) += 1;
-            }
-        }
-    }
-
-    tag_counts
-}
-
-/// 優先度×ステータスのクロス集計を計算
-///
-/// # 引数
-/// - `tasks`: タスクのスライス
-///
-/// # 戻り値
-/// (Priority, Status)のタプルをキーとして、タスク数を値とするHashMap
-fn calculate_priority_status_matrix(tasks: &[Task]) -> HashMap<(Priority, Status), usize> {
-    let mut matrix: HashMap<(Priority, Status), usize> = HashMap::new();
-
-    for task in tasks {
-        let key = (task.priority.clone(), task.status.clone());
-        *matrix.entry(key).or_insert(0) += 1;
-    }
-
-    matrix
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -394,8 +355,9 @@ mod tests {
 
     #[test]
     fn test_calculate_stats_empty_tasks() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks: Vec<Task> = vec![];
-        let stats = calculate_stats(&tasks);
+        let stats = calculate_stats(&tasks, today);
 
         assert_eq!(stats.total_count, 0);
         assert_eq!(stats.status_stats.get(&Status::Pending).unwrap_or(&0), &0);
@@ -408,6 +370,7 @@ mod tests {
 
     #[test]
     fn test_calculate_stats_status_counts() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks = vec![
             Task::new(
                 1,
@@ -447,7 +410,7 @@ mod tests {
             ),
         ];
 
-        let stats = calculate_stats(&tasks);
+        let stats = calculate_stats(&tasks, today);
 
         assert_eq!(stats.total_count, 4);
         assert_eq!(*stats.status_stats.get(&Status::Pending).unwrap(), 2);
@@ -457,6 +420,7 @@ mod tests {
 
     #[test]
     fn test_calculate_stats_priority_counts() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks = vec![
             Task::new(
                 1,
@@ -505,12 +469,42 @@ mod tests {
             ),
         ];
 
-        let stats = calculate_stats(&tasks);
+        let stats = calculate_stats(&tasks, today);
 
         assert_eq!(*stats.priority_stats.get(&Priority::Low).unwrap(), 1);
         assert_eq!(*stats.priority_stats.get(&Priority::Medium).unwrap(), 2);
         assert_eq!(*stats.priority_stats.get(&Priority::High).unwrap(), 1);
         assert_eq!(*stats.priority_stats.get(&Priority::Critical).unwrap(), 1);
+    }
+
+    #[test]
+    fn test_calculate_stats_due_date_counts() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
+        let tasks = vec![
+            // 期限切れ
+            Task::new(1, "t1", "", Status::Pending, Priority::Medium, vec![], Some(today - chrono::Duration::days(1))),
+            // 今日が期限
+            Task::new(2, "t2", "", Status::Pending, Priority::Medium, vec![], Some(today)),
+            // 今週が期限
+            Task::new(3, "t3", "", Status::Pending, Priority::Medium, vec![], Some(today + chrono::Duration::days(3))),
+            // 今週が期限 (7日後)
+            Task::new(4, "t4", "", Status::Pending, Priority::Medium, vec![], Some(today + chrono::Duration::days(7))),
+            // 期限なし
+            Task::new(5, "t5", "", Status::Pending, Priority::Medium, vec![], None),
+            // 期限切れだが完了済み
+            Task::new(6, "t6", "", Status::Completed, Priority::Medium, vec![], Some(today - chrono::Duration::days(1))),
+            // 期限がまだ先
+            Task::new(7, "t7", "", Status::Pending, Priority::Medium, vec![], Some(today + chrono::Duration::days(8))),
+        ];
+
+        let stats = calculate_stats(&tasks, today);
+
+        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::Overdue).unwrap_or(&0), 1);
+        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::DueToday).unwrap_or(&0), 1);
+        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::DueThisWeek).unwrap_or(&0), 2);
+        assert_eq!(*stats.due_date_stats.get(&DueDateStatus::NoDueDate).unwrap_or(&0), 1);
+        // 完了済みと期限がまだ先のタスクはカウントされない
+        assert_eq!(stats.due_date_stats.values().sum::<usize>(), 5);
     }
 
     #[test]
@@ -751,6 +745,7 @@ mod tests {
     fn test_calculate_tag_stats() {
         use crate::domain::tag::Tag;
 
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tag1 = Tag::new(1, "重要", "");
         let tag2 = Tag::new(2, "緊急", "");
         let tasks = vec![
@@ -774,20 +769,22 @@ mod tests {
             ),
         ];
 
-        let tag_stats = calculate_tag_stats(&tasks);
-        assert_eq!(tag_stats.get("重要"), Some(&2));
-        assert_eq!(tag_stats.get("緊急"), Some(&1));
+        let stats = calculate_stats(&tasks, today);
+        assert_eq!(stats.tag_stats.get("重要"), Some(&2));
+        assert_eq!(stats.tag_stats.get("緊急"), Some(&1));
     }
 
     #[test]
     fn test_calculate_tag_stats_empty() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks: Vec<Task> = vec![];
-        let tag_stats = calculate_tag_stats(&tasks);
-        assert!(tag_stats.is_empty());
+        let stats = calculate_stats(&tasks, today);
+        assert!(stats.tag_stats.is_empty());
     }
 
     #[test]
     fn test_calculate_tag_stats_no_tags() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks = vec![Task::new(
             1,
             "タスク1",
@@ -798,13 +795,14 @@ mod tests {
             None,
         )];
 
-        let tag_stats = calculate_tag_stats(&tasks);
-        assert_eq!(tag_stats.get("(タグなし)"), Some(&1));
+        let stats = calculate_stats(&tasks, today);
+        assert_eq!(stats.tag_stats.get("(タグなし)"), Some(&1));
     }
 
     // クロス集計のテスト
     #[test]
     fn test_calculate_priority_status_matrix() {
+        let today = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
         let tasks = vec![
             Task::new(
                 1,
@@ -844,11 +842,11 @@ mod tests {
             ),
         ];
 
-        let matrix = calculate_priority_status_matrix(&tasks);
-        assert_eq!(matrix.get(&(Priority::High, Status::Pending)), Some(&2));
-        assert_eq!(matrix.get(&(Priority::High, Status::Completed)), Some(&1));
+        let stats = calculate_stats(&tasks, today);
+        assert_eq!(stats.priority_status_matrix.get(&(Priority::High, Status::Pending)), Some(&2));
+        assert_eq!(stats.priority_status_matrix.get(&(Priority::High, Status::Completed)), Some(&1));
         assert_eq!(
-            matrix.get(&(Priority::Medium, Status::InProgress)),
+            stats.priority_status_matrix.get(&(Priority::Medium, Status::InProgress)),
             Some(&1)
         );
     }
