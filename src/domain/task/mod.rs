@@ -1,3 +1,3 @@
 pub mod value_objects;
 
-pub use value_objects::{Priority, Status, TaskId, TaskTitle};
+pub use value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle};
