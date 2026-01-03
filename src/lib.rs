@@ -4,9 +4,12 @@ mod infrastructure;
 mod interface;
 
 use crate::{
-    infrastructure::{load_config, DatabaseConnectionManager},
+    infrastructure::{DatabaseConnectionManager, load_config},
     interface::{
-        cli::{args::{Args, Commands}, tag_handler, task_handler},
+        cli::{
+            args::{Args, Commands},
+            tag_handler, task_handler,
+        },
         persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository},
     },
 };

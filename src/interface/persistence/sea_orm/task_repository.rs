@@ -1,15 +1,16 @@
 use crate::{
     domain::task::{
-        aggregate::TaskAggregate,
-        repository::TaskRepository,
-        specification::TaskSpecification,
+        aggregate::TaskAggregate, repository::TaskRepository, specification::TaskSpecification,
         value_objects::TaskId,
     },
     interface::persistence::sea_orm::mapper::TaskMapper,
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use entity::{prelude::{TaskTags, Tasks}, task_tags};
+use entity::{
+    prelude::{TaskTags, Tasks},
+    task_tags,
+};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
@@ -126,9 +127,7 @@ impl TaskRepository for SeaOrmTaskRepository {
 
     async fn update(&self, task: TaskAggregate) -> Result<TaskAggregate> {
         // 既存のタスクを取得
-        let existing = Tasks::find_by_id(task.id().value())
-            .one(&self.db)
-            .await?;
+        let existing = Tasks::find_by_id(task.id().value()).one(&self.db).await?;
 
         if existing.is_none() {
             anyhow::bail!("タスクID {}は存在しません", task.id().value());
@@ -150,9 +149,7 @@ impl TaskRepository for SeaOrmTaskRepository {
     }
 
     async fn delete(&self, id: &TaskId) -> Result<bool> {
-        let result = Tasks::delete_by_id(id.value())
-            .exec(&self.db)
-            .await?;
+        let result = Tasks::delete_by_id(id.value()).exec(&self.db).await?;
 
         // task_tagsは CASCADE DELETE で自動削除される
 

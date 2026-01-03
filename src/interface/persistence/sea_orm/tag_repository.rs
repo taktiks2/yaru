@@ -4,7 +4,10 @@ use crate::{
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use entity::{prelude::{Tags, TaskTags}, tags, task_tags};
+use entity::{
+    prelude::{Tags, TaskTags},
+    tags, task_tags,
+};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
 };
@@ -80,9 +83,7 @@ impl TagRepository for SeaOrmTagRepository {
 
     async fn update(&self, tag: TagAggregate) -> Result<TagAggregate> {
         // 既存のタグを取得
-        let existing = Tags::find_by_id(tag.id().value())
-            .one(&self.db)
-            .await?;
+        let existing = Tags::find_by_id(tag.id().value()).one(&self.db).await?;
 
         if existing.is_none() {
             anyhow::bail!("タグID {}は存在しません", tag.id().value());
@@ -112,9 +113,7 @@ impl TagRepository for SeaOrmTagRepository {
             );
         }
 
-        let result = Tags::delete_by_id(id.value())
-            .exec(&self.db)
-            .await?;
+        let result = Tags::delete_by_id(id.value()).exec(&self.db).await?;
 
         Ok(result.rows_affected > 0)
     }
