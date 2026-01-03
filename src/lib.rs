@@ -44,10 +44,14 @@ async fn run_cli() -> Result<()> {
 
     // コマンド実行
     match args.command {
-        Commands::Task { command } => {
+        Some(Commands::Task { command }) => {
             task_handler::handle_task_command(command, task_repo, tag_repo).await?
         }
-        Commands::Tag { command } => tag_handler::handle_tag_command(command, tag_repo).await?,
+        Some(Commands::Tag { command }) => tag_handler::handle_tag_command(command, tag_repo).await?,
+        None => {
+            eprintln!("サブコマンドが指定されていません。TUI mode is not yet implemented.");
+            std::process::exit(1);
+        }
     }
 
     // 接続を明示的に閉じる
