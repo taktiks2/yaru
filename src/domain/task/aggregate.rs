@@ -186,6 +186,45 @@ impl TaskAggregate {
         Ok(())
     }
 
+    /// タスクの説明を変更します
+    pub fn change_description(&mut self, new_description: TaskDescription) -> Result<()> {
+        self.description = new_description;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// タスクのステータスを変更します
+    ///
+    /// Completedへの変更の場合はcomplete()メソッドを使用してください。
+    pub fn change_status(&mut self, new_status: Status) -> Result<()> {
+        self.status = new_status;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// タスクの優先度を変更します
+    pub fn change_priority(&mut self, new_priority: Priority) -> Result<()> {
+        self.priority = new_priority;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// タスクの期限日を変更します
+    pub fn change_due_date(&mut self, new_due_date: Option<DueDate>) -> Result<()> {
+        self.due_date = new_due_date;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
+    /// タスクのタグを置き換えます
+    ///
+    /// 既存のタグをすべて削除して、新しいタグリストで置き換えます。
+    pub fn replace_tags(&mut self, new_tags: Vec<TagId>) -> Result<()> {
+        self.tags = new_tags;
+        self.updated_at = Utc::now();
+        Ok(())
+    }
+
     /// タスクにタグを追加します
     ///
     /// 既に同じタグが存在する場合はエラーを返します。
