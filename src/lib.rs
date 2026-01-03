@@ -3,6 +3,7 @@
 // mod command;
 // mod config;
 // mod display;
+mod application;
 mod domain;
 // mod json;
 // mod repository;
@@ -30,130 +31,130 @@ use anyhow::{Context, Result};
 pub async fn run() -> Result<()> {
     unimplemented!("リファクタリング中のため一時的に無効化")
     /*
-    let args = match Args::try_parse() {
-        Ok(args) => args,
-        Err(e) => {
-            if e.kind() == ErrorKind::InvalidSubcommand {
-                anyhow::bail!("無効なサブコマンドです。使用可能なコマンド: task, tag");
-            } else {
-                return Err(e.into());
+        let args = match Args::try_parse() {
+            Ok(args) => args,
+            Err(e) => {
+                if e.kind() == ErrorKind::InvalidSubcommand {
+                    anyhow::bail!("無効なサブコマンドです。使用可能なコマンド: task, tag");
+                } else {
+                    return Err(e.into());
+                }
+            }
+        };
+
+        // 設定を読み込む
+        let config = load_config()?;
+
+        // データベース接続を確立
+        let db = Database::connect(&config.storage.database_url)
+            .await
+            .context("データベース接続に失敗しました")?;
+
+        // マイグレーション実行
+        migration::Migrator::up(&db, None)
+            .await
+            .context("マイグレーション実行に失敗しました")?;
+
+        // コマンド実行（DB接続を直接渡す）
+        handle_command(args, &db).await?;
+
+        // 接続を明示的に閉じる
+        db.close().await?;
+
+        Ok(())
+    }
+
+    /// コマンドを実行
+    async fn handle_command(args: Args, db: &sea_orm::DatabaseConnection) -> Result<()> {
+        match args.command {
+            Commands::Task { command } => handle_task_command(command, db).await,
+            Commands::Tag { command } => handle_tag_command(command, db).await,
+        }
+    }
+
+    /// タスクコマンドを実行
+    async fn handle_task_command(
+        command: TaskCommands,
+        db: &sea_orm::DatabaseConnection,
+    ) -> Result<()> {
+        match command {
+            TaskCommands::List { filter } => list_tasks(db, ListTasksParams { filters: filter }).await,
+            TaskCommands::Show { id } => show_task(db, ShowTaskParams { id }).await,
+            TaskCommands::Add {
+                title,
+                description,
+                status,
+                priority,
+                tags,
+                due_date,
+            } => {
+                add_task(
+                    db,
+                    AddTaskParams {
+                        title,
+                        description,
+                        status,
+                        priority,
+                        tag_ids: tags,
+                        due_date,
+                    },
+                )
+                .await
+            }
+            TaskCommands::Delete { id } => delete_task(db, DeleteTaskParams { id }).await,
+            TaskCommands::Edit {
+                id,
+                title,
+                description,
+                status,
+                priority,
+                tags,
+                due_date,
+                clear_due_date,
+            } => {
+                edit_task(
+                    db,
+                    EditTaskParams {
+                        id,
+                        title,
+                        description,
+                        status,
+                        priority,
+                        tag_ids: tags,
+                        due_date,
+                        clear_due_date,
+                    },
+                )
+                .await
+            }
+            TaskCommands::Stats => show_stats(db).await,
+        }
+    }
+
+    /// タグコマンドを実行
+    async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnection) -> Result<()> {
+        match command {
+            TagCommands::Add { name, description } => {
+                add_tag(db, AddTagParams { name, description }).await
+            }
+            TagCommands::Show { id } => show_tag(db, ShowTagParams { id }).await,
+            TagCommands::List => list_tags(db).await,
+            TagCommands::Delete { id } => delete_tag(db, DeleteTagParams { id }).await,
+            TagCommands::Edit {
+                id,
+                name,
+                description,
+            } => {
+                edit_tag(
+                    db,
+                    EditTagParams {
+                        id,
+                        name,
+                        description,
+                    },
+                )
+                .await
             }
         }
-    };
-
-    // 設定を読み込む
-    let config = load_config()?;
-
-    // データベース接続を確立
-    let db = Database::connect(&config.storage.database_url)
-        .await
-        .context("データベース接続に失敗しました")?;
-
-    // マイグレーション実行
-    migration::Migrator::up(&db, None)
-        .await
-        .context("マイグレーション実行に失敗しました")?;
-
-    // コマンド実行（DB接続を直接渡す）
-    handle_command(args, &db).await?;
-
-    // 接続を明示的に閉じる
-    db.close().await?;
-
-    Ok(())
-}
-
-/// コマンドを実行
-async fn handle_command(args: Args, db: &sea_orm::DatabaseConnection) -> Result<()> {
-    match args.command {
-        Commands::Task { command } => handle_task_command(command, db).await,
-        Commands::Tag { command } => handle_tag_command(command, db).await,
-    }
-}
-
-/// タスクコマンドを実行
-async fn handle_task_command(
-    command: TaskCommands,
-    db: &sea_orm::DatabaseConnection,
-) -> Result<()> {
-    match command {
-        TaskCommands::List { filter } => list_tasks(db, ListTasksParams { filters: filter }).await,
-        TaskCommands::Show { id } => show_task(db, ShowTaskParams { id }).await,
-        TaskCommands::Add {
-            title,
-            description,
-            status,
-            priority,
-            tags,
-            due_date,
-        } => {
-            add_task(
-                db,
-                AddTaskParams {
-                    title,
-                    description,
-                    status,
-                    priority,
-                    tag_ids: tags,
-                    due_date,
-                },
-            )
-            .await
-        }
-        TaskCommands::Delete { id } => delete_task(db, DeleteTaskParams { id }).await,
-        TaskCommands::Edit {
-            id,
-            title,
-            description,
-            status,
-            priority,
-            tags,
-            due_date,
-            clear_due_date,
-        } => {
-            edit_task(
-                db,
-                EditTaskParams {
-                    id,
-                    title,
-                    description,
-                    status,
-                    priority,
-                    tag_ids: tags,
-                    due_date,
-                    clear_due_date,
-                },
-            )
-            .await
-        }
-        TaskCommands::Stats => show_stats(db).await,
-    }
-}
-
-/// タグコマンドを実行
-async fn handle_tag_command(command: TagCommands, db: &sea_orm::DatabaseConnection) -> Result<()> {
-    match command {
-        TagCommands::Add { name, description } => {
-            add_tag(db, AddTagParams { name, description }).await
-        }
-        TagCommands::Show { id } => show_tag(db, ShowTagParams { id }).await,
-        TagCommands::List => list_tags(db).await,
-        TagCommands::Delete { id } => delete_tag(db, DeleteTagParams { id }).await,
-        TagCommands::Edit {
-            id,
-            name,
-            description,
-        } => {
-            edit_tag(
-                db,
-                EditTagParams {
-                    id,
-                    name,
-                    description,
-                },
-            )
-            .await
-        }
-    }
-    */
+        */
 }
