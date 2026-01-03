@@ -1,9 +1,9 @@
 use crate::application::dto::task_dto::TaskDTO;
 use crate::interface::cli::display::format::{
-    format_date, format_local_time, format_optional_datetime, format_optional_text,
-    format_tag_ids, truncate_text,
+    format_date, format_local_time, format_optional_datetime, format_optional_text, format_tag_ids,
+    truncate_text,
 };
-use comfy_table::{presets::UTF8_FULL, Table};
+use comfy_table::{Table, presets::UTF8_FULL};
 
 /// タスクのテーブルを作成
 pub fn create_task_table(tasks: &[TaskDTO]) -> Table {
@@ -37,7 +37,10 @@ pub fn create_task_detail_table(task: &TaskDTO) -> Table {
     table.add_row(vec!["優先度", &task.priority]);
     table.add_row(vec!["タグ", &format_tag_ids(&task.tags, ", ")]);
     table.add_row(vec!["期限", &format_date(&task.due_date)]);
-    table.add_row(vec!["完了日時", &format_optional_datetime(&task.completed_at)]);
+    table.add_row(vec![
+        "完了日時",
+        &format_optional_datetime(&task.completed_at),
+    ]);
     table.add_row(vec!["作成日", &format_local_time(&task.created_at)]);
     table.add_row(vec!["更新日", &format_local_time(&task.updated_at)]);
 

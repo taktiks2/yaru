@@ -1,10 +1,14 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use entity::{tags, task_tags};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, ColumnTrait, QueryFilter, PaginatorTrait};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+};
 
-use crate::domain::tag::{aggregate::TagAggregate, repository::TagRepository, value_objects::TagId};
 use super::mapper::TagMapper;
+use crate::domain::tag::{
+    aggregate::TagAggregate, repository::TagRepository, value_objects::TagId,
+};
 
 /// SeaORM実装のTagRepository
 pub struct SeaOrmTagRepository {

@@ -1,6 +1,8 @@
 use crate::application::dto::tag_dto::TagDTO;
-use crate::interface::cli::display::format::{format_local_time, format_optional_text, truncate_text};
-use comfy_table::{presets::UTF8_FULL, Table};
+use crate::interface::cli::display::format::{
+    format_local_time, format_optional_text, truncate_text,
+};
+use comfy_table::{Table, presets::UTF8_FULL};
 
 /// タグのテーブルを作成
 ///

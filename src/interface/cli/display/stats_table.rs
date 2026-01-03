@@ -1,5 +1,5 @@
 use crate::application::dto::stats_dto::StatsDTO;
-use comfy_table::{presets::UTF8_FULL, Table};
+use comfy_table::{Table, presets::UTF8_FULL};
 
 /// 統計情報のテーブルを作成
 pub fn create_stats_table(stats: &StatsDTO) -> Table {

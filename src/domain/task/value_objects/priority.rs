@@ -2,7 +2,19 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 /// タスクの優先度を表すValue Object
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord, clap::ValueEnum)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    PartialOrd,
+    Ord,
+    clap::ValueEnum,
+)]
 pub enum Priority {
     /// 低
     Low = 1,

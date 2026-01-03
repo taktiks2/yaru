@@ -2,15 +2,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use entity::{task_tags, tasks};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait,
-    QueryFilter,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
 
+use super::mapper::TaskMapper;
 use crate::domain::task::{
     aggregate::TaskAggregate, repository::TaskRepository, specification::TaskSpecification,
     value_objects::TaskId,
 };
-use super::mapper::TaskMapper;
 
 /// SeaORM実装のTaskRepository
 pub struct SeaOrmTaskRepository {

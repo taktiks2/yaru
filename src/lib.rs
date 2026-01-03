@@ -7,9 +7,9 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use std::sync::Arc;
 
-use infrastructure::{load_config, DatabaseConnectionManager};
+use infrastructure::{DatabaseConnectionManager, load_config};
 use interface::cli::args::{Args, Commands};
-use interface::cli::{task_handler, tag_handler};
+use interface::cli::{tag_handler, task_handler};
 use interface::persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository};
 use migration::MigratorTrait;
 

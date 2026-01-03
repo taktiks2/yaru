@@ -98,7 +98,10 @@ async fn handle_add(
     let use_case = AddTagUseCase::new(tag_repo);
     let created_tag = use_case.execute(dto).await?;
 
-    println!("タグを追加しました: [{}] {}", created_tag.id, created_tag.name);
+    println!(
+        "タグを追加しました: [{}] {}",
+        created_tag.id, created_tag.name
+    );
 
     Ok(())
 }
@@ -138,7 +141,10 @@ async fn handle_edit(
     let use_case = EditTagUseCase::new(tag_repo);
     let updated_tag = use_case.execute(id, dto).await?;
 
-    println!("タグを更新しました: [{}] {}", updated_tag.id, updated_tag.name);
+    println!(
+        "タグを更新しました: [{}] {}",
+        updated_tag.id, updated_tag.name
+    );
 
     Ok(())
 }

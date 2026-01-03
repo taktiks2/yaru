@@ -20,7 +20,6 @@ pub struct TaskStats {
     total_count: usize,
 }
 
-
 impl TaskStats {
     /// 新しいTaskStatsを作成
     pub fn new(

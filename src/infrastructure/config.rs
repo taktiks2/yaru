@@ -1,3 +1,3 @@
 pub mod app_config;
 
-pub use app_config::{load_config, Config};
+pub use app_config::{Config, load_config};

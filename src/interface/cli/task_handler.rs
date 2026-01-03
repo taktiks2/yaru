@@ -11,7 +11,9 @@ use crate::application::use_cases::task::{
 use crate::domain::tag::repository::TagRepository;
 use crate::domain::task::value_objects::{Priority, Status};
 use crate::interface::cli::args::{Filter, TaskCommands};
-use crate::interface::cli::display::{create_stats_table, create_task_detail_table, create_task_table};
+use crate::interface::cli::display::{
+    create_stats_table, create_task_detail_table, create_task_table,
+};
 
 /// タスクコマンドを処理
 pub async fn handle_task_command(
@@ -123,101 +125,114 @@ async fn handle_add(
     // タグIDの検証（指定されている場合）
     if let Some(ref ids) = tag_ids {
         for id in ids {
-            let tag = tag_repo.find_by_id(&crate::domain::tag::value_objects::TagId::new(*id)?).await?;
+            let tag = tag_repo
+                .find_by_id(&crate::domain::tag::value_objects::TagId::new(*id)?)
+                .await?;
             if tag.is_none() {
                 anyhow::bail!("存在しないタグID: {}", id);
             }
         }
     }
 
-    let (final_title, final_description, final_status, final_priority, final_tags, final_due_date) = if is_interactive {
-        // 対話モード
-        let t = Text::new("タスクのタイトルを入力してください")
-            .with_validator(validator::MinLengthValidator::new(1))
-            .prompt()
-            .context("タスクのタイトルの入力に失敗しました")?;
-
-        let d = description.unwrap_or_else(|| {
-            Editor::new("タスクの説明を入力してください")
+    let (final_title, final_description, final_status, final_priority, final_tags, final_due_date) =
+        if is_interactive {
+            // 対話モード
+            let t = Text::new("タスクのタイトルを入力してください")
+                .with_validator(validator::MinLengthValidator::new(1))
                 .prompt()
-                .unwrap_or_default()
-        });
+                .context("タスクのタイトルの入力に失敗しました")?;
 
-        let s = status.unwrap_or_else(|| {
-            Select::new(
-                "ステータスを選択してください",
-                vec![Status::Pending, Status::InProgress, Status::Completed],
-            )
-            .with_vim_mode(true)
-            .prompt()
-            .unwrap_or(Status::Pending)
-        });
+            let d = description.unwrap_or_else(|| {
+                Editor::new("タスクの説明を入力してください")
+                    .prompt()
+                    .unwrap_or_default()
+            });
 
-        let p = priority.unwrap_or_else(|| {
-            Select::new(
-                "優先度を選択してください",
-                vec![Priority::Low, Priority::Medium, Priority::High, Priority::Critical],
-            )
-            .with_vim_mode(true)
-            .prompt()
-            .unwrap_or(Priority::Medium)
-        });
+            let s = status.unwrap_or_else(|| {
+                Select::new(
+                    "ステータスを選択してください",
+                    vec![Status::Pending, Status::InProgress, Status::Completed],
+                )
+                .with_vim_mode(true)
+                .prompt()
+                .unwrap_or(Status::Pending)
+            });
 
-        // タグ選択（対話モード）
-        let tags = if tag_ids.is_some() {
-            tag_ids.unwrap_or_default()
-        } else {
-            // 利用可能なタグを取得
-            let available_tags = tag_repo.find_all().await?;
-            if !available_tags.is_empty() {
-                let tag_options: Vec<String> = available_tags
-                    .iter()
-                    .map(|t| format!("[{}] {}", t.id().value(), t.name().value()))
-                    .collect();
+            let p = priority.unwrap_or_else(|| {
+                Select::new(
+                    "優先度を選択してください",
+                    vec![
+                        Priority::Low,
+                        Priority::Medium,
+                        Priority::High,
+                        Priority::Critical,
+                    ],
+                )
+                .with_vim_mode(true)
+                .prompt()
+                .unwrap_or(Priority::Medium)
+            });
 
-                let selected = MultiSelect::new("タグを選択してください（スペースで選択、Enterで確定）", tag_options)
+            // タグ選択（対話モード）
+            let tags = if tag_ids.is_some() {
+                tag_ids.unwrap_or_default()
+            } else {
+                // 利用可能なタグを取得
+                let available_tags = tag_repo.find_all().await?;
+                if !available_tags.is_empty() {
+                    let tag_options: Vec<String> = available_tags
+                        .iter()
+                        .map(|t| format!("[{}] {}", t.id().value(), t.name().value()))
+                        .collect();
+
+                    let selected = MultiSelect::new(
+                        "タグを選択してください（スペースで選択、Enterで確定）",
+                        tag_options,
+                    )
                     .with_vim_mode(true)
                     .prompt()
                     .unwrap_or_default();
 
-                selected
-                    .iter()
-                    .filter_map(|s| {
-                        s.split(']').next()?.trim_start_matches('[').parse::<i32>().ok()
-                    })
-                    .collect()
-            } else {
-                vec![]
-            }
-        };
+                    selected
+                        .iter()
+                        .filter_map(|s| {
+                            s.split(']')
+                                .next()?
+                                .trim_start_matches('[')
+                                .parse::<i32>()
+                                .ok()
+                        })
+                        .collect()
+                } else {
+                    vec![]
+                }
+            };
 
-        // 期限選択
-        let dd = due_date.or_else(|| {
-            if inquire::Confirm::new("期限を設定しますか？")
-                .with_default(false)
-                .prompt()
-                .unwrap_or(false)
-            {
-                DateSelect::new("期限を選択してください")
+            // 期限選択
+            let dd = due_date.or_else(|| {
+                if inquire::Confirm::new("期限を設定しますか？")
+                    .with_default(false)
                     .prompt()
-                    .ok()
-            } else {
-                None
-            }
-        });
+                    .unwrap_or(false)
+                {
+                    DateSelect::new("期限を選択してください").prompt().ok()
+                } else {
+                    None
+                }
+            });
 
-        (t, d, s, p, tags, dd)
-    } else {
-        // 引数モード
-        (
-            title.unwrap(),
-            description.unwrap_or_default(),
-            status.unwrap_or(Status::Pending),
-            priority.unwrap_or(Priority::Medium),
-            tag_ids.unwrap_or_default(),
-            due_date,
-        )
-    };
+            (t, d, s, p, tags, dd)
+        } else {
+            // 引数モード
+            (
+                title.unwrap(),
+                description.unwrap_or_default(),
+                status.unwrap_or(Status::Pending),
+                priority.unwrap_or(Priority::Medium),
+                tag_ids.unwrap_or_default(),
+                due_date,
+            )
+        };
 
     // DTOを構築
     let dto = CreateTaskDTO {
@@ -233,7 +248,10 @@ async fn handle_add(
     let use_case = AddTaskUseCase::new(task_repo, tag_repo);
     let created_task = use_case.execute(dto).await?;
 
-    println!("タスクを追加しました: [{}] {}", created_task.id, created_task.title);
+    println!(
+        "タスクを追加しました: [{}] {}",
+        created_task.id, created_task.title
+    );
 
     Ok(())
 }
@@ -279,7 +297,9 @@ async fn handle_edit(
     // タグIDの検証（指定されている場合）
     if let Some(ref ids) = tags {
         for tag_id in ids {
-            let tag = tag_repo.find_by_id(&crate::domain::tag::value_objects::TagId::new(*tag_id)?).await?;
+            let tag = tag_repo
+                .find_by_id(&crate::domain::tag::value_objects::TagId::new(*tag_id)?)
+                .await?;
             if tag.is_none() {
                 anyhow::bail!("存在しないタグID: {}", tag_id);
             }
@@ -309,7 +329,10 @@ async fn handle_edit(
     let use_case = EditTaskUseCase::new(task_repo, tag_repo);
     let updated_task = use_case.execute(id, dto).await?;
 
-    println!("タスクを更新しました: [{}] {}", updated_task.id, updated_task.title);
+    println!(
+        "タスクを更新しました: [{}] {}",
+        updated_task.id, updated_task.title
+    );
 
     Ok(())
 }

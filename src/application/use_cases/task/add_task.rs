@@ -51,8 +51,7 @@ impl AddTaskUseCase {
         // ステータスの変換（デフォルト: Pending）
         // Display形式（"InProgress"）とフィルタ形式（"in_progress"）の両方をサポート
         let status = if let Some(status_str) = dto.status {
-            Status::from_str(&status_str)
-                .or_else(|_| Status::from_filter_value(&status_str))?
+            Status::from_str(&status_str).or_else(|_| Status::from_filter_value(&status_str))?
         } else {
             Status::Pending
         };

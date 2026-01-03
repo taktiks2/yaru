@@ -49,10 +49,7 @@ impl TaskMapper {
             .collect();
 
         // DueDate変換
-        let due_date = task_model
-            .due_date
-            .map(DueDate::new)
-            .transpose()?;
+        let due_date = task_model.due_date.map(DueDate::new).transpose()?;
 
         // Aggregateを再構築
         let params = TaskReconstructParams {
