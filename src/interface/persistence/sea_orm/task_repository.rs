@@ -6,7 +6,10 @@ use sea_orm::{
     QueryFilter, QuerySelect, RelationTrait,
 };
 
-use crate::domain::task::{aggregate::TaskAggregate, repository::TaskRepository, value_objects::TaskId};
+use crate::domain::task::{
+    aggregate::TaskAggregate, repository::TaskRepository, specification::TaskSpecification,
+    value_objects::TaskId,
+};
 use super::mapper::TaskMapper;
 
 /// SeaORM実装のTaskRepository
@@ -80,6 +83,21 @@ impl TaskRepository for SeaOrmTaskRepository {
         }
 
         Ok(aggregates)
+    }
+
+    async fn find_by_specification(
+        &self,
+        spec: Box<dyn TaskSpecification>,
+    ) -> Result<Vec<TaskAggregate>> {
+        // すべてのタスクを取得してメモリ上でフィルタリング
+        // 将来的にはSeaORM用のクエリビルダーで最適化可能
+        let all_tasks = self.find_all().await?;
+        let filtered_tasks: Vec<TaskAggregate> = all_tasks
+            .into_iter()
+            .filter(|task| spec.is_satisfied_by(task))
+            .collect();
+
+        Ok(filtered_tasks)
     }
 
     async fn save(&self, task: TaskAggregate) -> Result<TaskAggregate> {

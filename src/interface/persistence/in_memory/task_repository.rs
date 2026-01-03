@@ -2,7 +2,8 @@ use anyhow::{Result, bail};
 use std::sync::{Arc, RwLock};
 
 use crate::domain::task::{
-    aggregate::TaskAggregate, repository::TaskRepository, value_objects::TaskId,
+    aggregate::TaskAggregate, repository::TaskRepository, specification::TaskSpecification,
+    value_objects::TaskId,
 };
 
 /// InMemoryTaskRepository - テスト用のタスクリポジトリ実装
@@ -48,6 +49,19 @@ impl TaskRepository for InMemoryTaskRepository {
     async fn find_all(&self) -> Result<Vec<TaskAggregate>> {
         let tasks = self.tasks.read().unwrap();
         Ok(tasks.clone())
+    }
+
+    async fn find_by_specification(
+        &self,
+        spec: Box<dyn TaskSpecification>,
+    ) -> Result<Vec<TaskAggregate>> {
+        let all_tasks = self.find_all().await?;
+        let filtered_tasks: Vec<TaskAggregate> = all_tasks
+            .into_iter()
+            .filter(|task| spec.is_satisfied_by(task))
+            .collect();
+
+        Ok(filtered_tasks)
     }
 
     async fn save(&self, task: TaskAggregate) -> Result<TaskAggregate> {

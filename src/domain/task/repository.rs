@@ -1,6 +1,7 @@
 use anyhow::Result;
 
 use super::aggregate::TaskAggregate;
+use super::specification::TaskSpecification;
 use super::value_objects::TaskId;
 
 /// TaskRepository trait - タスクの永続化を抽象化
@@ -26,6 +27,19 @@ pub trait TaskRepository: Send + Sync {
     /// * `Ok(Vec<TaskAggregate>)` - 全タスクのリスト
     /// * `Err` - エラーが発生した場合
     async fn find_all(&self) -> Result<Vec<TaskAggregate>>;
+
+    /// Specificationに基づいてタスクを検索
+    ///
+    /// # Arguments
+    /// * `spec` - 検索条件を表すSpecification
+    ///
+    /// # Returns
+    /// * `Ok(Vec<TaskAggregate>)` - 条件を満たすタスクのリスト
+    /// * `Err` - エラーが発生した場合
+    async fn find_by_specification(
+        &self,
+        spec: Box<dyn TaskSpecification>,
+    ) -> Result<Vec<TaskAggregate>>;
 
     /// 新しいタスクを保存
     ///
