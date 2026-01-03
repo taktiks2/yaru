@@ -7,14 +7,24 @@ use anyhow::Result;
 pub struct TaskTitle(String);
 
 impl TaskTitle {
-    /// 新しいTaskTitleを作成（スタブ - テスト失敗のため）
-    pub fn new(_value: impl Into<String>) -> Result<Self> {
-        unimplemented!("TaskTitle::new() は未実装です")
+    /// 新しいTaskTitleを作成
+    pub fn new(value: impl Into<String>) -> Result<Self> {
+        let value = value.into();
+
+        if value.trim().is_empty() {
+            anyhow::bail!("タイトルは空にできません");
+        }
+
+        if value.len() > 100 {
+            anyhow::bail!("タイトルは100文字以内にしてください");
+        }
+
+        Ok(Self(value))
     }
 
-    /// タイトルの値を取得（スタブ - テスト失敗のため）
+    /// タイトルの値を取得
     pub fn value(&self) -> &str {
-        unimplemented!("TaskTitle::value() は未実装です")
+        &self.0
     }
 }
 

@@ -7,14 +7,17 @@ use anyhow::Result;
 pub struct TaskId(i32);
 
 impl TaskId {
-    /// 新しいTaskIdを作成（スタブ - テスト失敗のため）
-    pub fn new(_value: i32) -> Result<Self> {
-        unimplemented!("TaskId::new() は未実装です")
+    /// 新しいTaskIdを作成
+    pub fn new(value: i32) -> Result<Self> {
+        if value < 0 {
+            anyhow::bail!("タスクIDは0以上である必要があります");
+        }
+        Ok(Self(value))
     }
 
-    /// IDの値を取得（スタブ - テスト失敗のため）
+    /// IDの値を取得
     pub fn value(&self) -> i32 {
-        unimplemented!("TaskId::value() は未実装です")
+        self.0
     }
 }
 

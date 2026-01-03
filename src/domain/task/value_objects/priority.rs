@@ -15,19 +15,35 @@ pub enum Priority {
 }
 
 impl Priority {
-    /// 文字列から変換（スタブ - テスト失敗のため）
-    pub fn from_str(_s: &str) -> Result<Self> {
-        unimplemented!("Priority::from_str() は未実装です")
+    /// 文字列から変換
+    pub fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "Low" => Ok(Priority::Low),
+            "Medium" => Ok(Priority::Medium),
+            "High" => Ok(Priority::High),
+            "Critical" => Ok(Priority::Critical),
+            _ => anyhow::bail!("無効な優先度: {}", s),
+        }
     }
 
-    /// 文字列表現を取得（スタブ - テスト失敗のため）
+    /// 文字列表現を取得
     pub fn as_str(&self) -> &str {
-        unimplemented!("Priority::as_str() は未実装です")
+        match self {
+            Priority::Low => "Low",
+            Priority::Medium => "Medium",
+            Priority::High => "High",
+            Priority::Critical => "Critical",
+        }
     }
 
-    /// 日本語表示名を取得（スタブ - テスト失敗のため）
+    /// 日本語表示名を取得
     pub fn display_name(&self) -> &str {
-        unimplemented!("Priority::display_name() は未実装です")
+        match self {
+            Priority::Low => "低",
+            Priority::Medium => "中",
+            Priority::High => "高",
+            Priority::Critical => "重大",
+        }
     }
 }
 

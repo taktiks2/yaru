@@ -13,24 +13,42 @@ pub enum Status {
 }
 
 impl Status {
-    /// 文字列から変換（スタブ - テスト失敗のため）
-    pub fn from_str(_s: &str) -> Result<Self> {
-        unimplemented!("Status::from_str() は未実装です")
+    /// 文字列から変換
+    pub fn from_str(s: &str) -> Result<Self> {
+        match s {
+            "Pending" => Ok(Status::Pending),
+            "InProgress" => Ok(Status::InProgress),
+            "Completed" => Ok(Status::Completed),
+            _ => anyhow::bail!("無効なステータス: {}", s),
+        }
     }
 
-    /// フィルタ値から変換（スタブ - テスト失敗のため）
-    pub fn from_filter_value(_s: &str) -> Result<Self> {
-        unimplemented!("Status::from_filter_value() は未実装です")
+    /// フィルタ値から変換
+    pub fn from_filter_value(s: &str) -> Result<Self> {
+        match s.to_lowercase().as_str() {
+            "pending" | "todo" => Ok(Status::Pending),
+            "in_progress" | "progress" => Ok(Status::InProgress),
+            "completed" | "done" => Ok(Status::Completed),
+            _ => anyhow::bail!("無効なフィルタ値: {}", s),
+        }
     }
 
-    /// 文字列表現を取得（スタブ - テスト失敗のため）
+    /// 文字列表現を取得
     pub fn as_str(&self) -> &str {
-        unimplemented!("Status::as_str() は未実装です")
+        match self {
+            Status::Pending => "Pending",
+            Status::InProgress => "InProgress",
+            Status::Completed => "Completed",
+        }
     }
 
-    /// 日本語表示名を取得（スタブ - テスト失敗のため）
+    /// 日本語表示名を取得
     pub fn display_name(&self) -> &str {
-        unimplemented!("Status::display_name() は未実装です")
+        match self {
+            Status::Pending => "保留中",
+            Status::InProgress => "進行中",
+            Status::Completed => "完了",
+        }
     }
 }
 
