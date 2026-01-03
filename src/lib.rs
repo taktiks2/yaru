@@ -60,5 +60,5 @@ async fn run_cli_with_command(command: Commands) -> Result<()> {
 
 /// TUIモードで実行
 async fn run_tui() -> Result<()> {
-    unimplemented!("TUI mode not yet implemented")
+    interface::tui::run_tui().await
 }
