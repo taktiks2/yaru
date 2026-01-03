@@ -16,7 +16,7 @@ use command::{
     },
     task::{
         AddTaskParams, DeleteTaskParams, EditTaskParams, ListTasksParams, ShowTaskParams, add_task,
-        delete_task, edit_task, list_tasks, show_task,
+        delete_task, edit_task, list_tasks, show_stats, show_task,
     },
 };
 use config::load_config;
@@ -123,6 +123,7 @@ async fn handle_task_command(
             )
             .await
         }
+        TaskCommands::Stats => show_stats(db).await,
     }
 }
 

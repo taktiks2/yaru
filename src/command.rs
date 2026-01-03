@@ -4,12 +4,14 @@ pub mod task {
     mod edit;
     mod list;
     mod show;
+    mod stats;
 
     pub use add::{AddTaskParams, add_task};
     pub use delete::{DeleteTaskParams, delete_task};
     pub use edit::{EditTaskParams, edit_task};
     pub use list::{ListTasksParams, list_tasks};
     pub use show::{ShowTaskParams, show_task};
+    pub use stats::show_stats;
 }
 
 pub mod tag {
