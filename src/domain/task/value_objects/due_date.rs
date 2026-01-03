@@ -9,24 +9,24 @@ use serde::{Deserialize, Serialize};
 pub struct DueDate(NaiveDate);
 
 impl DueDate {
-    /// 新しいDueDateを作成（スタブ - テスト失敗のため）
-    pub fn new(_date: NaiveDate) -> Result<Self> {
-        unimplemented!("DueDate::new() は未実装です")
+    /// 新しいDueDateを作成
+    pub fn new(date: NaiveDate) -> Result<Self> {
+        Ok(Self(date))
     }
 
-    /// 期限の値を取得（スタブ - テスト失敗のため）
+    /// 期限の値を取得
     pub fn value(&self) -> NaiveDate {
-        unimplemented!("DueDate::value() は未実装です")
+        self.0
     }
 
-    /// 指定された日付より前かチェック（スタブ - テスト失敗のため）
-    pub fn is_before(&self, _other: NaiveDate) -> bool {
-        unimplemented!("DueDate::is_before() は未実装です")
+    /// 指定された日付より前かチェック
+    pub fn is_before(&self, other: NaiveDate) -> bool {
+        self.0 < other
     }
 
-    /// 指定された日付より後かチェック（スタブ - テスト失敗のため）
-    pub fn is_after(&self, _other: NaiveDate) -> bool {
-        unimplemented!("DueDate::is_after() は未実装です")
+    /// 指定された日付より後かチェック
+    pub fn is_after(&self, other: NaiveDate) -> bool {
+        self.0 > other
     }
 }
 

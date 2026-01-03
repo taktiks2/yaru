@@ -7,20 +7,20 @@ use anyhow::Result;
 pub struct TaskDescription(String);
 
 impl TaskDescription {
-    /// 新しいTaskDescriptionを作成（スタブ - テスト失敗のため）
-    pub fn new(_value: impl Into<String>) -> Result<Self> {
-        unimplemented!("TaskDescription::new() は未実装です")
+    /// 新しいTaskDescriptionを作成
+    pub fn new(value: impl Into<String>) -> Result<Self> {
+        Ok(Self(value.into()))
     }
 
-    /// 説明の値を取得（スタブ - テスト失敗のため）
+    /// 説明の値を取得
     pub fn value(&self) -> &str {
-        unimplemented!("TaskDescription::value() は未実装です")
+        &self.0
     }
 }
 
 impl Default for TaskDescription {
     fn default() -> Self {
-        unimplemented!("TaskDescription::default() は未実装です")
+        Self(String::new())
     }
 }
 
