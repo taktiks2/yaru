@@ -60,8 +60,10 @@ impl EditTaskUseCase {
         }
 
         // ステータスの更新
+        // Display形式（"InProgress"）とフィルタ形式（"in_progress"）の両方をサポート
         if let Some(status_str) = dto.status {
-            let status = Status::from_filter_value(&status_str)?;
+            let status = Status::from_str(&status_str)
+                .or_else(|_| Status::from_filter_value(&status_str))?;
             task.change_status(status)?;
         }
 
