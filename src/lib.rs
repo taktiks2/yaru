@@ -17,14 +17,16 @@ use migration::MigratorTrait;
 ///
 /// コマンドライン引数をパースし、適切なコマンドを実行します。
 pub async fn run() -> Result<()> {
-    run_cli().await
-}
-
-/// CLIモードで実行
-async fn run_cli() -> Result<()> {
-    // CLI引数をパース
     let args = Args::parse();
 
+    match args.command {
+        Some(command) => run_cli_with_command(command).await,
+        None => run_tui().await,
+    }
+}
+
+/// CLIモードで指定されたコマンドを実行
+async fn run_cli_with_command(command: Commands) -> Result<()> {
     // 設定を読み込む
     let config = load_config()?;
 
@@ -43,19 +45,20 @@ async fn run_cli() -> Result<()> {
     let tag_repo = Arc::new(SeaOrmTagRepository::new(db.clone()));
 
     // コマンド実行
-    match args.command {
-        Some(Commands::Task { command }) => {
+    match command {
+        Commands::Task { command } => {
             task_handler::handle_task_command(command, task_repo, tag_repo).await?
         }
-        Some(Commands::Tag { command }) => tag_handler::handle_tag_command(command, tag_repo).await?,
-        None => {
-            eprintln!("サブコマンドが指定されていません。TUI mode is not yet implemented.");
-            std::process::exit(1);
-        }
+        Commands::Tag { command } => tag_handler::handle_tag_command(command, tag_repo).await?,
     }
 
     // 接続を明示的に閉じる
     db.close().await?;
 
     Ok(())
+}
+
+/// TUIモードで実行
+async fn run_tui() -> Result<()> {
+    unimplemented!("TUI mode not yet implemented")
 }
