@@ -56,6 +56,11 @@ mod tests {
 impl DueDateStatus {
     /// 表示用の日本語名を取得
     pub fn display_name(&self) -> &str {
-        unimplemented!()
+        match self {
+            DueDateStatus::Overdue => "期限切れ",
+            DueDateStatus::DueToday => "今日期限",
+            DueDateStatus::DueThisWeek => "今週期限",
+            DueDateStatus::NoDueDate => "期限なし",
+        }
     }
 }

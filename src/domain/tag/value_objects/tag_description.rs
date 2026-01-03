@@ -67,17 +67,17 @@ mod tests {
 impl TagDescription {
     /// 新しいTagDescriptionを作成
     pub fn new(value: impl Into<String>) -> Result<Self> {
-        unimplemented!()
+        Ok(Self(value.into()))
     }
 
     /// 説明の値を取得
     pub fn value(&self) -> &str {
-        unimplemented!()
+        &self.0
     }
 }
 
 impl Default for TagDescription {
     fn default() -> Self {
-        unimplemented!()
+        Self(String::new())
     }
 }

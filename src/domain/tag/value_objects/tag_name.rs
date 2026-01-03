@@ -81,11 +81,18 @@ mod tests {
 impl TagName {
     /// 新しいTagNameを作成
     pub fn new(value: impl Into<String>) -> Result<Self> {
-        unimplemented!()
+        let value = value.into();
+        if value.trim().is_empty() {
+            anyhow::bail!("タグ名は空にできません");
+        }
+        if value.len() > 50 {
+            anyhow::bail!("タグ名は50文字以内にしてください");
+        }
+        Ok(Self(value))
     }
 
     /// 名前の値を取得
     pub fn value(&self) -> &str {
-        unimplemented!()
+        &self.0
     }
 }

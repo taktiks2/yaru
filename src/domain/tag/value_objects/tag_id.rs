@@ -69,11 +69,14 @@ mod tests {
 impl TagId {
     /// 新しいTagIdを作成
     pub fn new(value: i32) -> Result<Self> {
-        unimplemented!()
+        if value < 0 {
+            anyhow::bail!("タグIDは0以上である必要があります");
+        }
+        Ok(Self(value))
     }
 
     /// IDの値を取得
     pub fn value(&self) -> i32 {
-        unimplemented!()
+        self.0
     }
 }
