@@ -12,6 +12,7 @@ use crate::application::use_cases::task::{
 use crate::domain::tag::repository::TagRepository;
 use crate::domain::task::value_objects::{Priority, Status};
 use crate::interface::cli::args::{Filter, FilterKey, TaskCommands};
+use crate::interface::cli::display::{create_stats_table, create_task_detail_table, create_task_table};
 
 /// タスクコマンドを処理
 pub async fn handle_task_command(
@@ -80,13 +81,12 @@ async fn handle_list(
     let tasks = use_case.execute().await?;
 
     // TODO: フィルタ処理を実装
-    // TODO: テーブル表示を実装（現在は簡易表示）
-    println!("タスク一覧 ({}件):", tasks.len());
-    for task in tasks {
-        println!(
-            "  [{}] {} - {} ({})",
-            task.id, task.title, task.status, task.priority
-        );
+    if tasks.is_empty() {
+        println!("タスクがありません");
+    } else {
+        println!("タスク一覧 ({}件):", tasks.len());
+        let table = create_task_table(&tasks);
+        println!("{}", table);
     }
 
     Ok(())
@@ -100,21 +100,8 @@ async fn handle_show(
     let use_case = ShowTaskUseCase::new(task_repo);
     let task = use_case.execute(id).await?;
 
-    // TODO: テーブル表示を実装（現在は簡易表示）
-    println!("タスク詳細:");
-    println!("  ID: {}", task.id);
-    println!("  タイトル: {}", task.title);
-    if let Some(desc) = &task.description {
-        println!("  説明: {}", desc);
-    }
-    println!("  ステータス: {}", task.status);
-    println!("  優先度: {}", task.priority);
-    if let Some(due_date) = task.due_date {
-        println!("  期限: {}", due_date);
-    }
-    if !task.tags.is_empty() {
-        println!("  タグ: {:?}", task.tags);
-    }
+    let table = create_task_detail_table(&task);
+    println!("{}", table);
 
     Ok(())
 }
@@ -335,17 +322,8 @@ async fn handle_stats(
     let use_case = ShowStatsUseCase::new(task_repo);
     let stats = use_case.execute().await?;
 
-    // TODO: テーブル表示を実装（現在は簡易表示）
-    println!("タスク統計:");
-    println!("  全体: {}", stats.total_count);
-    println!("  ステータス別:");
-    for (status, count) in &stats.status_stats {
-        println!("    {}: {}", status, count);
-    }
-    println!("  優先度別:");
-    for (priority, count) in &stats.priority_stats {
-        println!("    {}: {}", priority, count);
-    }
+    let table = create_stats_table(&stats);
+    println!("{}", table);
 
     Ok(())
 }

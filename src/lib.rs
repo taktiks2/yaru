@@ -5,6 +5,7 @@
 // mod display;
 mod application;
 mod domain;
+mod infrastructure;
 mod interface;
 // mod json;
 // mod repository;

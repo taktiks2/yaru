@@ -9,6 +9,7 @@ use crate::application::use_cases::tag::{
 };
 use crate::domain::tag::repository::TagRepository;
 use crate::interface::cli::args::TagCommands;
+use crate::interface::cli::display::{create_tag_detail_table, create_tag_table};
 
 /// タグコマンドを処理
 pub async fn handle_tag_command(
@@ -33,11 +34,12 @@ async fn handle_list(tag_repo: Arc<dyn TagRepository>) -> Result<()> {
     let use_case = ListTagsUseCase::new(tag_repo);
     let tags = use_case.execute().await?;
 
-    // TODO: テーブル表示を実装（現在は簡易表示）
-    println!("タグ一覧 ({}件):", tags.len());
-    for tag in tags {
-        let desc = tag.description.as_deref().unwrap_or("");
-        println!("  [{}] {} - {}", tag.id, tag.name, desc);
+    if tags.is_empty() {
+        println!("タグがありません");
+    } else {
+        println!("タグ一覧 ({}件):", tags.len());
+        let table = create_tag_table(&tags);
+        println!("{}", table);
     }
 
     Ok(())
@@ -48,13 +50,8 @@ async fn handle_show(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> {
     let use_case = ShowTagUseCase::new(tag_repo);
     let tag = use_case.execute(id).await?;
 
-    // TODO: テーブル表示を実装（現在は簡易表示）
-    println!("タグ詳細:");
-    println!("  ID: {}", tag.id);
-    println!("  名前: {}", tag.name);
-    if let Some(desc) = &tag.description {
-        println!("  説明: {}", desc);
-    }
+    let table = create_tag_detail_table(&tag);
+    println!("{}", table);
 
     Ok(())
 }
