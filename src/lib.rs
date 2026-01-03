@@ -1,14 +1,7 @@
-// TDDのため一時的に既存のモジュールをコメントアウト
-// mod cli;
-// mod command;
-// mod config;
-// mod display;
 mod application;
 mod domain;
 mod infrastructure;
 mod interface;
-// mod json;
-// mod repository;
 
 use anyhow::{Context, Result};
 use clap::Parser;
