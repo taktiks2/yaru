@@ -190,6 +190,8 @@ pub enum TaskCommands {
         #[arg(long, conflicts_with = "due_date")]
         clear_due_date: bool,
     },
+    /// タスクの統計情報を表示
+    Stats,
 }
 
 /// タグ管理用のサブコマンド
