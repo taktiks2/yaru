@@ -28,6 +28,38 @@ impl TagAggregate {
         }
     }
 
+    /// リポジトリからの再構築用ファクトリメソッド
+    ///
+    /// データベースから読み込んだデータをTagAggregateに変換する際に使用します。
+    pub fn reconstruct(
+        id: TagId,
+        name: TagName,
+        description: TagDescription,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            description,
+            created_at,
+            updated_at,
+        }
+    }
+
+    /// IDを設定した新しいインスタンスを返す
+    ///
+    /// リポジトリがタグを保存する際に新しいIDを割り当てるために使用します。
+    pub fn with_id(self, id: TagId) -> Self {
+        Self {
+            id,
+            name: self.name,
+            description: self.description,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+
     /// タグの名前を変更します
     pub fn change_name(&mut self, new_name: TagName) -> Result<()> {
         self.name = new_name;

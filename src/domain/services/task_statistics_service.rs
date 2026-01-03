@@ -91,8 +91,8 @@ impl TaskStatisticsService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::task::value_objects::{DueDate, TaskDescription, TaskId, TaskTitle};
     use crate::domain::tag::value_objects::TagId;
+    use crate::domain::task::value_objects::{DueDate, TaskDescription, TaskId, TaskTitle};
     use chrono::{Duration, Utc};
 
     #[test]

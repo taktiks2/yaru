@@ -1,10 +1,8 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use chrono::{DateTime, Utc};
 
 use super::events::{TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChanged};
-use super::value_objects::{
-    DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle,
-};
+use super::value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle};
 use crate::domain::tag::value_objects::TagId;
 
 /// TaskAggregate - タスクのAggregate Root
@@ -84,6 +82,57 @@ impl TaskAggregate {
             due_date,
             completed_at: None,
             domain_events: Vec::new(),
+        }
+    }
+
+    /// リポジトリからの再構築用ファクトリメソッド
+    ///
+    /// データベースから読み込んだデータをTaskAggregateに変換する際に使用します。
+    /// ドメインイベントは空の状態で作成されます。
+    pub fn reconstruct(
+        id: TaskId,
+        title: TaskTitle,
+        description: TaskDescription,
+        status: Status,
+        priority: Priority,
+        tags: Vec<TagId>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+        due_date: Option<DueDate>,
+        completed_at: Option<DateTime<Utc>>,
+    ) -> Self {
+        Self {
+            id,
+            title,
+            description,
+            status,
+            priority,
+            tags,
+            created_at,
+            updated_at,
+            due_date,
+            completed_at,
+            domain_events: Vec::new(),
+        }
+    }
+
+    /// IDを設定した新しいインスタンスを返す
+    ///
+    /// リポジトリがタスクを保存する際に新しいIDを割り当てるために使用します。
+    /// 元のインスタンスは変更せず、新しいインスタンスを返します。
+    pub fn with_id(self, id: TaskId) -> Self {
+        Self {
+            id,
+            title: self.title,
+            description: self.description,
+            status: self.status,
+            priority: self.priority,
+            tags: self.tags,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            due_date: self.due_date,
+            completed_at: self.completed_at,
+            domain_events: self.domain_events,
         }
     }
 
@@ -525,7 +574,11 @@ mod tests {
 
         // Assert
         assert_eq!(task.domain_events().len(), 1);
-        assert!(task.domain_events()[0].downcast_ref::<TaskCompleted>().is_some());
+        assert!(
+            task.domain_events()[0]
+                .downcast_ref::<TaskCompleted>()
+                .is_some()
+        );
     }
 
     #[test]
@@ -548,7 +601,11 @@ mod tests {
 
         // Assert
         assert_eq!(task.domain_events().len(), 1);
-        assert!(task.domain_events()[0].downcast_ref::<TaskTitleChanged>().is_some());
+        assert!(
+            task.domain_events()[0]
+                .downcast_ref::<TaskTitleChanged>()
+                .is_some()
+        );
     }
 
     #[test]
@@ -571,7 +628,11 @@ mod tests {
 
         // Assert
         assert_eq!(task.domain_events().len(), 1);
-        assert!(task.domain_events()[0].downcast_ref::<TaskTagAdded>().is_some());
+        assert!(
+            task.domain_events()[0]
+                .downcast_ref::<TaskTagAdded>()
+                .is_some()
+        );
     }
 
     #[test]
@@ -594,7 +655,11 @@ mod tests {
 
         // Assert
         assert_eq!(task.domain_events().len(), 1);
-        assert!(task.domain_events()[0].downcast_ref::<TaskTagRemoved>().is_some());
+        assert!(
+            task.domain_events()[0]
+                .downcast_ref::<TaskTagRemoved>()
+                .is_some()
+        );
     }
 
     #[test]

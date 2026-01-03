@@ -142,9 +142,18 @@ mod tests {
             7,
         );
 
-        assert_eq!(stats.priority_status_count(&Priority::High, &Status::Pending), 5);
-        assert_eq!(stats.priority_status_count(&Priority::Low, &Status::Completed), 2);
-        assert_eq!(stats.priority_status_count(&Priority::Medium, &Status::InProgress), 0);
+        assert_eq!(
+            stats.priority_status_count(&Priority::High, &Status::Pending),
+            5
+        );
+        assert_eq!(
+            stats.priority_status_count(&Priority::Low, &Status::Completed),
+            2
+        );
+        assert_eq!(
+            stats.priority_status_count(&Priority::Medium, &Status::InProgress),
+            0
+        );
     }
 
     #[test]
@@ -221,7 +230,10 @@ impl TaskStats {
 
     /// 期限ステータス別タスク数を取得
     pub fn due_date_count(&self, due_date_status: &DueDateStatus) -> usize {
-        self.due_date_stats.get(due_date_status).copied().unwrap_or(0)
+        self.due_date_stats
+            .get(due_date_status)
+            .copied()
+            .unwrap_or(0)
     }
 
     /// タグ別タスク数を取得
@@ -231,7 +243,10 @@ impl TaskStats {
 
     /// 優先度×ステータスのクロス集計を取得
     pub fn priority_status_count(&self, priority: &Priority, status: &Status) -> usize {
-        self.priority_status_matrix.get(&(*priority, *status)).copied().unwrap_or(0)
+        self.priority_status_matrix
+            .get(&(*priority, *status))
+            .copied()
+            .unwrap_or(0)
     }
 
     /// すべてのタグ名を取得
