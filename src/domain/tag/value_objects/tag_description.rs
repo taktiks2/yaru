@@ -6,7 +6,18 @@ use anyhow::Result;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TagDescription(String);
 
-// テストのみを先に作成（TDD）
+impl TagDescription {
+    /// 新しいTagDescriptionを作成
+    pub fn new(value: impl Into<String>) -> Result<Self> {
+        Ok(Self(value.into()))
+    }
+
+    /// 説明の値を取得
+    pub fn value(&self) -> &str {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -61,17 +72,5 @@ mod tests {
     fn test_tag_description_default() {
         let desc = TagDescription::default();
         assert_eq!(desc.value(), "");
-    }
-}
-
-impl TagDescription {
-    /// 新しいTagDescriptionを作成
-    pub fn new(value: impl Into<String>) -> Result<Self> {
-        Ok(Self(value.into()))
-    }
-
-    /// 説明の値を取得
-    pub fn value(&self) -> &str {
-        &self.0
     }
 }

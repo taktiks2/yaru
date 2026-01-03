@@ -20,6 +20,69 @@ pub struct TaskStats {
     total_count: usize,
 }
 
+
+impl TaskStats {
+    /// 新しいTaskStatsを作成
+    pub fn new(
+        status_stats: HashMap<Status, usize>,
+        priority_stats: HashMap<Priority, usize>,
+        due_date_stats: HashMap<DueDateStatus, usize>,
+        tag_stats: HashMap<String, usize>,
+        priority_status_matrix: HashMap<(Priority, Status), usize>,
+        total_count: usize,
+    ) -> Self {
+        Self {
+            status_stats,
+            priority_stats,
+            due_date_stats,
+            tag_stats,
+            priority_status_matrix,
+            total_count,
+        }
+    }
+
+    /// 総タスク数を取得
+    pub fn total_count(&self) -> usize {
+        self.total_count
+    }
+
+    /// ステータス別タスク数を取得
+    pub fn status_count(&self, status: &Status) -> usize {
+        self.status_stats.get(status).copied().unwrap_or(0)
+    }
+
+    /// 優先度別タスク数を取得
+    pub fn priority_count(&self, priority: &Priority) -> usize {
+        self.priority_stats.get(priority).copied().unwrap_or(0)
+    }
+
+    /// 期限ステータス別タスク数を取得
+    pub fn due_date_count(&self, due_date_status: &DueDateStatus) -> usize {
+        self.due_date_stats
+            .get(due_date_status)
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// タグ別タスク数を取得
+    pub fn tag_count(&self, tag: &str) -> usize {
+        self.tag_stats.get(tag).copied().unwrap_or(0)
+    }
+
+    /// 優先度×ステータスのクロス集計を取得
+    pub fn priority_status_count(&self, priority: &Priority, status: &Status) -> usize {
+        self.priority_status_matrix
+            .get(&(*priority, *status))
+            .copied()
+            .unwrap_or(0)
+    }
+
+    /// すべてのタグ名を取得
+    pub fn all_tag_names(&self) -> Vec<String> {
+        self.tag_stats.keys().cloned().collect()
+    }
+}
+
 // テストのみを先に作成（TDD）
 #[cfg(test)]
 mod tests {
@@ -190,67 +253,5 @@ mod tests {
         tag_names.sort();
 
         assert_eq!(tag_names, vec!["バグ", "緊急", "重要"]);
-    }
-}
-
-impl TaskStats {
-    /// 新しいTaskStatsを作成
-    pub fn new(
-        status_stats: HashMap<Status, usize>,
-        priority_stats: HashMap<Priority, usize>,
-        due_date_stats: HashMap<DueDateStatus, usize>,
-        tag_stats: HashMap<String, usize>,
-        priority_status_matrix: HashMap<(Priority, Status), usize>,
-        total_count: usize,
-    ) -> Self {
-        Self {
-            status_stats,
-            priority_stats,
-            due_date_stats,
-            tag_stats,
-            priority_status_matrix,
-            total_count,
-        }
-    }
-
-    /// 総タスク数を取得
-    pub fn total_count(&self) -> usize {
-        self.total_count
-    }
-
-    /// ステータス別タスク数を取得
-    pub fn status_count(&self, status: &Status) -> usize {
-        self.status_stats.get(status).copied().unwrap_or(0)
-    }
-
-    /// 優先度別タスク数を取得
-    pub fn priority_count(&self, priority: &Priority) -> usize {
-        self.priority_stats.get(priority).copied().unwrap_or(0)
-    }
-
-    /// 期限ステータス別タスク数を取得
-    pub fn due_date_count(&self, due_date_status: &DueDateStatus) -> usize {
-        self.due_date_stats
-            .get(due_date_status)
-            .copied()
-            .unwrap_or(0)
-    }
-
-    /// タグ別タスク数を取得
-    pub fn tag_count(&self, tag: &str) -> usize {
-        self.tag_stats.get(tag).copied().unwrap_or(0)
-    }
-
-    /// 優先度×ステータスのクロス集計を取得
-    pub fn priority_status_count(&self, priority: &Priority, status: &Status) -> usize {
-        self.priority_status_matrix
-            .get(&(*priority, *status))
-            .copied()
-            .unwrap_or(0)
-    }
-
-    /// すべてのタグ名を取得
-    pub fn all_tag_names(&self) -> Vec<String> {
-        self.tag_stats.keys().cloned().collect()
     }
 }

@@ -6,7 +6,25 @@ use anyhow::Result;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TagName(String);
 
-// テストのみを先に作成（TDD）
+impl TagName {
+    /// 新しいTagNameを作成
+    pub fn new(value: impl Into<String>) -> Result<Self> {
+        let value = value.into();
+        if value.trim().is_empty() {
+            anyhow::bail!("タグ名は空にできません");
+        }
+        if value.len() > 50 {
+            anyhow::bail!("タグ名は50文字以内にしてください");
+        }
+        Ok(Self(value))
+    }
+
+    /// 名前の値を取得
+    pub fn value(&self) -> &str {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -75,24 +93,5 @@ mod tests {
         let name = TagName::new("重要").unwrap();
         set.insert(name.clone());
         assert!(set.contains(&name));
-    }
-}
-
-impl TagName {
-    /// 新しいTagNameを作成
-    pub fn new(value: impl Into<String>) -> Result<Self> {
-        let value = value.into();
-        if value.trim().is_empty() {
-            anyhow::bail!("タグ名は空にできません");
-        }
-        if value.len() > 50 {
-            anyhow::bail!("タグ名は50文字以内にしてください");
-        }
-        Ok(Self(value))
-    }
-
-    /// 名前の値を取得
-    pub fn value(&self) -> &str {
-        &self.0
     }
 }

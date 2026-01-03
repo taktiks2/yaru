@@ -348,10 +348,10 @@ mod tests {
         let task = TaskAggregate::new(
             title.clone(),
             description.clone(),
-            status.clone(),
-            priority.clone(),
+            status,
+            priority,
             tags.clone(),
-            due_date.clone(),
+            due_date,
         );
 
         // Assert
@@ -401,7 +401,7 @@ mod tests {
             None,
         );
         task.complete().unwrap();
-        let first_completed_at = task.completed_at().clone();
+        let first_completed_at = *task.completed_at();
 
         // Act
         let result = task.complete();
@@ -530,7 +530,7 @@ mod tests {
         let tag_id = TagId::new(1).unwrap();
 
         // Act
-        let result = task.add_tag(tag_id.clone());
+        let result = task.add_tag(tag_id);
 
         // Assert
         assert!(result.is_ok());
@@ -549,12 +549,12 @@ mod tests {
             description,
             Status::Pending,
             Priority::Medium,
-            vec![tag_id.clone()],
+            vec![tag_id],
             None,
         );
 
         // Act
-        let result = task.add_tag(tag_id.clone());
+        let result = task.add_tag(tag_id);
 
         // Assert
         assert!(result.is_err());
@@ -572,7 +572,7 @@ mod tests {
             description,
             Status::Pending,
             Priority::Medium,
-            vec![tag_id.clone()],
+            vec![tag_id],
             None,
         );
 
@@ -698,7 +698,7 @@ mod tests {
             description,
             Status::Pending,
             Priority::Medium,
-            vec![tag_id.clone()],
+            vec![tag_id],
             None,
         );
 

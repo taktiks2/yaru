@@ -46,7 +46,8 @@ impl DatabaseConnectionManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::config::{Config, StorageConfig};
+    use crate::infrastructure::config::app_config::StorageConfig;
+    use crate::infrastructure::config::Config;
 
     #[tokio::test]
     async fn test_connect_with_valid_url() {

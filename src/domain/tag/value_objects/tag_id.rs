@@ -6,7 +6,21 @@ use anyhow::Result;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TagId(i32);
 
-// テストのみを先に作成（TDD）
+impl TagId {
+    /// 新しいTagIdを作成
+    pub fn new(value: i32) -> Result<Self> {
+        if value < 0 {
+            anyhow::bail!("タグIDは0以上である必要があります");
+        }
+        Ok(Self(value))
+    }
+
+    /// IDの値を取得
+    pub fn value(&self) -> i32 {
+        self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,20 +77,5 @@ mod tests {
         let id = TagId::new(1).unwrap();
         map.insert(id, "test");
         assert_eq!(map.get(&id), Some(&"test"));
-    }
-}
-
-impl TagId {
-    /// 新しいTagIdを作成
-    pub fn new(value: i32) -> Result<Self> {
-        if value < 0 {
-            anyhow::bail!("タグIDは0以上である必要があります");
-        }
-        Ok(Self(value))
-    }
-
-    /// IDの値を取得
-    pub fn value(&self) -> i32 {
-        self.0
     }
 }

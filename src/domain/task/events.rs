@@ -168,7 +168,7 @@ mod tests {
         let title = TaskTitle::new("新しいタスク").unwrap();
 
         // Act
-        let event = TaskCreated::new(task_id.clone(), title.clone());
+        let event = TaskCreated::new(task_id, title.clone());
 
         // Assert
         assert_eq!(event.task_id, task_id);
@@ -183,7 +183,7 @@ mod tests {
         let completed_at = Utc::now();
 
         // Act
-        let event = TaskCompleted::new(task_id.clone(), completed_at);
+        let event = TaskCompleted::new(task_id, completed_at);
 
         // Assert
         assert_eq!(event.task_id, task_id);
@@ -199,7 +199,7 @@ mod tests {
         let new_title = TaskTitle::new("新しいタイトル").unwrap();
 
         // Act
-        let event = TaskTitleChanged::new(task_id.clone(), old_title.clone(), new_title.clone());
+        let event = TaskTitleChanged::new(task_id, old_title.clone(), new_title.clone());
 
         // Assert
         assert_eq!(event.task_id, task_id);
@@ -215,7 +215,7 @@ mod tests {
         let tag_id = TagId::new(1).unwrap();
 
         // Act
-        let event = TaskTagAdded::new(task_id.clone(), tag_id.clone());
+        let event = TaskTagAdded::new(task_id, tag_id);
 
         // Assert
         assert_eq!(event.task_id, task_id);
@@ -230,7 +230,7 @@ mod tests {
         let tag_id = TagId::new(1).unwrap();
 
         // Act
-        let event = TaskTagRemoved::new(task_id.clone(), tag_id.clone());
+        let event = TaskTagRemoved::new(task_id, tag_id);
 
         // Assert
         assert_eq!(event.task_id, task_id);

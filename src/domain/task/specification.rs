@@ -221,10 +221,10 @@ mod tests {
             description,
             Status::Pending,
             Priority::Medium,
-            vec![tag_id.clone()],
+            vec![tag_id],
             None,
         );
-        let spec = TaskByTag::new(tag_id.clone());
+        let spec = TaskByTag::new(tag_id);
 
         // Act & Assert
         assert!(spec.is_satisfied_by(&task));
@@ -334,7 +334,7 @@ mod tests {
             description,
             Status::Pending,
             Priority::High,
-            vec![tag_id.clone()],
+            vec![tag_id],
             None,
         );
 
