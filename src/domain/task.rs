@@ -69,7 +69,7 @@ impl Task {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, ValueEnum)]
 pub enum Status {
     Pending,
     InProgress,
@@ -130,7 +130,7 @@ impl fmt::Display for Status {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, ValueEnum)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, ValueEnum)]
 pub enum Priority {
     Low,
     Medium,
