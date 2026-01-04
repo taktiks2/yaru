@@ -1,3 +1,4 @@
+use crate::domain::tag::value_objects::TagId;
 use crate::domain::task::value_objects::{DueDateStatus, Priority, Status, TaskStats};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -21,9 +22,16 @@ pub struct StatsDTO {
     pub total_count: usize,
 }
 
-// TaskStatsからStatsDTOへの変換
-impl From<TaskStats> for StatsDTO {
-    fn from(stats: TaskStats) -> Self {
+impl StatsDTO {
+    /// TaskStatsからStatsDTOを作成（タグ名マップ付き）
+    ///
+    /// # Arguments
+    /// * `stats` - タスク統計
+    /// * `tag_names` - タグIDからタグ名へのマッピング
+    pub fn from_task_stats_with_tag_names(
+        stats: TaskStats,
+        tag_names: HashMap<TagId, String>,
+    ) -> Self {
         // ステータス別統計を文字列キーに変換
         let mut status_stats = HashMap::new();
         for status in [Status::Pending, Status::InProgress, Status::Completed] {
@@ -61,10 +69,17 @@ impl From<TaskStats> for StatsDTO {
             }
         }
 
-        // タグ別統計（すでに文字列キー）
+        // タグ別統計（タグIDからタグ名に変換）
         let mut tag_stats = HashMap::new();
-        for tag_name in stats.all_tag_names() {
-            tag_stats.insert(tag_name.clone(), stats.tag_count(&tag_name));
+        for (tag_id_opt, count) in stats.tag_stats() {
+            let tag_name = match tag_id_opt {
+                None => "(タグなし)".to_string(),
+                Some(tag_id) => tag_names
+                    .get(tag_id)
+                    .cloned()
+                    .unwrap_or_else(|| format!("Tag ID: {}", tag_id.value())),
+            };
+            tag_stats.insert(tag_name, *count);
         }
 
         // 優先度×ステータス クロス集計を文字列キーに変換
@@ -96,6 +111,15 @@ impl From<TaskStats> for StatsDTO {
             priority_status_matrix,
             total_count: stats.total_count(),
         }
+    }
+}
+
+// TaskStatsからStatsDTOへの変換（タグ名なし）
+// 注: この実装は後方互換性のために残していますが、
+// タグ名が正しく表示されないため、from_task_stats_with_tag_namesの使用を推奨します
+impl From<TaskStats> for StatsDTO {
+    fn from(stats: TaskStats) -> Self {
+        Self::from_task_stats_with_tag_names(stats, HashMap::new())
     }
 }
 
@@ -145,7 +169,8 @@ mod tests {
         due_date_stats.insert(DueDateStatus::Overdue, 2);
 
         let mut tag_stats = HashMap::new();
-        tag_stats.insert("重要".to_string(), 5);
+        let tag_id_1 = TagId::new(1).unwrap();
+        tag_stats.insert(Some(tag_id_1), 5);
 
         let mut priority_status_matrix = HashMap::new();
         priority_status_matrix.insert((Priority::High, Status::Pending), 3);
@@ -159,7 +184,11 @@ mod tests {
             8,
         );
 
-        let dto = StatsDTO::from(task_stats);
+        // タグ名マップを作成
+        let mut tag_names = HashMap::new();
+        tag_names.insert(tag_id_1, "重要".to_string());
+
+        let dto = StatsDTO::from_task_stats_with_tag_names(task_stats, tag_names);
 
         assert_eq!(dto.total_count, 8);
         assert_eq!(dto.status_stats.get("pending"), Some(&5));

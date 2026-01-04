@@ -1,3 +1,4 @@
+use crate::domain::tag::value_objects::TagId;
 use crate::domain::task::value_objects::{DueDateStatus, Priority, Status};
 use std::collections::HashMap;
 
@@ -12,8 +13,8 @@ pub struct TaskStats {
     priority_stats: HashMap<Priority, usize>,
     /// 期限関連統計
     due_date_stats: HashMap<DueDateStatus, usize>,
-    /// タグ別統計
-    tag_stats: HashMap<String, usize>,
+    /// タグ別統計（None: タグなし、Some(TagId): 該当タグID）
+    tag_stats: HashMap<Option<TagId>, usize>,
     /// 優先度×ステータス クロス集計
     priority_status_matrix: HashMap<(Priority, Status), usize>,
     /// 全体統計
@@ -26,7 +27,7 @@ impl TaskStats {
         status_stats: HashMap<Status, usize>,
         priority_stats: HashMap<Priority, usize>,
         due_date_stats: HashMap<DueDateStatus, usize>,
-        tag_stats: HashMap<String, usize>,
+        tag_stats: HashMap<Option<TagId>, usize>,
         priority_status_matrix: HashMap<(Priority, Status), usize>,
         total_count: usize,
     ) -> Self {
@@ -63,11 +64,6 @@ impl TaskStats {
             .unwrap_or(0)
     }
 
-    /// タグ別タスク数を取得
-    pub fn tag_count(&self, tag: &str) -> usize {
-        self.tag_stats.get(tag).copied().unwrap_or(0)
-    }
-
     /// 優先度×ステータスのクロス集計を取得
     pub fn priority_status_count(&self, priority: &Priority, status: &Status) -> usize {
         self.priority_status_matrix
@@ -76,9 +72,9 @@ impl TaskStats {
             .unwrap_or(0)
     }
 
-    /// すべてのタグ名を取得
-    pub fn all_tag_names(&self) -> Vec<String> {
-        self.tag_stats.keys().cloned().collect()
+    /// タグ別統計の生のHashMapを取得
+    pub fn tag_stats(&self) -> &HashMap<Option<TagId>, usize> {
+        &self.tag_stats
     }
 }
 
@@ -170,26 +166,6 @@ mod tests {
     }
 
     #[test]
-    fn test_task_stats_tag_count() {
-        let mut tag_stats = HashMap::new();
-        tag_stats.insert("重要".to_string(), 5);
-        tag_stats.insert("緊急".to_string(), 3);
-
-        let stats = TaskStats::new(
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
-            tag_stats,
-            HashMap::new(),
-            8,
-        );
-
-        assert_eq!(stats.tag_count("重要"), 5);
-        assert_eq!(stats.tag_count("緊急"), 3);
-        assert_eq!(stats.tag_count("その他"), 0);
-    }
-
-    #[test]
     fn test_task_stats_priority_status_matrix() {
         let mut matrix = HashMap::new();
         matrix.insert((Priority::High, Status::Pending), 5);
@@ -230,27 +206,5 @@ mod tests {
         );
         let stats2 = stats1.clone();
         assert_eq!(stats1, stats2);
-    }
-
-    #[test]
-    fn test_task_stats_all_tag_names() {
-        let mut tag_stats = HashMap::new();
-        tag_stats.insert("重要".to_string(), 5);
-        tag_stats.insert("緊急".to_string(), 3);
-        tag_stats.insert("バグ".to_string(), 1);
-
-        let stats = TaskStats::new(
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
-            tag_stats,
-            HashMap::new(),
-            9,
-        );
-
-        let mut tag_names: Vec<String> = stats.all_tag_names().into_iter().collect();
-        tag_names.sort();
-
-        assert_eq!(tag_names, vec!["バグ", "緊急", "重要"]);
     }
 }
