@@ -13,7 +13,7 @@ use crate::{
     },
 };
 use anyhow::{Context, Result};
-use inquire::{Confirm, Editor, Text, validator};
+use inquire::{Confirm, Editor, MultiSelect, Text, validator};
 use std::sync::Arc;
 
 /// タグ追加のパラメータ
@@ -146,16 +146,67 @@ async fn handle_delete(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> 
     Ok(())
 }
 
-/// タグを編集
 async fn handle_edit(
     tag_repo: Arc<dyn TagRepository>,
     id: i32,
     params: EditTagParams,
 ) -> Result<()> {
+    // 引数モードか対話モードか判定
+    let is_interactive = params.name.is_none() && params.description.is_none();
+
+    let (final_name, final_description) = if is_interactive {
+        // 対話モード: 既存のタグ情報を取得
+        let use_case = ShowTagUseCase::new(tag_repo.clone());
+        let current_tag = use_case.execute(id).await?;
+
+        let table = create_tag_detail_table(&current_tag);
+        println!("{table}\n");
+
+        // 編集するフィールドを選択
+        let field_options = vec!["名前", "説明"];
+
+        let selected_fields = MultiSelect::new(
+            "編集するフィールドを選択してください（スペースで選択、Enterで確定）",
+            field_options,
+        )
+        .with_vim_mode(true)
+        .prompt()
+        .unwrap_or_default();
+
+        // 選択されたフィールドのみ編集
+        let new_name = if selected_fields.contains(&"名前") {
+            Some(
+                Text::new("名前:")
+                    .with_default(&current_tag.name)
+                    .with_validator(validator::MinLengthValidator::new(1))
+                    .prompt()
+                    .context("名前の入力に失敗しました")?,
+            )
+        } else {
+            None
+        };
+
+        let new_description = if selected_fields.contains(&"説明") {
+            Some(
+                Editor::new("説明を入力してください")
+                    .with_predefined_text(current_tag.description.as_deref().unwrap_or(""))
+                    .prompt()
+                    .unwrap_or_default(),
+            )
+        } else {
+            None
+        };
+
+        (new_name, new_description)
+    } else {
+        // 引数モード
+        (params.name, params.description)
+    };
+
     // DTOを構築
     let dto = UpdateTagDTO {
-        name: params.name,
-        description: params.description,
+        name: final_name,
+        description: final_description,
     };
 
     // Use Caseを実行
