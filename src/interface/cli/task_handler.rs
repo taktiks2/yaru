@@ -21,7 +21,84 @@ use crate::{
 use anyhow::{Context, Result};
 use chrono::NaiveDate;
 use inquire::{DateSelect, Editor, MultiSelect, Select, Text, validator};
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
+use strum::IntoEnumIterator;
+
+/// タスク追加のパラメータ
+struct AddTaskParams {
+    title: Option<String>,
+    description: Option<String>,
+    status: Option<Status>,
+    priority: Option<Priority>,
+    tags: Option<Vec<i32>>,
+    due_date: Option<NaiveDate>,
+}
+
+/// タスク編集のパラメータ
+struct EditTaskParams {
+    title: Option<String>,
+    description: Option<String>,
+    status: Option<Status>,
+    priority: Option<Priority>,
+    tags: Option<Vec<i32>>,
+    due_date: Option<NaiveDate>,
+    clear_due_date: bool,
+}
+
+/// タグ選択用のラッパー型
+///
+/// `inquire::MultiSelect`で使用するために、タグIDと表示文字列をペアで保持します。
+/// 文字列パースに依存せず、型安全にタグIDを取得できます。
+#[derive(Debug, Clone)]
+struct TagOption {
+    id: i32,
+    display: String,
+}
+
+impl std::fmt::Display for TagOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.display)
+    }
+}
+
+/// タグIDの存在を一括検証
+///
+/// # Arguments
+/// * `tag_repo` - TagRepositoryの参照
+/// * `tag_ids` - 検証するタグIDのスライス
+///
+/// # Returns
+/// * `Ok(())` - すべてのタグが存在する場合
+/// * `Err` - 存在しないタグがある場合（最初に見つかった不正なIDを報告）
+///
+/// # Note
+/// find_by_idsを使用してN+1問題を回避します
+async fn validate_tag_ids(tag_repo: &Arc<dyn TagRepository>, tag_ids: &[i32]) -> Result<()> {
+    if tag_ids.is_empty() {
+        return Ok(());
+    }
+
+    // i32からTagIdへ変換
+    let tag_id_vos = tag_ids
+        .iter()
+        .map(|id| TagId::new(*id))
+        .collect::<Result<Vec<_>>>()?;
+
+    // 一括でタグを取得
+    let found_tags = tag_repo.find_by_ids(&tag_id_vos).await?;
+
+    // 見つかったタグのIDセットを作成
+    let found_ids: HashSet<i32> = found_tags.iter().map(|tag| tag.id().value()).collect();
+
+    // 存在しないIDを検出
+    for id in tag_ids {
+        if !found_ids.contains(id) {
+            anyhow::bail!("存在しないタグID: {}", id);
+        }
+    }
+
+    Ok(())
+}
 
 /// タスクコマンドを処理
 pub async fn handle_task_command(
@@ -40,17 +117,15 @@ pub async fn handle_task_command(
             tags,
             due_date,
         } => {
-            handle_add(
-                task_repo,
-                tag_repo,
+            let params = AddTaskParams {
                 title,
                 description,
                 status,
                 priority,
                 tags,
                 due_date,
-            )
-            .await
+            };
+            handle_add(task_repo, tag_repo, params).await
         }
         TaskCommands::Delete { id } => handle_delete(task_repo, id).await,
         TaskCommands::Edit {
@@ -63,10 +138,7 @@ pub async fn handle_task_command(
             due_date,
             clear_due_date,
         } => {
-            handle_edit(
-                task_repo,
-                tag_repo,
-                id,
+            let params = EditTaskParams {
                 title,
                 description,
                 status,
@@ -74,8 +146,8 @@ pub async fn handle_task_command(
                 tags,
                 due_date,
                 clear_due_date,
-            )
-            .await
+            };
+            handle_edit(task_repo, tag_repo, id, params).await
         }
         TaskCommands::Stats => handle_stats(task_repo).await,
     }
@@ -113,28 +185,17 @@ async fn handle_show(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()> 
 }
 
 /// 新しいタスクを追加
-#[allow(clippy::too_many_arguments)]
 async fn handle_add(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
-    title: Option<String>,
-    description: Option<String>,
-    status: Option<Status>,
-    priority: Option<Priority>,
-    tag_ids: Option<Vec<i32>>,
-    due_date: Option<NaiveDate>,
+    params: AddTaskParams,
 ) -> Result<()> {
     // 引数モードか対話モードか判定
-    let is_interactive = title.is_none();
+    let is_interactive = params.title.is_none();
 
     // タグIDの検証（指定されている場合）
-    if let Some(ref ids) = tag_ids {
-        for id in ids {
-            let tag = tag_repo.find_by_id(&TagId::new(*id)?).await?;
-            if tag.is_none() {
-                anyhow::bail!("存在しないタグID: {}", id);
-            }
-        }
+    if let Some(ref ids) = params.tags {
+        validate_tag_ids(&tag_repo, ids).await?;
     }
 
     let (final_title, final_description, final_status, final_priority, final_tags, final_due_date) =
@@ -145,31 +206,26 @@ async fn handle_add(
                 .prompt()
                 .context("タスクのタイトルの入力に失敗しました")?;
 
-            let d = description.unwrap_or_else(|| {
+            let d = params.description.unwrap_or_else(|| {
                 Editor::new("タスクの説明を入力してください")
                     .prompt()
                     .unwrap_or_default()
             });
 
-            let s = status.unwrap_or_else(|| {
+            let s = params.status.unwrap_or_else(|| {
                 Select::new(
                     "ステータスを選択してください",
-                    vec![Status::Pending, Status::InProgress, Status::Completed],
+                    Status::iter().collect::<Vec<_>>(),
                 )
                 .with_vim_mode(true)
                 .prompt()
                 .unwrap_or(Status::Pending)
             });
 
-            let p = priority.unwrap_or_else(|| {
+            let p = params.priority.unwrap_or_else(|| {
                 Select::new(
                     "優先度を選択してください",
-                    vec![
-                        Priority::Low,
-                        Priority::Medium,
-                        Priority::High,
-                        Priority::Critical,
-                    ],
+                    Priority::iter().collect::<Vec<_>>(),
                 )
                 .with_vim_mode(true)
                 .prompt()
@@ -177,15 +233,18 @@ async fn handle_add(
             });
 
             // タグ選択（対話モード）
-            let tags = if tag_ids.is_some() {
-                tag_ids.unwrap_or_default()
+            let tags = if params.tags.is_some() {
+                params.tags.unwrap_or_default()
             } else {
                 // 利用可能なタグを取得
                 let available_tags = tag_repo.find_all().await?;
                 if !available_tags.is_empty() {
-                    let tag_options: Vec<String> = available_tags
+                    let tag_options: Vec<TagOption> = available_tags
                         .iter()
-                        .map(|t| format!("[{}] {}", t.id().value(), t.name().value()))
+                        .map(|t| TagOption {
+                            id: t.id().value(),
+                            display: format!("[{}] {}", t.id().value(), t.name().value()),
+                        })
                         .collect();
 
                     let selected = MultiSelect::new(
@@ -196,23 +255,15 @@ async fn handle_add(
                     .prompt()
                     .unwrap_or_default();
 
-                    selected
-                        .iter()
-                        .filter_map(|s| {
-                            s.split(']')
-                                .next()?
-                                .trim_start_matches('[')
-                                .parse::<i32>()
-                                .ok()
-                        })
-                        .collect()
+                    // 直接IDを取得（文字列パース不要）
+                    selected.iter().map(|opt| opt.id).collect()
                 } else {
                     vec![]
                 }
             };
 
             // 期限選択
-            let dd = due_date.or_else(|| {
+            let dd = params.due_date.or_else(|| {
                 if inquire::Confirm::new("期限を設定しますか？")
                     .with_default(false)
                     .prompt()
@@ -228,12 +279,12 @@ async fn handle_add(
         } else {
             // 引数モード
             (
-                title.unwrap(),
-                description.unwrap_or_default(),
-                status.unwrap_or(Status::Pending),
-                priority.unwrap_or(Priority::Medium),
-                tag_ids.unwrap_or_default(),
-                due_date,
+                params.title.unwrap(),
+                params.description.unwrap_or_default(),
+                params.status.unwrap_or(Status::Pending),
+                params.priority.unwrap_or(Priority::Medium),
+                params.tags.unwrap_or_default(),
+                params.due_date,
             )
         };
 
@@ -281,27 +332,15 @@ async fn handle_delete(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()
 }
 
 /// タスクを編集
-#[allow(clippy::too_many_arguments)]
 async fn handle_edit(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
     id: i32,
-    title: Option<String>,
-    description: Option<String>,
-    status: Option<Status>,
-    priority: Option<Priority>,
-    tags: Option<Vec<i32>>,
-    due_date: Option<NaiveDate>,
-    clear_due_date: bool,
+    params: EditTaskParams,
 ) -> Result<()> {
     // タグIDの検証（指定されている場合）
-    if let Some(ref ids) = tags {
-        for tag_id in ids {
-            let tag = tag_repo.find_by_id(&TagId::new(*tag_id)?).await?;
-            if tag.is_none() {
-                anyhow::bail!("存在しないタグID: {}", tag_id);
-            }
-        }
+    if let Some(ref ids) = params.tags {
+        validate_tag_ids(&tag_repo, ids).await?;
     }
 
     // DTOを構築
@@ -309,17 +348,17 @@ async fn handle_edit(
     // UpdateTaskDTOではOption<NaiveDate>なので、Noneを渡すことで「変更しない」、
     // clear_due_dateの場合は別途処理が必要（現在のDTOでは対応していないため、due_dateをNoneのままにする）
     let dto = UpdateTaskDTO {
-        title,
-        description,
-        status: status.map(|s| s.to_string()),
-        priority: priority.map(|p| p.to_string()),
-        tags,
-        due_date: if clear_due_date {
+        title: params.title,
+        description: params.description,
+        status: params.status.map(|s| s.to_string()),
+        priority: params.priority.map(|p| p.to_string()),
+        tags: params.tags,
+        due_date: if params.clear_due_date {
             // 期限をクリアする場合は、use case側で処理する必要がある
             // TODO: DTOにclear_due_dateフィールドを追加するか、別の方法で処理
             None
         } else {
-            due_date
+            params.due_date
         },
     };
 

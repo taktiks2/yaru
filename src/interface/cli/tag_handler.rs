@@ -13,8 +13,20 @@ use crate::{
     },
 };
 use anyhow::{Context, Result};
-use inquire::{Editor, Text, validator};
+use inquire::{Confirm, Editor, Text, validator};
 use std::sync::Arc;
+
+/// タグ追加のパラメータ
+struct AddTagParams {
+    name: Option<String>,
+    description: Option<String>,
+}
+
+/// タグ編集のパラメータ
+struct EditTagParams {
+    name: Option<String>,
+    description: Option<String>,
+}
 
 /// タグコマンドを処理
 pub async fn handle_tag_command(
@@ -24,13 +36,19 @@ pub async fn handle_tag_command(
     match command {
         TagCommands::List => handle_list(tag_repo).await,
         TagCommands::Show { id } => handle_show(tag_repo, id).await,
-        TagCommands::Add { name, description } => handle_add(tag_repo, name, description).await,
+        TagCommands::Add { name, description } => {
+            let params = AddTagParams { name, description };
+            handle_add(tag_repo, params).await
+        }
         TagCommands::Delete { id } => handle_delete(tag_repo, id).await,
         TagCommands::Edit {
             id,
             name,
             description,
-        } => handle_edit(tag_repo, id, name, description).await,
+        } => {
+            let params = EditTagParams { name, description };
+            handle_edit(tag_repo, id, params).await
+        }
     }
 }
 
@@ -62,13 +80,9 @@ async fn handle_show(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> {
 }
 
 /// 新しいタグを追加
-async fn handle_add(
-    tag_repo: Arc<dyn TagRepository>,
-    name: Option<String>,
-    description: Option<String>,
-) -> Result<()> {
+async fn handle_add(tag_repo: Arc<dyn TagRepository>, params: AddTagParams) -> Result<()> {
     // 引数モードか対話モードか判定
-    let is_interactive = name.is_none();
+    let is_interactive = params.name.is_none();
 
     let (final_name, final_description) = if is_interactive {
         // 対話モード
@@ -77,7 +91,7 @@ async fn handle_add(
             .prompt()
             .context("タグの名前の入力に失敗しました")?;
 
-        let d = description.unwrap_or_else(|| {
+        let d = params.description.unwrap_or_else(|| {
             Editor::new("タグの説明を入力してください")
                 .prompt()
                 .unwrap_or_default()
@@ -86,7 +100,7 @@ async fn handle_add(
         (n, d)
     } else {
         // 引数モード
-        (name.unwrap(), description.unwrap_or_default())
+        (params.name.unwrap(), params.description.unwrap_or_default())
     };
 
     // DTOを構築
@@ -114,7 +128,7 @@ async fn handle_add(
 /// タグを削除
 async fn handle_delete(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> {
     // 確認
-    let confirm = inquire::Confirm::new(&format!("タグID {}を削除しますか？", id))
+    let confirm = Confirm::new(&format!("タグID {}を削除しますか？", id))
         .with_default(false)
         .prompt()
         .unwrap_or(false);
@@ -136,11 +150,13 @@ async fn handle_delete(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> 
 async fn handle_edit(
     tag_repo: Arc<dyn TagRepository>,
     id: i32,
-    name: Option<String>,
-    description: Option<String>,
+    params: EditTagParams,
 ) -> Result<()> {
     // DTOを構築
-    let dto = UpdateTagDTO { name, description };
+    let dto = UpdateTagDTO {
+        name: params.name,
+        description: params.description,
+    };
 
     // Use Caseを実行
     let use_case = EditTagUseCase::new(tag_repo);
