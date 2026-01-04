@@ -26,19 +26,14 @@ impl DeleteTaskUseCase {
     pub async fn execute(&self, id: i32) -> Result<()> {
         let task_id = TaskId::new(id)?;
 
-        // タスクの存在確認
-        if self.task_repository.find_by_id(&task_id).await?.is_none() {
-            bail!("タスクID {}は存在しません", id);
-        }
-
         // タスクを削除
         let deleted = self.task_repository.delete(&task_id).await?;
 
-        if deleted {
-            Ok(())
-        } else {
-            bail!("タスクの削除に失敗しました: {}", id)
+        if !deleted {
+            bail!("タスクID {}は存在しません", id);
         }
+
+        Ok(())
     }
 }
 

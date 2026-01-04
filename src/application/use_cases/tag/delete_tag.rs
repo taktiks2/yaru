@@ -26,13 +26,12 @@ impl DeleteTagUseCase {
     pub async fn execute(&self, id: i32) -> Result<()> {
         let tag_id = TagId::new(id)?;
 
-        // タグの存在確認
-        if self.tag_repository.find_by_id(&tag_id).await?.is_none() {
+        // タグを削除
+        let deleted = self.tag_repository.delete(&tag_id).await?;
+
+        if !deleted {
             anyhow::bail!("タグID {}は存在しません", id);
         }
-
-        // タグを削除
-        self.tag_repository.delete(&tag_id).await?;
 
         Ok(())
     }
