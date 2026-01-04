@@ -91,8 +91,23 @@ impl TaskAggregate {
         due_date: Option<DueDate>,
     ) -> Self {
         let now = Utc::now();
+        let id = TaskId::new(0).unwrap(); // デフォルトは0、リポジトリで新しいIDを割り当てる
+
+        // Status::Completedで作成する場合の処理
+        let completed_at = if status == Status::Completed {
+            Some(now)
+        } else {
+            None
+        };
+
+        let mut domain_events: Vec<Box<dyn Any + Send + Sync>> = Vec::new();
+        if status == Status::Completed {
+            let event = TaskCompleted::new(id, now);
+            domain_events.push(Box::new(event));
+        }
+
         Self {
-            id: TaskId::new(0).unwrap(), // デフォルトは0、リポジトリで新しいIDを割り当てる
+            id,
             title,
             description,
             status,
@@ -101,8 +116,8 @@ impl TaskAggregate {
             created_at: now,
             updated_at: now,
             due_date,
-            completed_at: None,
-            domain_events: Vec::new(),
+            completed_at,
+            domain_events,
         }
     }
 
