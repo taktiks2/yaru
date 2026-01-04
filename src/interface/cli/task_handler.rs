@@ -167,7 +167,7 @@ async fn handle_list(
     } else {
         println!("タスク一覧 ({}件):", tasks.len());
         let table = create_task_table(&tasks);
-        println!("{}", table);
+        println!("{table}");
     }
 
     Ok(())
@@ -179,7 +179,7 @@ async fn handle_show(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()> 
     let task = use_case.execute(id).await?;
 
     let table = create_task_detail_table(&task);
-    println!("{}", table);
+    println!("{table}");
 
     Ok(())
 }
@@ -326,12 +326,11 @@ async fn handle_delete(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()
     let use_case = DeleteTaskUseCase::new(task_repo);
     use_case.execute(id).await?;
 
-    println!("タスクID {}を削除しました", id);
+    println!("タスクID {id}を削除しました");
 
     Ok(())
 }
 
-/// タスクを編集
 async fn handle_edit(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
@@ -343,22 +342,205 @@ async fn handle_edit(
         validate_tag_ids(&tag_repo, ids).await?;
     }
 
+    // 引数モードか対話モードか判定
+    let is_interactive = params.title.is_none()
+        && params.description.is_none()
+        && params.status.is_none()
+        && params.priority.is_none()
+        && params.tags.is_none()
+        && params.due_date.is_none()
+        && !params.clear_due_date;
+
+    let (
+        final_title,
+        final_description,
+        final_status,
+        final_priority,
+        final_tags,
+        final_due_date,
+        final_clear_due_date,
+    ) = if is_interactive {
+        // 対話モード: 既存のタスク情報を取得
+        let use_case = ShowTaskUseCase::new(task_repo.clone());
+        let current_task = use_case.execute(id).await?;
+
+        let table = create_task_detail_table(&current_task);
+        println!("{table}\n");
+
+        // 編集するフィールドを選択
+        let field_options = vec!["タイトル", "説明", "ステータス", "優先度", "タグ", "期限"];
+
+        let selected_fields = MultiSelect::new(
+            "編集するフィールドを選択してください（スペースで選択、Enterで確定）",
+            field_options,
+        )
+        .with_vim_mode(true)
+        .prompt()
+        .unwrap_or_default();
+
+        // 選択されたフィールドのみ編集
+        let new_title = if selected_fields.contains(&"タイトル") {
+            Some(
+                Text::new("タイトル:")
+                    .with_default(&current_task.title)
+                    .with_validator(validator::MinLengthValidator::new(1))
+                    .prompt()
+                    .context("タイトルの入力に失敗しました")?,
+            )
+        } else {
+            None
+        };
+
+        let new_description = if selected_fields.contains(&"説明") {
+            Some(
+                Editor::new("説明を入力してください")
+                    .with_predefined_text(current_task.description.as_deref().unwrap_or(""))
+                    .prompt()
+                    .unwrap_or_default(),
+            )
+        } else {
+            None
+        };
+
+        let new_status = if selected_fields.contains(&"ステータス") {
+            let current_status =
+                Status::try_from(current_task.status.as_str()).unwrap_or(Status::Pending);
+            Some(
+                Select::new("ステータス:", Status::iter().collect::<Vec<_>>())
+                    .with_starting_cursor(
+                        Status::iter()
+                            .position(|s| s == current_status)
+                            .unwrap_or(0),
+                    )
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or(current_status),
+            )
+        } else {
+            None
+        };
+
+        let new_priority = if selected_fields.contains(&"優先度") {
+            let current_priority =
+                Priority::try_from(current_task.priority.as_str()).unwrap_or(Priority::Medium);
+            Some(
+                Select::new("優先度:", Priority::iter().collect::<Vec<_>>())
+                    .with_starting_cursor(
+                        Priority::iter()
+                            .position(|p| p == current_priority)
+                            .unwrap_or(1),
+                    )
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or(current_priority),
+            )
+        } else {
+            None
+        };
+
+        let new_tags = if selected_fields.contains(&"タグ") {
+            let available_tags = tag_repo.find_all().await?;
+            if !available_tags.is_empty() {
+                let tag_options: Vec<TagOption> = available_tags
+                    .iter()
+                    .map(|t| TagOption {
+                        id: t.id().value(),
+                        display: format!("[{}] {}", t.id().value(), t.name().value()),
+                    })
+                    .collect();
+
+                // 既存のタグIDを取得
+                let current_tag_ids: Vec<i32> = current_task.tags.clone();
+
+                // デフォルト選択のインデックスを計算
+                let default_indices: Vec<usize> = tag_options
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, opt)| current_tag_ids.contains(&opt.id))
+                    .map(|(idx, _)| idx)
+                    .collect();
+
+                let selected = MultiSelect::new(
+                    "タグを選択してください（スペースで選択、Enterで確定）",
+                    tag_options,
+                )
+                .with_default(&default_indices)
+                .with_vim_mode(true)
+                .prompt()
+                .ok();
+
+                // キャンセルされた場合はNoneを返し、既存のタグを保持
+                selected.map(|tags| tags.iter().map(|opt| opt.id).collect())
+            } else {
+                Some(vec![])
+            }
+        } else {
+            None
+        };
+
+        let (new_due_date, clear_due_date) = if selected_fields.contains(&"期限") {
+            if current_task.due_date.is_some() {
+                // 既存の期限がある場合、クリアするか新しい値を設定するか選択
+                let options = vec!["期限をクリア", "新しい期限を設定"];
+                let choice = Select::new("期限:", options)
+                    .with_starting_cursor(1) // デフォルトは「新しい期限を設定」
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or("新しい期限を設定");
+
+                if choice == "期限をクリア" {
+                    (None, true)
+                } else {
+                    let new_date = DateSelect::new("期限を選択してください")
+                        .with_default(current_task.due_date.unwrap())
+                        .prompt()
+                        .ok();
+                    (new_date, false)
+                }
+            } else {
+                // 既存の期限がない場合、新しく設定
+                let new_date = DateSelect::new("期限を選択してください").prompt().ok();
+                (new_date, false)
+            }
+        } else {
+            (None, false)
+        };
+
+        (
+            new_title,
+            new_description,
+            new_status,
+            new_priority,
+            new_tags,
+            new_due_date,
+            clear_due_date,
+        )
+    } else {
+        // 引数モード
+        (
+            params.title,
+            params.description,
+            params.status,
+            params.priority,
+            params.tags,
+            params.due_date,
+            params.clear_due_date,
+        )
+    };
+
     // DTOを構築
-    // due_dateの処理: clear_due_dateが指定されている場合は扱いを変える
-    // UpdateTaskDTOではOption<NaiveDate>なので、Noneを渡すことで「変更しない」、
-    // clear_due_dateの場合は別途処理が必要（現在のDTOでは対応していないため、due_dateをNoneのままにする）
     let dto = UpdateTaskDTO {
-        title: params.title,
-        description: params.description,
-        status: params.status.map(|s| s.to_string()),
-        priority: params.priority.map(|p| p.to_string()),
-        tags: params.tags,
-        due_date: if params.clear_due_date {
+        title: final_title,
+        description: final_description,
+        status: final_status.map(|s| s.to_string()),
+        priority: final_priority.map(|p| p.to_string()),
+        tags: final_tags,
+        due_date: if final_clear_due_date {
             // 期限をクリアする場合は、use case側で処理する必要がある
             // TODO: DTOにclear_due_dateフィールドを追加するか、別の方法で処理
             None
         } else {
-            params.due_date
+            final_due_date
         },
     };
 
@@ -380,7 +562,7 @@ async fn handle_stats(task_repo: Arc<dyn TaskRepository>) -> Result<()> {
     let stats = use_case.execute().await?;
 
     let table = create_stats_table(&stats);
-    println!("{}", table);
+    println!("{table}");
 
     Ok(())
 }
