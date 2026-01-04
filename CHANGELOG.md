@@ -2,6 +2,88 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.10.0](https://github.com/taktiks2/yaru/compare/c81ecdc7574572bb97274b7deb15da5ff541f4b6..0.10.0) - 2026-01-04
+#### Features
+- タスク一覧・詳細でタグ名を表示 - ([e6d154e](https://github.com/taktiks2/yaru/commit/e6d154e43ef30819ce65a37dd1fe265527baeed5)) - taktiks2
+- タスク編集の対話モードを実装 - ([246fb82](https://github.com/taktiks2/yaru/commit/246fb82ce0ca519cd03768adefa47547f2616b26)) - taktiks2
+- タグ編集の対話モードを実装 - ([1ac7464](https://github.com/taktiks2/yaru/commit/1ac74640a35063a25bbb0e8ac910a1a5db1eb438)) - taktiks2
+- TagRepository::find_by_idsメソッドを追加 - ([34a69af](https://github.com/taktiks2/yaru/commit/34a69af433e5c3513c4418fb0b3a271e61c615d5)) - taktiks2
+- TUIモードとCLIモードの統合完了 - ([261350e](https://github.com/taktiks2/yaru/commit/261350ec9d3af57d9c4181226d0f77269a4daa4c)) - taktiks2
+- TUIメインループを実装 - ([caf4c14](https://github.com/taktiks2/yaru/commit/caf4c149a7b80bdca7e8d0cd9e01a3f207d004cc)) - taktiks2
+- TUI画面描画ロジックを実装 - ([7315a49](https://github.com/taktiks2/yaru/commit/7315a49dcf0e66cee4e3bf82e885b713c752249b)) - taktiks2
+- サブコマンドをオプショナルに変更 - ([5b841ca](https://github.com/taktiks2/yaru/commit/5b841ca3b79d0f761defa18603d8d8c723d02fc7)) - taktiks2
+- エントリーポイントの更新（Phase 5完了） - ([63670a2](https://github.com/taktiks2/yaru/commit/63670a2f8da8897d42e31a295c0124c993f2561e)) - taktiks2
+- Interface層とInfrastructure層の実装（Phase 3-4完了） - ([fc8b120](https://github.com/taktiks2/yaru/commit/fc8b1206e11f4c751a31dc93c06d26303ff01f55)) - taktiks2
+- CLI Handler層を実装（Step 3.3完了） - ([0e38e18](https://github.com/taktiks2/yaru/commit/0e38e18a1562f83a80479aac6ccb2b76416283c1)) - taktiks2
+- RepositoryにSpecification Pattern対応を追加（Step 3.2完了） - ([ef85abb](https://github.com/taktiks2/yaru/commit/ef85abbdfa12c49cf45cbb5196e3cb0691175474)) - taktiks2
+- SeaORM Repository実装とMapper実装を追加（Step 3.1完了） - ([480ac59](https://github.com/taktiks2/yaru/commit/480ac59c023ceb25f271b1ce297be115b210fb14)) - taktiks2
+- Tag関連Use Casesを実装（Step 2.2完了） - ([6b453d3](https://github.com/taktiks2/yaru/commit/6b453d3345a54d0dc6c500b5679055fd42fefe89)) - taktiks2
+- EditTaskUseCaseを実装（Step 2.2完了） - ([7c97b1a](https://github.com/taktiks2/yaru/commit/7c97b1a10085ac87fe3527c733be3252d920be7b)) - taktiks2
+- タスク関連Use Casesを実装（Step 2.2 タスク部分完了） - ([0d45053](https://github.com/taktiks2/yaru/commit/0d4505321a516a05fffe0b02c8e1a20f8cd94075)) - taktiks2
+- InMemoryリポジトリとAggregate拡張メソッドを実装（TDD準備） - ([7fbc0b4](https://github.com/taktiks2/yaru/commit/7fbc0b4f0f093b5568a56c5f0f0b3bf91a77132e)) - taktiks2
+- Application層のDTO定義を実装（Step 2.1完了） - ([37a7cca](https://github.com/taktiks2/yaru/commit/37a7ccac858bb28800023c837c65269068313341)) - taktiks2
+- Domain Events機能を実装（TDD Green段階） - ([64662f5](https://github.com/taktiks2/yaru/commit/64662f5165486b331d19944598ded1760327846e)) - taktiks2
+- TaskStatisticsServiceドメインサービスを実装（Step 1.5完了） - ([a9bcfe7](https://github.com/taktiks2/yaru/commit/a9bcfe7bfb59ce1a67b32acb67a117a7097444b9)) - taktiks2
+- TaskSpecification traitと具体的なSpecificationを実装（Step 1.4完了） - ([ef6b0b5](https://github.com/taktiks2/yaru/commit/ef6b0b5cea3d93d2ee332e472c1af7a652a46fee)) - taktiks2
+- TaskRepositoryとTagRepositoryのtraitを定義（Step 1.3完了） - ([2f5ae0c](https://github.com/taktiks2/yaru/commit/2f5ae0c0f78ff3e089c5f976b576fa62ec898071)) - taktiks2
+- TaskAggregateとTagAggregateの実装を追加（Step 1.2完了） - ([3edf852](https://github.com/taktiks2/yaru/commit/3edf852c6c798008601253d2534ff61f75bf7e28)) - taktiks2
+- 残りValue Objectsの実装を追加（TDD Green） - ([123321b](https://github.com/taktiks2/yaru/commit/123321b14518418507855cc72d49e4c1ade9309c)) - taktiks2
+- TaskDescriptionとDueDateの完全な実装を追加（TDD Green段階） - ([b90e8fa](https://github.com/taktiks2/yaru/commit/b90e8fa4851708ae674fce3f24486325083d50f7)) - taktiks2
+- Value Objectの完全な実装を追加（TDD Green段階） - ([bc3f19d](https://github.com/taktiks2/yaru/commit/bc3f19dc687a090d227056203bdbd50c576af820)) - taktiks2
+#### Bug Fixes
+- new()でCompleted状態作成時にcompleted_atを設定しTaskCompletedイベントを発行 - ([08d8329](https://github.com/taktiks2/yaru/commit/08d8329dff4c3ada3c3001397ebcdfa40c7e90d3)) - taktiks2
+- change_status()でCompleted変更時にcompleted_atを設定しTaskCompletedイベントを発行 - ([1f2171c](https://github.com/taktiks2/yaru/commit/1f2171c5d3b40406a27a5d8ac60dab8480068103)) - taktiks2
+- ビルドエラーとClippy警告の修正 - ([5929015](https://github.com/taktiks2/yaru/commit/5929015f4a134ac2935fa230527dfd1ba4fe7ecd)) - taktiks2
+- Status変換時の両フォーマット対応 - ([51f2a42](https://github.com/taktiks2/yaru/commit/51f2a420c70c7e5b66369fa105e2d1e4160b0f6f)) - taktiks2
+#### Documentation
+- SpecificationパターンとDomainEventの使用例をドキュメントに追加 - ([3993353](https://github.com/taktiks2/yaru/commit/3993353b6217067de3d3d36a739dc7ec9e277133)) - taktiks2
+- DDDとアーキテクチャについてのドキュメント作成 - ([57556ce](https://github.com/taktiks2/yaru/commit/57556ce5d05d945524fa6d6f1b753fd8d70e1548)) - taktiks2
+- DDDアーキテクチャとTUI/CLI統合に関するドキュメント全体を更新 - ([93b0a6c](https://github.com/taktiks2/yaru/commit/93b0a6ca3149e4fdd05d007d8700d0f5c67a8700)) - taktiks2
+#### Tests
+- new()でCompleted状態のタスク作成テストを追加 - ([4e77815](https://github.com/taktiks2/yaru/commit/4e77815920d3bbd9230918fc29bf0051ec410d57)) - taktiks2
+- change_status()の完了状態管理テストを追加 - ([60d44f6](https://github.com/taktiks2/yaru/commit/60d44f6b0ae02949922080a1188e58a8346858dc)) - taktiks2
+- TUIイベント処理のテスト追加 - ([2905a04](https://github.com/taktiks2/yaru/commit/2905a045d69ad5086ec3ac78408cca536224a2af)) - taktiks2
+- TUI App状態管理のテスト追加 - ([5fb8017](https://github.com/taktiks2/yaru/commit/5fb8017ee0204d4cae1986885ded68c9e707f419)) - taktiks2
+- Args構造のオプショナル化テスト追加 - ([a75efa5](https://github.com/taktiks2/yaru/commit/a75efa5e146e757acdc3629c6da143c0a51cc6f5)) - taktiks2
+- 残りValue Objectsのテストを追加（TDD Red） - ([8aeb181](https://github.com/taktiks2/yaru/commit/8aeb1814e0d446ffc2b05d4d0a022ac7ee66f978)) - taktiks2
+- TaskDescriptionとDueDateのテストを追加（TDD Red段階） - ([8f94206](https://github.com/taktiks2/yaru/commit/8f9420680f4d6b169ca952820804b53a9c3ec1b3)) - taktiks2
+- Value Objectのテストを追加（TDD Red段階） - ([d0f147f](https://github.com/taktiks2/yaru/commit/d0f147feb81f0dc988e5a7b97267c9665c93b692)) - taktiks2
+#### Build System
+- strumクレートを追加 - ([80763a5](https://github.com/taktiks2/yaru/commit/80763a5440e044bf09fbe7d9f05b1b804fbc1fc7)) - taktiks2
+- リンターの設定を厳密化 - ([758764f](https://github.com/taktiks2/yaru/commit/758764fd9d2fc8ece057dc6505d04ba32ca2e742)) - taktiks2
+#### Refactoring
+- 未使用メソッドとコードを削除 - ([58d03b2](https://github.com/taktiks2/yaru/commit/58d03b2ddbc45745670827e8a8b8f4327d0b0558)) - taktiks2
+- ドメイン層の純粋性を改善しタグ統計をドメインオブジェクトで管理 - ([2468093](https://github.com/taktiks2/yaru/commit/24680931556f4c1a94f93c69e5f7917461e0a081)) - taktiks2
+- 削除処理のN+1問題を解消 - ([08dbfe2](https://github.com/taktiks2/yaru/commit/08dbfe2b5028fcbe968ecd92c7d57b5ba8a150df)) - taktiks2
+- N+1問題の解決 - ([2192513](https://github.com/taktiks2/yaru/commit/219251345dd2584514607ee138e68746ceb6f307)) - taktiks2
+- N+1問題の解決 - ([56e8885](https://github.com/taktiks2/yaru/commit/56e8885f98d5873ea634d6995f56f4227f57ade1)) - taktiks2
+- Presenterパターンを導入し統計表示機能を強化 - ([c1f6ae7](https://github.com/taktiks2/yaru/commit/c1f6ae7ccb79a940241bd77e9922a2548f25ae78)) - taktiks2
+- 型の修正 - ([9555342](https://github.com/taktiks2/yaru/commit/9555342a28dc8ae06615824513e62356dea419aa)) - taktiks2
+- 不要なヘルパー関数の削除 - ([487951c](https://github.com/taktiks2/yaru/commit/487951c893849f69055ba83ee7a60009c5af754f)) - taktiks2
+- CLIハンドラーでパラメータ構造体とヘルパー型を導入 - ([eddce80](https://github.com/taktiks2/yaru/commit/eddce806730063a551c0a6db09955d78ff3c5241)) - taktiks2
+- タグ検証処理を一括化してN+1問題を解決 - ([5da8c89](https://github.com/taktiks2/yaru/commit/5da8c896bee3d5301c22493bf5ec37a108062dbd)) - taktiks2
+- StatusとPriorityでstrumマクロを使用 - ([2fdb30a](https://github.com/taktiks2/yaru/commit/2fdb30ab5836bfbe254ef9de5daa32ae6f282ade)) - taktiks2
+- warningの回避方法を変更 - ([3993b30](https://github.com/taktiks2/yaru/commit/3993b3049eb45772f55dbcab8d5a2043859da8ea)) - taktiks2
+- TUIモジュールをmod.rsからtui.rsに変更 - ([732ef81](https://github.com/taktiks2/yaru/commit/732ef81edeb25b234c172c6e379a4909f12d3896)) - taktiks2
+- CLIとTUIの分岐処理を実装（TUIは未実装） - ([6716ca9](https://github.com/taktiks2/yaru/commit/6716ca9afa8be27ed0217d7bdb319ad7473e8ef6)) - taktiks2
+- SeaORMのActiveModelとEntityの使い方を改善 - ([d004459](https://github.com/taktiks2/yaru/commit/d004459920f1ed45602192aae5a2cdf9b7e44dee)) - taktiks2
+- Clippy警告の解消 - ([3e7a7c4](https://github.com/taktiks2/yaru/commit/3e7a7c49e9bc26a3fd0df6668e463c93c51a6c6e)) - taktiks2
+- 不要なcloneの削除 - ([e393305](https://github.com/taktiks2/yaru/commit/e39330559423e59dd5db166266647420bd1e5831)) - taktiks2
+- reconstruct関数の引数をパラメータ構造体に置き換え - ([a9c61d3](https://github.com/taktiks2/yaru/commit/a9c61d38908e228a92210b09766913623357fcf8)) - taktiks2
+- 非推奨のmod.rsを現代的なモジュール構成に移行 - ([b6a6cf8](https://github.com/taktiks2/yaru/commit/b6a6cf8abb9dfb93f18718a09e51243272072847)) - taktiks2
+- 既存コードの削除（Phase 7完了） - ([c4070fd](https://github.com/taktiks2/yaru/commit/c4070fd7952b5e8b467b79be886932e8a35717c7)) - taktiks2
+#### Miscellaneous Chores
+- 不要なimportを整理 - ([daa4ee9](https://github.com/taktiks2/yaru/commit/daa4ee936e51ccfd19f971fea07357ca37bdb67c)) - taktiks2
+- 不要なファイル削除 - ([6292fcf](https://github.com/taktiks2/yaru/commit/6292fcfeef528e0cffce593dd269ad51da79a3ea)) - taktiks2
+- ratatuiの依存を追加 - ([c81ecdc](https://github.com/taktiks2/yaru/commit/c81ecdc7574572bb97274b7deb15da5ff541f4b6)) - taktiks2
+#### Styling
+- フォーマット - ([3c6308c](https://github.com/taktiks2/yaru/commit/3c6308c53a8cbddad35314decdaf26a8e2b41b78)) - taktiks2
+- 不要なコメントアウトを削除 - ([c527fcd](https://github.com/taktiks2/yaru/commit/c527fcd18a59fa68d1040001d2a11a3a94afef18)) - taktiks2
+- import文のフォーマットを統一 - ([64cc1fa](https://github.com/taktiks2/yaru/commit/64cc1fa51df4e3932ad8d809529a11b355fa54bb)) - taktiks2
+- フォーマット - ([3a77ebd](https://github.com/taktiks2/yaru/commit/3a77ebd4465547c8adc1e15bdd47e8d55eb9f0dd)) - taktiks2
+
+- - -
+
 ## [0.9.0](https://github.com/taktiks2/yaru/compare/825930222ba3f5a8e5c2b303f6513f19365b3209..0.9.0) - 2026-01-03
 #### Features
 - タスク統計情報表示機能を追加 - ([cf91a41](https://github.com/taktiks2/yaru/commit/cf91a419c4b063c71ce227df64983efb9a0aa96a)) - taktiks2
