@@ -11,11 +11,12 @@ use crate::{
             tag_handler, task_handler,
         },
         persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository},
+        tui,
     },
 };
 use anyhow::{Context, Result};
 use clap::Parser;
-use migration::MigratorTrait;
+use migration::{Migrator, MigratorTrait};
 use std::sync::Arc;
 
 /// アプリケーションのエントリーポイント
@@ -41,7 +42,7 @@ async fn run_cli_with_command(command: Commands) -> Result<()> {
         .context("データベース接続に失敗しました")?;
 
     // マイグレーション実行
-    migration::Migrator::up(&db, None)
+    Migrator::up(&db, None)
         .await
         .context("マイグレーション実行に失敗しました")?;
 
@@ -65,5 +66,5 @@ async fn run_cli_with_command(command: Commands) -> Result<()> {
 
 /// TUIモードで実行
 async fn run_tui() -> Result<()> {
-    interface::tui::run_tui().await
+    tui::run_tui().await
 }
