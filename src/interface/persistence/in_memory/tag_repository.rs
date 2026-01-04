@@ -101,4 +101,101 @@ impl TagRepository for InMemoryTagRepository {
         let tags = self.tags.read().unwrap();
         Ok(tags.iter().find(|t| t.name().value() == name).cloned())
     }
+
+    async fn find_by_ids(&self, ids: &[TagId]) -> Result<Vec<TagAggregate>> {
+        let tags = self.tags.read().unwrap();
+        let id_set: std::collections::HashSet<_> = ids.iter().map(|id| id.value()).collect();
+        let result = tags
+            .iter()
+            .filter(|tag| id_set.contains(&tag.id().value()))
+            .cloned()
+            .collect();
+        Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::tag::value_objects::{TagDescription, TagName};
+
+    #[tokio::test]
+    async fn test_find_by_ids_multiple_tags_found() {
+        // Arrange
+        let repo = InMemoryTagRepository::new();
+        let tag1 = TagAggregate::new(
+            TagName::new("タグ1").unwrap(),
+            TagDescription::new("説明1").unwrap(),
+        );
+        let tag2 = TagAggregate::new(
+            TagName::new("タグ2").unwrap(),
+            TagDescription::new("説明2").unwrap(),
+        );
+        let saved_tag1 = repo.save(tag1).await.unwrap();
+        let saved_tag2 = repo.save(tag2).await.unwrap();
+
+        let ids = vec![*saved_tag1.id(), *saved_tag2.id()];
+
+        // Act
+        let result = repo.find_by_ids(&ids).await.unwrap();
+
+        // Assert
+        assert_eq!(result.len(), 2);
+        assert!(result.iter().any(|t| t.id() == saved_tag1.id()));
+        assert!(result.iter().any(|t| t.id() == saved_tag2.id()));
+    }
+
+    #[tokio::test]
+    async fn test_find_by_ids_some_ids_not_found() {
+        // Arrange
+        let repo = InMemoryTagRepository::new();
+        let tag = TagAggregate::new(
+            TagName::new("タグ").unwrap(),
+            TagDescription::new("説明").unwrap(),
+        );
+        let saved_tag = repo.save(tag).await.unwrap();
+
+        let non_existent_id = TagId::new(9999).unwrap();
+        let ids = vec![*saved_tag.id(), non_existent_id];
+
+        // Act
+        let result = repo.find_by_ids(&ids).await.unwrap();
+
+        // Assert
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].id(), saved_tag.id());
+    }
+
+    #[tokio::test]
+    async fn test_find_by_ids_empty_array() {
+        // Arrange
+        let repo = InMemoryTagRepository::new();
+        let ids: Vec<TagId> = vec![];
+
+        // Act
+        let result = repo.find_by_ids(&ids).await.unwrap();
+
+        // Assert
+        assert_eq!(result.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_find_by_ids_duplicate_ids() {
+        // Arrange
+        let repo = InMemoryTagRepository::new();
+        let tag = TagAggregate::new(
+            TagName::new("タグ").unwrap(),
+            TagDescription::new("説明").unwrap(),
+        );
+        let saved_tag = repo.save(tag).await.unwrap();
+
+        let ids = vec![*saved_tag.id(), *saved_tag.id()];
+
+        // Act
+        let result = repo.find_by_ids(&ids).await.unwrap();
+
+        // Assert
+        // 重複は除外される
+        assert_eq!(result.len(), 1);
+    }
 }

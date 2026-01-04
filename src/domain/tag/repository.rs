@@ -69,4 +69,18 @@ pub trait TagRepository: Send + Sync {
     /// * `Err` - エラーが発生した場合
     #[allow(dead_code)]
     async fn find_by_name(&self, name: &str) -> Result<Option<TagAggregate>>;
+
+    /// 複数のIDでタグを一括検索
+    ///
+    /// # Arguments
+    /// * `ids` - 検索するタグのIDのスライス
+    ///
+    /// # Returns
+    /// * `Ok(Vec<TagAggregate>)` - 見つかったタグのリスト（IDの順序は保証されない）
+    /// * `Err` - エラーが発生した場合
+    ///
+    /// # Note
+    /// 存在しないIDは結果に含まれません。
+    /// 呼び出し側で存在確認が必要な場合は、戻り値の長さを引数の長さと比較してください。
+    async fn find_by_ids(&self, ids: &[TagId]) -> Result<Vec<TagAggregate>>;
 }

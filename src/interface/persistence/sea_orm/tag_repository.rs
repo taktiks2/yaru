@@ -117,4 +117,26 @@ impl TagRepository for SeaOrmTagRepository {
 
         Ok(result.rows_affected > 0)
     }
+
+    async fn find_by_ids(&self, ids: &[TagId]) -> Result<Vec<TagAggregate>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let id_values: Vec<i32> = ids.iter().map(|id| id.value()).collect();
+
+        // SELECT * FROM tags WHERE id IN (?, ?, ...)
+        let tag_models = Tags::find()
+            .filter(tags::Column::Id.is_in(id_values))
+            .all(&self.db)
+            .await?;
+
+        let mut aggregates = Vec::new();
+        for model in tag_models {
+            let aggregate = TagMapper::to_domain(model)?;
+            aggregates.push(aggregate);
+        }
+
+        Ok(aggregates)
+    }
 }
