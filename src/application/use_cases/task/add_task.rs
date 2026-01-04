@@ -54,7 +54,8 @@ impl AddTaskUseCase {
         // ステータスの変換（デフォルト: Pending）
         // Display形式（"InProgress"）とフィルタ形式（"in_progress"）の両方をサポート
         let status = if let Some(status_str) = dto.status {
-            Status::from_str(&status_str).or_else(|_| Status::from_filter_value(&status_str))?
+            Status::from_str_anyhow(&status_str)
+                .or_else(|_| Status::from_filter_value(&status_str))?
         } else {
             Status::Pending
         };
@@ -66,12 +67,30 @@ impl AddTaskUseCase {
             Priority::Medium
         };
 
-        // タグの存在確認
-        for tag_id in &dto.tags {
-            use crate::domain::tag::value_objects::TagId;
-            let tag_id_vo = TagId::new(*tag_id)?;
-            if self.tag_repository.find_by_id(&tag_id_vo).await?.is_none() {
-                bail!("タグID {}は存在しません", tag_id);
+        // タグの存在確認（一括）
+        if !dto.tags.is_empty() {
+            let tag_id_vos: Result<Vec<_>> = dto
+                .tags
+                .iter()
+                .map(|id| {
+                    use crate::domain::tag::value_objects::TagId;
+                    TagId::new(*id)
+                })
+                .collect();
+            let tag_id_vos = tag_id_vos?;
+
+            let found_tags = self.tag_repository.find_by_ids(&tag_id_vos).await?;
+
+            if found_tags.len() != dto.tags.len() {
+                // どのIDが見つからなかったか特定
+                let found_ids: std::collections::HashSet<i32> =
+                    found_tags.iter().map(|tag| tag.id().value()).collect();
+
+                for tag_id in &dto.tags {
+                    if !found_ids.contains(tag_id) {
+                        bail!("タグID {}は存在しません", tag_id);
+                    }
+                }
             }
         }
 

@@ -65,7 +65,7 @@ impl EditTaskUseCase {
         // ステータスの更新
         // Display形式（"InProgress"）とフィルタ形式（"in_progress"）の両方をサポート
         if let Some(status_str) = dto.status {
-            let status = Status::from_str(&status_str)
+            let status = Status::from_str_anyhow(&status_str)
                 .or_else(|_| Status::from_filter_value(&status_str))?;
             task.change_status(status)?;
         }
@@ -78,11 +78,23 @@ impl EditTaskUseCase {
 
         // タグの更新
         if let Some(tag_ids) = dto.tags {
-            // タグの存在確認
-            for tag_id in &tag_ids {
-                let tag_id_vo = TagId::new(*tag_id)?;
-                if self.tag_repository.find_by_id(&tag_id_vo).await?.is_none() {
-                    bail!("タグID {}は存在しません", tag_id);
+            // タグの存在確認（一括）
+            if !tag_ids.is_empty() {
+                let tag_id_vos: Result<Vec<_>> = tag_ids.iter().map(|id| TagId::new(*id)).collect();
+                let tag_id_vos = tag_id_vos?;
+
+                let found_tags = self.tag_repository.find_by_ids(&tag_id_vos).await?;
+
+                if found_tags.len() != tag_ids.len() {
+                    // どのIDが見つからなかったか特定
+                    let found_ids: std::collections::HashSet<i32> =
+                        found_tags.iter().map(|tag| tag.id().value()).collect();
+
+                    for tag_id in &tag_ids {
+                        if !found_ids.contains(tag_id) {
+                            bail!("タグID {}は存在しません", tag_id);
+                        }
+                    }
                 }
             }
 
