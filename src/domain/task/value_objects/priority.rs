@@ -1,5 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumIter, EnumString};
 
 /// タスクの優先度を表すValue Object
 #[derive(
@@ -13,39 +14,35 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     PartialOrd,
     Ord,
-    clap::ValueEnum,
+    EnumIter,
+    EnumString,
+    Display,
 )]
 pub enum Priority {
     /// 低
+    #[strum(serialize = "Low", serialize = "low")]
     Low = 1,
     /// 中
+    #[strum(serialize = "Medium", serialize = "medium")]
     Medium = 2,
     /// 高
+    #[strum(serialize = "High", serialize = "high")]
     High = 3,
     /// 重大
+    #[strum(serialize = "Critical", serialize = "critical")]
     Critical = 4,
 }
 
-impl std::fmt::Display for Priority {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
 impl Priority {
-    /// 文字列から変換
+    /// 文字列から変換（anyhow::Result版）
     #[allow(dead_code)]
-    pub fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "Low" => Ok(Priority::Low),
-            "Medium" => Ok(Priority::Medium),
-            "High" => Ok(Priority::High),
-            "Critical" => Ok(Priority::Critical),
-            _ => anyhow::bail!("無効な優先度: {}", s),
-        }
+    pub fn from_str_anyhow(s: &str) -> Result<Self> {
+        s.parse()
+            .map_err(|_| anyhow::anyhow!("無効な優先度: {}", s))
     }
 
     /// 文字列表現を取得
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &str {
         match self {
             Priority::Low => "Low",
@@ -74,31 +71,31 @@ mod tests {
 
     #[test]
     fn test_priority_from_string_low() {
-        let priority = Priority::from_str("Low").unwrap();
+        let priority = Priority::from_str_anyhow("Low").unwrap();
         assert_eq!(priority, Priority::Low);
     }
 
     #[test]
     fn test_priority_from_string_medium() {
-        let priority = Priority::from_str("Medium").unwrap();
+        let priority = Priority::from_str_anyhow("Medium").unwrap();
         assert_eq!(priority, Priority::Medium);
     }
 
     #[test]
     fn test_priority_from_string_high() {
-        let priority = Priority::from_str("High").unwrap();
+        let priority = Priority::from_str_anyhow("High").unwrap();
         assert_eq!(priority, Priority::High);
     }
 
     #[test]
     fn test_priority_from_string_critical() {
-        let priority = Priority::from_str("Critical").unwrap();
+        let priority = Priority::from_str_anyhow("Critical").unwrap();
         assert_eq!(priority, Priority::Critical);
     }
 
     #[test]
     fn test_priority_from_string_invalid() {
-        let result = Priority::from_str("invalid");
+        let result = Priority::from_str_anyhow("invalid");
         assert!(result.is_err());
     }
 

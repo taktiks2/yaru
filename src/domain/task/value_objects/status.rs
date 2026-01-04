@@ -1,32 +1,32 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumIter, EnumString};
 
 /// タスクのステータスを表すValue Object
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, clap::ValueEnum)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIter, EnumString, Display,
+)]
 pub enum Status {
     /// 保留中
+    #[strum(serialize = "Pending", serialize = "pending")]
     Pending,
     /// 進行中
+    #[strum(
+        serialize = "InProgress",
+        serialize = "inprogress",
+        serialize = "in_progress"
+    )]
     InProgress,
     /// 完了
+    #[strum(serialize = "Completed", serialize = "completed")]
     Completed,
 }
 
-impl std::fmt::Display for Status {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
 impl Status {
-    /// 文字列から変換
-    pub fn from_str(s: &str) -> Result<Self> {
-        match s {
-            "Pending" => Ok(Status::Pending),
-            "InProgress" => Ok(Status::InProgress),
-            "Completed" => Ok(Status::Completed),
-            _ => anyhow::bail!("無効なステータス: {}", s),
-        }
+    /// 文字列から変換（anyhow::Result版）
+    pub fn from_str_anyhow(s: &str) -> Result<Self> {
+        s.parse()
+            .map_err(|_| anyhow::anyhow!("無効なステータス: {}", s))
     }
 
     /// フィルタ値から変換
@@ -40,6 +40,7 @@ impl Status {
     }
 
     /// 文字列表現を取得
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &str {
         match self {
             Status::Pending => "Pending",
@@ -66,19 +67,19 @@ mod tests {
 
     #[test]
     fn test_status_from_string_pending() {
-        let status = Status::from_str("Pending").unwrap();
+        let status = Status::from_str_anyhow("Pending").unwrap();
         assert_eq!(status, Status::Pending);
     }
 
     #[test]
     fn test_status_from_string_in_progress() {
-        let status = Status::from_str("InProgress").unwrap();
+        let status = Status::from_str_anyhow("InProgress").unwrap();
         assert_eq!(status, Status::InProgress);
     }
 
     #[test]
     fn test_status_from_string_completed() {
-        let status = Status::from_str("Completed").unwrap();
+        let status = Status::from_str_anyhow("Completed").unwrap();
         assert_eq!(status, Status::Completed);
     }
 
