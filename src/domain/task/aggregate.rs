@@ -147,23 +147,14 @@ impl TaskAggregate {
         }
     }
 
-    /// タスクを完了します
+    /// タスクを完了します（利便性メソッド）
     ///
+    /// change_status(Status::Completed)を呼び出すラッパーメソッドです。
     /// ステータスをCompletedに変更し、completed_atを現在時刻に設定します。
     /// 既に完了している場合は、何もしません。
     #[allow(dead_code)]
     pub fn complete(&mut self) -> Result<()> {
-        if self.status != Status::Completed {
-            self.status = Status::Completed;
-            let now = Utc::now();
-            self.completed_at = Some(now);
-            self.updated_at = now;
-
-            // Domain Event発行
-            let event = TaskCompleted::new(self.id, now);
-            self.domain_events.push(Box::new(event));
-        }
-        Ok(())
+        self.change_status(Status::Completed)
     }
 
     /// タスクが期限切れかどうかを判定します
@@ -208,10 +199,29 @@ impl TaskAggregate {
 
     /// タスクのステータスを変更します
     ///
-    /// Completedへの変更の場合はcomplete()メソッドを使用してください。
+    /// Status::Completedへ変更する場合、completed_atが自動的に設定され、
+    /// TaskCompletedイベントが発行されます。
+    /// Completedから他のステータスへ変更する場合、completed_atはクリアされます。
     pub fn change_status(&mut self, new_status: Status) -> Result<()> {
+        let old_status = self.status;
+        let now = Utc::now();
+
         self.status = new_status;
-        self.updated_at = Utc::now();
+        self.updated_at = now;
+
+        // Completedへの変更時の処理
+        if new_status == Status::Completed && old_status != Status::Completed {
+            self.completed_at = Some(now);
+
+            // Domain Event発行
+            let event = TaskCompleted::new(self.id, now);
+            self.domain_events.push(Box::new(event));
+        }
+        // Completedから他のステータスへの変更時の処理
+        else if old_status == Status::Completed && new_status != Status::Completed {
+            self.completed_at = None;
+        }
+
         Ok(())
     }
 
