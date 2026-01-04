@@ -379,6 +379,56 @@ mod tests {
     }
 
     #[test]
+    fn test_new_task_with_completed_status() {
+        // Arrange
+        let title = TaskTitle::new("完了状態で作成").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let status = Status::Completed;
+        let priority = Priority::Medium;
+        let tags = vec![];
+        let due_date = None;
+
+        // Act
+        let task = TaskAggregate::new(
+            title.clone(),
+            description.clone(),
+            status,
+            priority,
+            tags.clone(),
+            due_date,
+        );
+
+        // Assert
+        assert_eq!(task.status(), &Status::Completed);
+        assert!(task.completed_at().is_some());
+    }
+
+    #[test]
+    fn test_new_task_with_completed_status_emits_event() {
+        // Arrange
+        let title = TaskTitle::new("完了状態で作成").unwrap();
+        let description = TaskDescription::new("").unwrap();
+
+        // Act
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Completed,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 1);
+        assert!(
+            task.domain_events()[0]
+                .downcast_ref::<TaskCompleted>()
+                .is_some()
+        );
+    }
+
+    #[test]
     fn test_complete_task() {
         // Arrange
         let title = TaskTitle::new("完了するタスク").unwrap();
