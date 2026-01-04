@@ -11,6 +11,7 @@ use crate::{
             tag_handler, task_handler,
         },
         persistence::sea_orm::{SeaOrmTagRepository, SeaOrmTaskRepository},
+        presentation::CliPresenter,
         tui,
     },
 };
@@ -50,12 +51,17 @@ async fn run_cli_with_command(command: Commands) -> Result<()> {
     let task_repo = Arc::new(SeaOrmTaskRepository::new(db.clone()));
     let tag_repo = Arc::new(SeaOrmTagRepository::new(db.clone()));
 
+    // プレゼンターを初期化
+    let presenter = Arc::new(CliPresenter::new());
+
     // コマンド実行
     match command {
         Commands::Task { command } => {
-            task_handler::handle_task_command(command, task_repo, tag_repo).await?
+            task_handler::handle_task_command(command, task_repo, tag_repo, presenter).await?
         }
-        Commands::Tag { command } => tag_handler::handle_tag_command(command, tag_repo).await?,
+        Commands::Tag { command } => {
+            tag_handler::handle_tag_command(command, tag_repo, presenter).await?
+        }
     }
 
     // 接続を明示的に閉じる

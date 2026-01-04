@@ -7,13 +7,10 @@ use crate::{
         },
     },
     domain::tag::repository::TagRepository,
-    interface::cli::{
-        args::TagCommands,
-        display::{create_tag_detail_table, create_tag_table},
-    },
+    interface::{cli::args::TagCommands, presentation::Presenter},
 };
 use anyhow::{Context, Result};
-use inquire::{Confirm, Editor, MultiSelect, Text, validator};
+use inquire::{Editor, MultiSelect, Text, validator};
 use std::sync::Arc;
 
 /// タグ追加のパラメータ
@@ -32,55 +29,60 @@ struct EditTagParams {
 pub async fn handle_tag_command(
     command: TagCommands,
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
 ) -> Result<()> {
     match command {
-        TagCommands::List => handle_list(tag_repo).await,
-        TagCommands::Show { id } => handle_show(tag_repo, id).await,
+        TagCommands::List => handle_list(tag_repo, presenter).await,
+        TagCommands::Show { id } => handle_show(tag_repo, presenter, id).await,
         TagCommands::Add { name, description } => {
             let params = AddTagParams { name, description };
-            handle_add(tag_repo, params).await
+            handle_add(tag_repo, presenter, params).await
         }
-        TagCommands::Delete { id } => handle_delete(tag_repo, id).await,
+        TagCommands::Delete { id } => handle_delete(tag_repo, presenter, id).await,
         TagCommands::Edit {
             id,
             name,
             description,
         } => {
             let params = EditTagParams { name, description };
-            handle_edit(tag_repo, id, params).await
+            handle_edit(tag_repo, presenter, id, params).await
         }
     }
 }
 
 /// タグ一覧を表示
-async fn handle_list(tag_repo: Arc<dyn TagRepository>) -> Result<()> {
+async fn handle_list(
+    tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
+) -> Result<()> {
     let use_case = ListTagsUseCase::new(tag_repo);
     let tags = use_case.execute().await?;
 
-    if tags.is_empty() {
-        println!("タグがありません");
-    } else {
-        println!("タグ一覧 ({}件):", tags.len());
-        let table = create_tag_table(&tags);
-        println!("{}", table);
-    }
+    presenter.present_tag_list(&tags)?;
 
     Ok(())
 }
 
 /// タグの詳細を表示
-async fn handle_show(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> {
+async fn handle_show(
+    tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
+    id: i32,
+) -> Result<()> {
     let use_case = ShowTagUseCase::new(tag_repo);
     let tag = use_case.execute(id).await?;
 
-    let table = create_tag_detail_table(&tag);
-    println!("{}", table);
+    presenter.present_tag_detail(&tag)?;
 
     Ok(())
 }
 
 /// 新しいタグを追加
-async fn handle_add(tag_repo: Arc<dyn TagRepository>, params: AddTagParams) -> Result<()> {
+async fn handle_add(
+    tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
+    params: AddTagParams,
+) -> Result<()> {
     // 引数モードか対話モードか判定
     let is_interactive = params.name.is_none();
 
@@ -117,37 +119,39 @@ async fn handle_add(tag_repo: Arc<dyn TagRepository>, params: AddTagParams) -> R
     let use_case = AddTagUseCase::new(tag_repo);
     let created_tag = use_case.execute(dto).await?;
 
-    println!(
+    presenter.present_success(&format!(
         "タグを追加しました: [{}] {}",
         created_tag.id, created_tag.name
-    );
+    ))?;
 
     Ok(())
 }
 
 /// タグを削除
-async fn handle_delete(tag_repo: Arc<dyn TagRepository>, id: i32) -> Result<()> {
+async fn handle_delete(
+    tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
+    id: i32,
+) -> Result<()> {
     // 確認
-    let confirm = Confirm::new(&format!("タグID {}を削除しますか？", id))
-        .with_default(false)
-        .prompt()
-        .unwrap_or(false);
+    let confirm = presenter.confirm(&format!("タグID {}を削除しますか？", id), false)?;
 
     if !confirm {
-        println!("削除をキャンセルしました");
+        presenter.present_success("削除をキャンセルしました")?;
         return Ok(());
     }
 
     let use_case = DeleteTagUseCase::new(tag_repo);
     use_case.execute(id).await?;
 
-    println!("タグID {}を削除しました", id);
+    presenter.present_success(&format!("タグID {}を削除しました", id))?;
 
     Ok(())
 }
 
 async fn handle_edit(
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
     id: i32,
     params: EditTagParams,
 ) -> Result<()> {
@@ -159,8 +163,8 @@ async fn handle_edit(
         let use_case = ShowTagUseCase::new(tag_repo.clone());
         let current_tag = use_case.execute(id).await?;
 
-        let table = create_tag_detail_table(&current_tag);
-        println!("{table}\n");
+        presenter.present_tag_detail(&current_tag)?;
+        println!(); // 空行を追加
 
         // 編集するフィールドを選択
         let field_options = vec!["名前", "説明"];
@@ -213,10 +217,10 @@ async fn handle_edit(
     let use_case = EditTagUseCase::new(tag_repo);
     let updated_tag = use_case.execute(id, dto).await?;
 
-    println!(
+    presenter.present_success(&format!(
         "タグを更新しました: [{}] {}",
         updated_tag.id, updated_tag.name
-    );
+    ))?;
 
     Ok(())
 }

@@ -1,11 +1,16 @@
+use crate::{
+    application::dto::{stats_dto::StatsDTO, tag_dto::TagDTO, task_dto::TaskDTO},
+    interface::cli::display::{
+        create_rich_stats_display, create_tag_detail_table, create_tag_table,
+        create_task_detail_table, create_task_table,
+    },
+};
 use anyhow::Result;
-
-use crate::application::dto::{stats_dto::StatsDTO, tag_dto::TagDTO, task_dto::TaskDTO};
+use inquire::Confirm;
 
 /// プレゼンテーション層の抽象トレイト
 ///
 /// CLI/TUIの両方に対応できるよう、プレゼンテーションロジックを抽象化します。
-#[allow(dead_code)]
 pub trait Presenter: Send + Sync {
     /// タスク一覧を表示
     fn present_task_list(&self, tasks: &[TaskDTO]) -> Result<()>;
@@ -26,6 +31,7 @@ pub trait Presenter: Send + Sync {
     fn present_success(&self, message: &str) -> Result<()>;
 
     /// エラーメッセージを表示
+    #[allow(dead_code)]
     fn present_error(&self, error: &str) -> Result<()>;
 
     /// 確認メッセージを表示し、ユーザーの入力を取得
@@ -36,11 +42,9 @@ pub trait Presenter: Send + Sync {
 ///
 /// コマンドラインインターフェース用のプレゼンター実装。
 /// テーブル形式でデータを表示します。
-#[allow(dead_code)]
 pub struct CliPresenter;
 
 impl CliPresenter {
-    #[allow(dead_code)]
     pub fn new() -> Self {
         Self
     }
@@ -54,8 +58,6 @@ impl Default for CliPresenter {
 
 impl Presenter for CliPresenter {
     fn present_task_list(&self, tasks: &[TaskDTO]) -> Result<()> {
-        use crate::interface::cli::display::create_task_table;
-
         if tasks.is_empty() {
             println!("タスクがありません");
         } else {
@@ -68,8 +70,6 @@ impl Presenter for CliPresenter {
     }
 
     fn present_task_detail(&self, task: &TaskDTO) -> Result<()> {
-        use crate::interface::cli::display::create_task_detail_table;
-
         let table = create_task_detail_table(task);
         println!("{}", table);
 
@@ -77,8 +77,6 @@ impl Presenter for CliPresenter {
     }
 
     fn present_tag_list(&self, tags: &[TagDTO]) -> Result<()> {
-        use crate::interface::cli::display::create_tag_table;
-
         if tags.is_empty() {
             println!("タグがありません");
         } else {
@@ -91,8 +89,6 @@ impl Presenter for CliPresenter {
     }
 
     fn present_tag_detail(&self, tag: &TagDTO) -> Result<()> {
-        use crate::interface::cli::display::create_tag_detail_table;
-
         let table = create_tag_detail_table(tag);
         println!("{}", table);
 
@@ -100,10 +96,8 @@ impl Presenter for CliPresenter {
     }
 
     fn present_stats(&self, stats: &StatsDTO) -> Result<()> {
-        use crate::interface::cli::display::create_stats_table;
-
-        let table = create_stats_table(stats);
-        println!("{}", table);
+        let display = create_rich_stats_display(stats);
+        println!("{display}");
 
         Ok(())
     }
@@ -119,8 +113,6 @@ impl Presenter for CliPresenter {
     }
 
     fn confirm(&self, message: &str, default: bool) -> Result<bool> {
-        use inquire::Confirm;
-
         let result = Confirm::new(message)
             .with_default(default)
             .prompt()

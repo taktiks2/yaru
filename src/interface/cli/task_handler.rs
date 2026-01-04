@@ -13,9 +13,9 @@ use crate::{
             value_objects::{Priority, Status},
         },
     },
-    interface::cli::{
-        args::{Filter, TaskCommands},
-        display::{create_stats_table, create_task_detail_table, create_task_table},
+    interface::{
+        cli::args::{Filter, TaskCommands},
+        presentation::Presenter,
     },
 };
 use anyhow::{Context, Result};
@@ -108,10 +108,11 @@ pub async fn handle_task_command(
     command: TaskCommands,
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => handle_list(task_repo, tag_repo, filter).await,
-        TaskCommands::Show { id } => handle_show(task_repo, tag_repo, id).await,
+        TaskCommands::List { filter } => handle_list(task_repo, tag_repo, presenter, filter).await,
+        TaskCommands::Show { id } => handle_show(task_repo, tag_repo, presenter, id).await,
         TaskCommands::Add {
             title,
             description,
@@ -128,9 +129,9 @@ pub async fn handle_task_command(
                 tags,
                 due_date,
             };
-            handle_add(task_repo, tag_repo, params).await
+            handle_add(task_repo, tag_repo, presenter, params).await
         }
-        TaskCommands::Delete { id } => handle_delete(task_repo, id).await,
+        TaskCommands::Delete { id } => handle_delete(task_repo, presenter, id).await,
         TaskCommands::Edit {
             id,
             title,
@@ -150,9 +151,9 @@ pub async fn handle_task_command(
                 due_date,
                 clear_due_date,
             };
-            handle_edit(task_repo, tag_repo, id, params).await
+            handle_edit(task_repo, tag_repo, presenter, id, params).await
         }
-        TaskCommands::Stats => handle_stats(task_repo).await,
+        TaskCommands::Stats => handle_stats(task_repo, presenter).await,
     }
 }
 
@@ -160,19 +161,14 @@ pub async fn handle_task_command(
 async fn handle_list(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
     _filter: Option<Vec<Filter>>,
 ) -> Result<()> {
     let use_case = ListTasksUseCase::new(task_repo, tag_repo);
     let tasks = use_case.execute().await?;
 
     // TODO: フィルタ処理を実装
-    if tasks.is_empty() {
-        println!("タスクがありません");
-    } else {
-        println!("タスク一覧 ({}件):", tasks.len());
-        let table = create_task_table(&tasks);
-        println!("{table}");
-    }
+    presenter.present_task_list(&tasks)?;
 
     Ok(())
 }
@@ -181,13 +177,13 @@ async fn handle_list(
 async fn handle_show(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
     id: i32,
 ) -> Result<()> {
     let use_case = ShowTaskUseCase::new(task_repo, tag_repo);
     let task = use_case.execute(id).await?;
 
-    let table = create_task_detail_table(&task);
-    println!("{table}");
+    presenter.present_task_detail(&task)?;
 
     Ok(())
 }
@@ -196,6 +192,7 @@ async fn handle_show(
 async fn handle_add(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
     params: AddTaskParams,
 ) -> Result<()> {
     // 引数モードか対話モードか判定
@@ -310,31 +307,32 @@ async fn handle_add(
     let use_case = AddTaskUseCase::new(task_repo, tag_repo);
     let created_task = use_case.execute(dto).await?;
 
-    println!(
+    presenter.present_success(&format!(
         "タスクを追加しました: [{}] {}",
         created_task.id, created_task.title
-    );
+    ))?;
 
     Ok(())
 }
 
 /// タスクを削除
-async fn handle_delete(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()> {
+async fn handle_delete(
+    task_repo: Arc<dyn TaskRepository>,
+    presenter: Arc<dyn Presenter>,
+    id: i32,
+) -> Result<()> {
     // 確認
-    let confirm = inquire::Confirm::new(&format!("タスクID {}を削除しますか？", id))
-        .with_default(false)
-        .prompt()
-        .unwrap_or(false);
+    let confirm = presenter.confirm(&format!("タスクID {}を削除しますか？", id), false)?;
 
     if !confirm {
-        println!("削除をキャンセルしました");
+        presenter.present_success("削除をキャンセルしました")?;
         return Ok(());
     }
 
     let use_case = DeleteTaskUseCase::new(task_repo);
     use_case.execute(id).await?;
 
-    println!("タスクID {id}を削除しました");
+    presenter.present_success(&format!("タスクID {id}を削除しました"))?;
 
     Ok(())
 }
@@ -342,6 +340,7 @@ async fn handle_delete(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()
 async fn handle_edit(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
     id: i32,
     params: EditTaskParams,
 ) -> Result<()> {
@@ -372,8 +371,8 @@ async fn handle_edit(
         let use_case = ShowTaskUseCase::new(task_repo.clone(), tag_repo.clone());
         let current_task = use_case.execute(id).await?;
 
-        let table = create_task_detail_table(&current_task);
-        println!("{table}\n");
+        presenter.present_task_detail(&current_task)?;
+        println!(); // 空行を追加
 
         // 編集するフィールドを選択
         let field_options = vec!["タイトル", "説明", "ステータス", "優先度", "タグ", "期限"];
@@ -556,21 +555,23 @@ async fn handle_edit(
     let use_case = EditTaskUseCase::new(task_repo, tag_repo);
     let updated_task = use_case.execute(id, dto).await?;
 
-    println!(
+    presenter.present_success(&format!(
         "タスクを更新しました: [{}] {}",
         updated_task.id, updated_task.title
-    );
+    ))?;
 
     Ok(())
 }
 
 /// タスクの統計情報を表示
-async fn handle_stats(task_repo: Arc<dyn TaskRepository>) -> Result<()> {
+async fn handle_stats(
+    task_repo: Arc<dyn TaskRepository>,
+    presenter: Arc<dyn Presenter>,
+) -> Result<()> {
     let use_case = ShowStatsUseCase::new(task_repo);
     let stats = use_case.execute().await?;
 
-    let table = create_stats_table(&stats);
-    println!("{table}");
+    presenter.present_stats(&stats)?;
 
     Ok(())
 }
