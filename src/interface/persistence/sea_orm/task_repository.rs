@@ -73,10 +73,7 @@ impl TaskRepository for SeaOrmTaskRepository {
 
     async fn find_all(&self) -> Result<Vec<TaskAggregate>> {
         // find_with_relatedを使って一括取得（N+1問題の回避）
-        let tasks_with_tags = Tasks::find()
-            .find_with_related(Tags)
-            .all(&self.db)
-            .await?;
+        let tasks_with_tags = Tasks::find().find_with_related(Tags).all(&self.db).await?;
 
         let aggregates = tasks_with_tags
             .into_iter()
