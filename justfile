@@ -9,7 +9,8 @@ fmt:
 
 # コードのリントを実行
 lint:
-    cargo clippy -- -D warnings
+    cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings
+
 
 # フォーマットとリントを順番に実行
 check: fmt lint
