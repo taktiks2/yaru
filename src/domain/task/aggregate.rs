@@ -740,4 +740,122 @@ mod tests {
         // Assert
         assert_eq!(task.domain_events().len(), 0);
     }
+
+    #[test]
+    fn test_change_status_to_completed_sets_completed_at() {
+        // Arrange
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act
+        let result = task.change_status(Status::Completed);
+
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(task.status(), &Status::Completed);
+        assert!(task.completed_at().is_some());
+    }
+
+    #[test]
+    fn test_change_status_to_completed_emits_event() {
+        // Arrange
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::InProgress,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act
+        task.change_status(Status::Completed).unwrap();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 1);
+        assert!(
+            task.domain_events()[0]
+                .downcast_ref::<TaskCompleted>()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn test_change_status_from_completed_clears_completed_at() {
+        // Arrange
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        task.complete().unwrap(); // 一度完了させる
+        assert!(task.completed_at().is_some());
+
+        // Act
+        let result = task.change_status(Status::InProgress);
+
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(task.status(), &Status::InProgress);
+        assert!(task.completed_at().is_none());
+    }
+
+    #[test]
+    fn test_change_status_to_non_completed_does_not_emit_event() {
+        // Arrange
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act
+        task.change_status(Status::InProgress).unwrap();
+
+        // Assert
+        assert_eq!(task.domain_events().len(), 0);
+    }
+
+    #[test]
+    fn test_change_status_already_completed_does_not_change_completed_at() {
+        // Arrange
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let mut task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        task.complete().unwrap();
+        let first_completed_at = *task.completed_at();
+
+        // Act
+        task.change_status(Status::Completed).unwrap();
+
+        // Assert
+        assert_eq!(task.completed_at(), &first_completed_at);
+    }
 }
