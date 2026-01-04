@@ -153,7 +153,7 @@ pub async fn handle_task_command(
             };
             handle_edit(task_repo, tag_repo, presenter, id, params).await
         }
-        TaskCommands::Stats => handle_stats(task_repo, presenter).await,
+        TaskCommands::Stats => handle_stats(task_repo, tag_repo, presenter).await,
     }
 }
 
@@ -566,9 +566,10 @@ async fn handle_edit(
 /// タスクの統計情報を表示
 async fn handle_stats(
     task_repo: Arc<dyn TaskRepository>,
+    tag_repo: Arc<dyn TagRepository>,
     presenter: Arc<dyn Presenter>,
 ) -> Result<()> {
-    let use_case = ShowStatsUseCase::new(task_repo);
+    let use_case = ShowStatsUseCase::new(task_repo, tag_repo);
     let stats = use_case.execute().await?;
 
     presenter.present_stats(&stats)?;

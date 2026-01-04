@@ -1,22 +1,32 @@
 use crate::{
     application::dto::StatsDTO,
-    domain::{services::TaskStatisticsService, task::repository::TaskRepository},
+    domain::{
+        services::TaskStatisticsService, tag::repository::TagRepository,
+        task::repository::TaskRepository,
+    },
 };
 use anyhow::Result;
 use chrono::Utc;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// ShowStatsUseCase - タスク統計表示のユースケース
 ///
 /// 全タスクの統計情報を計算して返します。
 pub struct ShowStatsUseCase {
     task_repository: Arc<dyn TaskRepository>,
+    tag_repository: Arc<dyn TagRepository>,
 }
 
 impl ShowStatsUseCase {
     /// 新しいShowStatsUseCaseを作成
-    pub fn new(task_repository: Arc<dyn TaskRepository>) -> Self {
-        Self { task_repository }
+    pub fn new(
+        task_repository: Arc<dyn TaskRepository>,
+        tag_repository: Arc<dyn TagRepository>,
+    ) -> Self {
+        Self {
+            task_repository,
+            tag_repository,
+        }
     }
 
     /// タスクの統計情報を取得する
@@ -34,8 +44,15 @@ impl ShowStatsUseCase {
         // TaskStatisticsServiceで統計を計算
         let stats = TaskStatisticsService::calculate_stats(&tasks, today);
 
-        // DTOに変換
-        Ok(StatsDTO::from(stats))
+        // タグIDからタグ名へのマッピングを作成
+        let all_tags = self.tag_repository.find_all().await?;
+        let tag_names: HashMap<_, _> = all_tags
+            .into_iter()
+            .map(|tag| (*tag.id(), tag.name().value().to_string()))
+            .collect();
+
+        // DTOに変換（タグ名マップ付き）
+        Ok(StatsDTO::from_task_stats_with_tag_names(stats, tag_names))
     }
 }
 
@@ -47,14 +64,15 @@ mod tests {
         aggregate::TaskAggregate,
         value_objects::{DueDate, Priority, Status, TaskDescription, TaskTitle},
     };
-    use crate::interface::persistence::in_memory::InMemoryTaskRepository;
+    use crate::interface::persistence::in_memory::{InMemoryTagRepository, InMemoryTaskRepository};
     use chrono::{Duration, Utc};
 
     #[tokio::test]
     async fn test_show_stats_empty() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
-        let use_case = ShowStatsUseCase::new(task_repo);
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+        let use_case = ShowStatsUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -71,6 +89,7 @@ mod tests {
     async fn test_show_stats_single_task() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         let task = TaskAggregate::new(
             TaskTitle::new("タスク1").unwrap(),
@@ -82,7 +101,7 @@ mod tests {
         );
         task_repo.save(task).await.unwrap();
 
-        let use_case = ShowStatsUseCase::new(task_repo);
+        let use_case = ShowStatsUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -99,6 +118,7 @@ mod tests {
     async fn test_show_stats_multiple_tasks() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         // Pendingタスク（High）
         let task1 = TaskAggregate::new(
@@ -135,7 +155,7 @@ mod tests {
         task_repo.save(task2).await.unwrap();
         task_repo.save(task3).await.unwrap();
 
-        let use_case = ShowStatsUseCase::new(task_repo);
+        let use_case = ShowStatsUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -156,6 +176,7 @@ mod tests {
     async fn test_show_stats_with_overdue_tasks() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         let past_date = Utc::now().naive_utc().date() - Duration::days(1);
         let task = TaskAggregate::new(
@@ -168,7 +189,7 @@ mod tests {
         );
         task_repo.save(task).await.unwrap();
 
-        let use_case = ShowStatsUseCase::new(task_repo);
+        let use_case = ShowStatsUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -184,6 +205,7 @@ mod tests {
     async fn test_show_stats_with_tags() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         let task1 = TaskAggregate::new(
             TaskTitle::new("タスク1").unwrap(),
@@ -206,7 +228,7 @@ mod tests {
         task_repo.save(task1).await.unwrap();
         task_repo.save(task2).await.unwrap();
 
-        let use_case = ShowStatsUseCase::new(task_repo);
+        let use_case = ShowStatsUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;

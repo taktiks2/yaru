@@ -26,7 +26,8 @@ impl TaskStatisticsService {
         let mut status_stats: HashMap<Status, usize> = HashMap::new();
         let mut priority_stats: HashMap<Priority, usize> = HashMap::new();
         let mut due_date_stats: HashMap<DueDateStatus, usize> = HashMap::new();
-        let mut tag_stats: HashMap<String, usize> = HashMap::new();
+        let mut tag_stats: HashMap<Option<crate::domain::tag::value_objects::TagId>, usize> =
+            HashMap::new();
         let mut priority_status_matrix: HashMap<(Priority, Status), usize> = HashMap::new();
 
         for task in tasks {
@@ -59,13 +60,12 @@ impl TaskStatisticsService {
 
             // タグ別統計
             if task.tags().is_empty() {
-                *tag_stats.entry("(タグなし)".to_string()).or_default() += 1;
+                // タグなしのタスクはNoneをキーとして集計
+                *tag_stats.entry(None).or_default() += 1;
             } else {
                 for tag_id in task.tags() {
-                    // 注: タグ名を取得するにはTagRepositoryが必要
-                    // ここではIDの文字列表現を使用
-                    let tag_key = format!("Tag ID: {}", tag_id.value());
-                    *tag_stats.entry(tag_key).or_default() += 1;
+                    // タグIDをそのままキーとして使用
+                    *tag_stats.entry(Some(*tag_id)).or_default() += 1;
                 }
             }
 
