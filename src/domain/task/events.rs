@@ -1,3 +1,199 @@
+//! # ドメインイベントモジュール
+//!
+//! タスクに関連するドメインイベントを定義します。
+//!
+//! ## DomainEventの使い方
+//!
+//! ### 1. イベントの作成
+//!
+//! ```rust,ignore
+//! use crate::domain::task::events::TaskCreated;
+//! use crate::domain::task::value_objects::{TaskId, TaskTitle};
+//!
+//! // イベントインスタンスの作成
+//! let task_id = TaskId::new(1).unwrap();
+//! let title = TaskTitle::new("新しいタスク").unwrap();
+//! let event = TaskCreated::new(task_id, title);
+//! ```
+//!
+//! ### 2. 集約ルートでのイベント発火
+//!
+//! ```rust,ignore
+//! // TaskAggregateでイベントを発火する例
+//! impl TaskAggregate {
+//!     pub fn create(id: TaskId, title: TaskTitle) -> Self {
+//!         let mut task = Self::new(id, title.clone(), /* ... */);
+//!
+//!         // イベントを作成してドメインイベントリストに追加
+//!         let event = TaskCreated::new(id, title);
+//!         task.add_domain_event(Box::new(event));
+//!
+//!         task
+//!     }
+//!
+//!     fn add_domain_event(&mut self, event: Box<dyn DomainEvent>) {
+//!         self.domain_events.push(event);
+//!     }
+//! }
+//! ```
+//!
+//! ### 3. イベントの取得と処理
+//!
+//! ```rust,ignore
+//! // リポジトリやユースケースでイベントを取得して処理
+//! let mut task = task_repository.find_by_id(&task_id).await?;
+//!
+//! // 何らかの操作を実行
+//! task.complete(Utc::now())?;
+//!
+//! // 発火したイベントを取得
+//! let events = task.take_domain_events();
+//!
+//! // イベントハンドラに渡して処理
+//! for event in events {
+//!     event_bus.publish(event).await?;
+//! }
+//! ```
+//!
+//! ### 4. イベントの型判定とダウンキャスト
+//!
+//! ```rust,ignore
+//! use crate::domain::task::events::{DomainEvent, TaskCompleted};
+//!
+//! fn handle_event(event: &dyn DomainEvent) {
+//!     // as_any()を使って具体的な型にダウンキャスト
+//!     if let Some(task_completed) = event.as_any().downcast_ref::<TaskCompleted>() {
+//!         println!("タスク {} が完了しました", task_completed.task_id.value());
+//!     }
+//! }
+//! ```
+//!
+//! ### 5. イベントハンドラの実装例
+//!
+//! ```rust,ignore
+//! use crate::domain::task::events::{DomainEvent, TaskCompleted, TaskCreated};
+//! use async_trait::async_trait;
+//! use anyhow::Result;
+//!
+//! // イベントハンドラのトレイト定義
+//! #[async_trait]
+//! trait EventHandler: Send + Sync {
+//!     async fn handle(&self, event: &dyn DomainEvent) -> Result<()>;
+//! }
+//!
+//! // タスク完了時にメールを送信するハンドラ
+//! struct TaskCompletedEmailHandler {
+//!     email_service: Arc<dyn EmailService>,
+//! }
+//!
+//! #[async_trait]
+//! impl EventHandler for TaskCompletedEmailHandler {
+//!     async fn handle(&self, event: &dyn DomainEvent) -> Result<()> {
+//!         // TaskCompletedイベントのみ処理
+//!         if let Some(task_completed) = event.as_any().downcast_ref::<TaskCompleted>() {
+//!             // メール送信
+//!             self.email_service.send_task_completion_notification(
+//!                 task_completed.task_id,
+//!                 task_completed.completed_at,
+//!             ).await?;
+//!
+//!             println!("タスク完了通知メールを送信しました: {}", task_completed.task_id.value());
+//!         }
+//!         Ok(())
+//!     }
+//! }
+//!
+//! // 重要なイベントをログに記録するハンドラ
+//! struct EventLoggingHandler {
+//!     logger: Arc<dyn Logger>,
+//! }
+//!
+//! #[async_trait]
+//! impl EventHandler for EventLoggingHandler {
+//!     async fn handle(&self, event: &dyn DomainEvent) -> Result<()> {
+//!         // すべてのイベントをログに記録
+//!         self.logger.info(&format!(
+//!             "[DomainEvent] {} - occurred_at: {}",
+//!             event.event_name(),
+//!             event.occurred_at()
+//!         ));
+//!
+//!         // 特定のイベントは詳細ログを記録
+//!         if let Some(task_completed) = event.as_any().downcast_ref::<TaskCompleted>() {
+//!             self.logger.info(&format!(
+//!                 "[TaskCompleted] task_id: {}, completed_at: {}",
+//!                 task_completed.task_id.value(),
+//!                 task_completed.completed_at
+//!             ));
+//!         } else if let Some(task_created) = event.as_any().downcast_ref::<TaskCreated>() {
+//!             self.logger.info(&format!(
+//!                 "[TaskCreated] task_id: {}, title: {}",
+//!                 task_created.task_id.value(),
+//!                 task_created.title.value()
+//!             ));
+//!         }
+//!
+//!         Ok(())
+//!     }
+//! }
+//! ```
+//!
+//! ### 6. イベントバスでの複数ハンドラの実行
+//!
+//! ```rust,ignore
+//! use crate::domain::task::events::DomainEvent;
+//! use anyhow::Result;
+//!
+//! // イベントバス - 複数のハンドラを管理
+//! struct EventBus {
+//!     handlers: Vec<Arc<dyn EventHandler>>,
+//! }
+//!
+//! impl EventBus {
+//!     pub fn new() -> Self {
+//!         Self {
+//!             handlers: Vec::new(),
+//!         }
+//!     }
+//!
+//!     pub fn register(&mut self, handler: Arc<dyn EventHandler>) {
+//!         self.handlers.push(handler);
+//!     }
+//!
+//!     pub async fn publish(&self, event: Box<dyn DomainEvent>) -> Result<()> {
+//!         // 登録されたすべてのハンドラでイベントを処理
+//!         for handler in &self.handlers {
+//!             handler.handle(event.as_ref()).await?;
+//!         }
+//!         Ok(())
+//!     }
+//! }
+//!
+//! // 使用例
+//! async fn example_usage() -> Result<()> {
+//!     // イベントバスのセットアップ
+//!     let mut event_bus = EventBus::new();
+//!
+//!     // ハンドラを登録
+//!     event_bus.register(Arc::new(EventLoggingHandler::new()));
+//!     event_bus.register(Arc::new(TaskCompletedEmailHandler::new()));
+//!
+//!     // タスク完了処理
+//!     let mut task = task_repository.find_by_id(&task_id).await?;
+//!     task.complete(Utc::now())?;
+//!
+//!     // 変更を保存
+//!     task_repository.save(&task).await?;
+//!
+//!     // イベントを発行（ログ記録とメール送信が実行される）
+//!     for event in task.take_domain_events() {
+//!         event_bus.publish(event).await?;
+//!     }
+//!
+//!     Ok(())
+//! }
+//! ```
+
 use crate::domain::{
     tag::value_objects::TagId,
     task::value_objects::{TaskId, TaskTitle},
