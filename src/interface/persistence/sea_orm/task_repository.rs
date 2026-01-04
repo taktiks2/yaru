@@ -14,6 +14,7 @@ use entity::{
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
+use std::collections::HashMap;
 
 /// SeaORM実装のTaskRepository
 pub struct SeaOrmTaskRepository {
@@ -47,13 +48,19 @@ impl SeaOrmTaskRepository {
             .exec(&self.db)
             .await?;
 
-        // 新しいタグ関連付けを作成
-        for tag_id in tag_ids {
-            let task_tag = task_tags::ActiveModel {
-                task_id: Set(task_id),
-                tag_id: Set(*tag_id),
-            };
-            task_tag.insert(&self.db).await?;
+        // 新しいタグ関連付けを一括作成（N+1問題の回避）
+        if !tag_ids.is_empty() {
+            let task_tag_models: Vec<task_tags::ActiveModel> = tag_ids
+                .iter()
+                .map(|tag_id| task_tags::ActiveModel {
+                    task_id: Set(task_id),
+                    tag_id: Set(*tag_id),
+                })
+                .collect();
+
+            TaskTags::insert_many(task_tag_models)
+                .exec(&self.db)
+                .await?;
         }
 
         Ok(())
@@ -76,11 +83,32 @@ impl TaskRepository for SeaOrmTaskRepository {
     }
 
     async fn find_all(&self) -> Result<Vec<TaskAggregate>> {
+        // 1. 全タスクを取得
         let task_models = Tasks::find().all(&self.db).await?;
 
+        if task_models.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // 2. 全タスクのIDを収集
+        let task_ids: Vec<i32> = task_models.iter().map(|t| t.id).collect();
+
+        // 3. 全タグ関連付けを一括取得（N+1問題の回避）
+        let task_tags = TaskTags::find()
+            .filter(task_tags::Column::TaskId.is_in(task_ids))
+            .all(&self.db)
+            .await?;
+
+        // 4. タスクIDごとにタグIDをグループ化
+        let mut tag_map: HashMap<i32, Vec<i32>> = HashMap::new();
+        for tt in task_tags {
+            tag_map.entry(tt.task_id).or_default().push(tt.tag_id);
+        }
+
+        // 5. ドメインモデルに変換
         let mut aggregates = Vec::new();
         for model in task_models {
-            let tag_ids = self.get_tag_ids(model.id).await?;
+            let tag_ids = tag_map.get(&model.id).cloned().unwrap_or_default();
             let aggregate = TaskMapper::to_domain(model, tag_ids)?;
             aggregates.push(aggregate);
         }
