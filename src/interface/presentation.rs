@@ -30,10 +30,6 @@ pub trait Presenter: Send + Sync {
     /// 成功メッセージを表示
     fn present_success(&self, message: &str) -> Result<()>;
 
-    /// エラーメッセージを表示
-    #[allow(dead_code)]
-    fn present_error(&self, error: &str) -> Result<()>;
-
     /// 確認メッセージを表示し、ユーザーの入力を取得
     fn confirm(&self, message: &str, default: bool) -> Result<bool>;
 }
@@ -104,11 +100,6 @@ impl Presenter for CliPresenter {
 
     fn present_success(&self, message: &str) -> Result<()> {
         println!("{}", message);
-        Ok(())
-    }
-
-    fn present_error(&self, error: &str) -> Result<()> {
-        eprintln!("エラー: {}", error);
         Ok(())
     }
 
