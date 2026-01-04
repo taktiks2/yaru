@@ -62,7 +62,7 @@ impl AddTaskUseCase {
 
         // 優先度の変換（デフォルト: Medium）
         let priority = if let Some(priority_str) = dto.priority {
-            parse_priority(&priority_str)?
+            Priority::from_str_anyhow(&priority_str)?
         } else {
             Priority::Medium
         };
@@ -121,17 +121,6 @@ impl AddTaskUseCase {
 
         // DTOに変換して返す
         Ok(TaskDTO::from(saved_task))
-    }
-}
-
-// ヘルパー関数: 文字列からPriorityに変換
-fn parse_priority(priority_str: &str) -> Result<Priority> {
-    match priority_str.to_lowercase().as_str() {
-        "low" => Ok(Priority::Low),
-        "medium" => Ok(Priority::Medium),
-        "high" => Ok(Priority::High),
-        "critical" => Ok(Priority::Critical),
-        _ => bail!("無効な優先度: {}", priority_str),
     }
 }
 

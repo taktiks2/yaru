@@ -72,7 +72,10 @@ impl std::fmt::Display for TagOption {
 /// * `Err` - 存在しないタグがある場合（最初に見つかった不正なIDを報告）
 ///
 /// # Note
-/// find_by_idsを使用してN+1問題を回避します
+/// - find_by_idsを使用してN+1問題を回避します
+/// - **UX向上のための事前検証**: アプリケーション層でも再度検証されるため、
+///   ここでのエラーはユーザーへの早期フィードバックが目的です
+/// - 不要な処理をスキップし、CLI固有のエラーメッセージを提供できます
 async fn validate_tag_ids(tag_repo: &Arc<dyn TagRepository>, tag_ids: &[i32]) -> Result<()> {
     if tag_ids.is_empty() {
         return Ok(());

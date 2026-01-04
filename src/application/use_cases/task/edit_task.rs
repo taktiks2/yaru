@@ -72,13 +72,15 @@ impl EditTaskUseCase {
 
         // 優先度の更新
         if let Some(priority_str) = dto.priority {
-            let priority = parse_priority(&priority_str)?;
+            let priority = Priority::from_str_anyhow(&priority_str)?;
             task.change_priority(priority)?;
         }
 
         // タグの更新
         if let Some(tag_ids) = dto.tags {
             // タグの存在確認（一括）
+            // **ビジネスルール保証のための検証**: このユースケースがどのインターフェース
+            // （CLI、TUI、Web APIなど）から呼ばれても、データ整合性を保証する責任があります
             if !tag_ids.is_empty() {
                 let tag_id_vos: Result<Vec<_>> = tag_ids.iter().map(|id| TagId::new(*id)).collect();
                 let tag_id_vos = tag_id_vos?;
@@ -117,17 +119,6 @@ impl EditTaskUseCase {
 
         // DTOに変換して返す
         Ok(TaskDTO::from(updated_task))
-    }
-}
-
-// ヘルパー関数: 文字列からPriorityに変換
-fn parse_priority(priority_str: &str) -> Result<Priority> {
-    match priority_str.to_lowercase().as_str() {
-        "low" => Ok(Priority::Low),
-        "medium" => Ok(Priority::Medium),
-        "high" => Ok(Priority::High),
-        "critical" => Ok(Priority::Critical),
-        _ => bail!("無効な優先度: {}", priority_str),
     }
 }
 
