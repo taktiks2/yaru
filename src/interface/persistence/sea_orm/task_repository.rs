@@ -8,13 +8,12 @@ use crate::{
 use anyhow::Result;
 use async_trait::async_trait;
 use entity::{
-    prelude::{TaskTags, Tasks},
+    prelude::{Tags, TaskTags, Tasks},
     task_tags,
 };
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
 };
-use std::collections::HashMap;
 
 /// SeaORM実装のTaskRepository
 pub struct SeaOrmTaskRepository {
@@ -25,19 +24,6 @@ impl SeaOrmTaskRepository {
     /// 新しいSeaOrmTaskRepositoryを作成
     pub fn new(db: DatabaseConnection) -> Self {
         Self { db }
-    }
-
-    /// タスクに紐づくタグIDのリストを取得
-    async fn get_tag_ids(&self, task_id: i32) -> Result<Vec<i32>> {
-        let tag_ids = TaskTags::find()
-            .filter(task_tags::Column::TaskId.eq(task_id))
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|tt| tt.tag_id)
-            .collect();
-
-        Ok(tag_ids)
     }
 
     /// タスクのタグ関連付けを更新（既存を削除して新規作成）
@@ -70,48 +56,35 @@ impl SeaOrmTaskRepository {
 #[async_trait]
 impl TaskRepository for SeaOrmTaskRepository {
     async fn find_by_id(&self, id: &TaskId) -> Result<Option<TaskAggregate>> {
-        let task_model = Tasks::find_by_id(id.value()).one(&self.db).await?;
-
-        match task_model {
-            Some(model) => {
-                let tag_ids = self.get_tag_ids(model.id).await?;
-                let aggregate = TaskMapper::to_domain(model, tag_ids)?;
-                Ok(Some(aggregate))
-            }
-            None => Ok(None),
-        }
-    }
-
-    async fn find_all(&self) -> Result<Vec<TaskAggregate>> {
-        // 1. 全タスクを取得
-        let task_models = Tasks::find().all(&self.db).await?;
-
-        if task_models.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        // 2. 全タスクのIDを収集
-        let task_ids: Vec<i32> = task_models.iter().map(|t| t.id).collect();
-
-        // 3. 全タグ関連付けを一括取得（N+1問題の回避）
-        let task_tags = TaskTags::find()
-            .filter(task_tags::Column::TaskId.is_in(task_ids))
+        let result = Tasks::find_by_id(id.value())
+            .find_with_related(Tags)
             .all(&self.db)
             .await?;
 
-        // 4. タスクIDごとにタグIDをグループ化
-        let mut tag_map: HashMap<i32, Vec<i32>> = HashMap::new();
-        for tt in task_tags {
-            tag_map.entry(tt.task_id).or_default().push(tt.tag_id);
+        if result.is_empty() {
+            return Ok(None);
         }
 
-        // 5. ドメインモデルに変換
-        let mut aggregates = Vec::new();
-        for model in task_models {
-            let tag_ids = tag_map.get(&model.id).cloned().unwrap_or_default();
-            let aggregate = TaskMapper::to_domain(model, tag_ids)?;
-            aggregates.push(aggregate);
-        }
+        let (task_model, tags) = &result[0];
+        let tag_ids: Vec<i32> = tags.iter().map(|tag| tag.id).collect();
+        let aggregate = TaskMapper::to_domain(task_model.clone(), tag_ids)?;
+        Ok(Some(aggregate))
+    }
+
+    async fn find_all(&self) -> Result<Vec<TaskAggregate>> {
+        // find_with_relatedを使って一括取得（N+1問題の回避）
+        let tasks_with_tags = Tasks::find()
+            .find_with_related(Tags)
+            .all(&self.db)
+            .await?;
+
+        let aggregates = tasks_with_tags
+            .into_iter()
+            .map(|(task_model, tags)| {
+                let tag_ids: Vec<i32> = tags.iter().map(|tag| tag.id).collect();
+                TaskMapper::to_domain(task_model, tag_ids)
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(aggregates)
     }
@@ -143,8 +116,13 @@ impl TaskRepository for SeaOrmTaskRepository {
             self.update_task_tags(saved_model.id, &tag_ids).await?;
 
             // 保存されたタスクを取得して返す
-            let tag_ids = self.get_tag_ids(saved_model.id).await?;
-            TaskMapper::to_domain(saved_model, tag_ids)?
+            let result = Tasks::find_by_id(saved_model.id)
+                .find_with_related(Tags)
+                .all(&self.db)
+                .await?;
+            let (task_model, tags) = &result[0];
+            let tag_ids: Vec<i32> = tags.iter().map(|tag| tag.id).collect();
+            TaskMapper::to_domain(task_model.clone(), tag_ids)?
         } else {
             // 既存IDがある場合は更新
             self.update(task).await?
@@ -170,8 +148,13 @@ impl TaskRepository for SeaOrmTaskRepository {
         self.update_task_tags(updated_model.id, &tag_ids).await?;
 
         // 更新されたタスクを取得して返す
-        let tag_ids = self.get_tag_ids(updated_model.id).await?;
-        let aggregate = TaskMapper::to_domain(updated_model, tag_ids)?;
+        let result = Tasks::find_by_id(updated_model.id)
+            .find_with_related(Tags)
+            .all(&self.db)
+            .await?;
+        let (task_model, tags) = &result[0];
+        let tag_ids: Vec<i32> = tags.iter().map(|tag| tag.id).collect();
+        let aggregate = TaskMapper::to_domain(task_model.clone(), tag_ids)?;
 
         Ok(aggregate)
     }
