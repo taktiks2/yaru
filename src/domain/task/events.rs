@@ -3,15 +3,19 @@ use crate::domain::{
     task::value_objects::{TaskId, TaskTitle},
 };
 use chrono::{DateTime, Utc};
+use std::fmt::Debug;
 
 /// DomainEvent trait - ドメインイベントの基底トレイト
 #[allow(dead_code)]
-pub trait DomainEvent: Send + Sync {
+pub trait DomainEvent: Debug + Send + Sync {
     /// イベントが発生した日時を取得
     fn occurred_at(&self) -> DateTime<Utc>;
 
     /// イベントの名前を取得
     fn event_name(&self) -> &str;
+
+    /// Any型へのダウンキャストのためのメソッド
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 /// TaskCreated - タスク作成イベント
@@ -42,6 +46,10 @@ impl DomainEvent for TaskCreated {
     fn event_name(&self) -> &str {
         "TaskCreated"
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 /// TaskCompleted - タスク完了イベント
@@ -69,6 +77,10 @@ impl DomainEvent for TaskCompleted {
 
     fn event_name(&self) -> &str {
         "TaskCompleted"
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -100,6 +112,10 @@ impl DomainEvent for TaskTitleChanged {
     fn event_name(&self) -> &str {
         "TaskTitleChanged"
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 /// TaskTagAdded - タスクタグ追加イベント
@@ -128,6 +144,10 @@ impl DomainEvent for TaskTagAdded {
     fn event_name(&self) -> &str {
         "TaskTagAdded"
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 }
 
 /// TaskTagRemoved - タスクタグ削除イベント
@@ -155,6 +175,10 @@ impl DomainEvent for TaskTagRemoved {
 
     fn event_name(&self) -> &str {
         "TaskTagRemoved"
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 

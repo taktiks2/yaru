@@ -1,13 +1,12 @@
 use crate::domain::{
     tag::value_objects::TagId,
     task::{
-        events::{TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChanged},
+        events::{DomainEvent, TaskCompleted, TaskTagAdded, TaskTagRemoved, TaskTitleChanged},
         value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle},
     },
 };
 use anyhow::{Result, bail};
 use chrono::{DateTime, Utc};
-use std::any::Any;
 
 /// TaskAggregate の再構築用パラメータ
 ///
@@ -42,7 +41,7 @@ pub struct TaskAggregate {
     due_date: Option<DueDate>,
     completed_at: Option<DateTime<Utc>>,
     // Domain Events
-    domain_events: Vec<Box<dyn Any + Send + Sync>>,
+    domain_events: Vec<Box<dyn DomainEvent>>,
 }
 
 impl Clone for TaskAggregate {
@@ -100,7 +99,7 @@ impl TaskAggregate {
             None
         };
 
-        let mut domain_events: Vec<Box<dyn Any + Send + Sync>> = Vec::new();
+        let mut domain_events: Vec<Box<dyn DomainEvent>> = Vec::new();
         if status == Status::Completed {
             let event = TaskCompleted::new(id, now);
             domain_events.push(Box::new(event));
@@ -345,7 +344,7 @@ impl TaskAggregate {
 
     /// ドメインイベントを取得します
     #[allow(dead_code)]
-    pub fn domain_events(&self) -> &Vec<Box<dyn Any + Send + Sync>> {
+    pub fn domain_events(&self) -> &Vec<Box<dyn DomainEvent>> {
         &self.domain_events
     }
 
@@ -438,6 +437,7 @@ mod tests {
         assert_eq!(task.domain_events().len(), 1);
         assert!(
             task.domain_events()[0]
+                .as_any()
                 .downcast_ref::<TaskCompleted>()
                 .is_some()
         );
@@ -707,6 +707,7 @@ mod tests {
         assert_eq!(task.domain_events().len(), 1);
         assert!(
             task.domain_events()[0]
+                .as_any()
                 .downcast_ref::<TaskCompleted>()
                 .is_some()
         );
@@ -734,6 +735,7 @@ mod tests {
         assert_eq!(task.domain_events().len(), 1);
         assert!(
             task.domain_events()[0]
+                .as_any()
                 .downcast_ref::<TaskTitleChanged>()
                 .is_some()
         );
@@ -761,6 +763,7 @@ mod tests {
         assert_eq!(task.domain_events().len(), 1);
         assert!(
             task.domain_events()[0]
+                .as_any()
                 .downcast_ref::<TaskTagAdded>()
                 .is_some()
         );
@@ -788,6 +791,7 @@ mod tests {
         assert_eq!(task.domain_events().len(), 1);
         assert!(
             task.domain_events()[0]
+                .as_any()
                 .downcast_ref::<TaskTagRemoved>()
                 .is_some()
         );
@@ -860,6 +864,7 @@ mod tests {
         assert_eq!(task.domain_events().len(), 1);
         assert!(
             task.domain_events()[0]
+                .as_any()
                 .downcast_ref::<TaskCompleted>()
                 .is_some()
         );
