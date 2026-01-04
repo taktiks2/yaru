@@ -110,8 +110,8 @@ pub async fn handle_task_command(
     tag_repo: Arc<dyn TagRepository>,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => handle_list(task_repo, filter).await,
-        TaskCommands::Show { id } => handle_show(task_repo, id).await,
+        TaskCommands::List { filter } => handle_list(task_repo, tag_repo, filter).await,
+        TaskCommands::Show { id } => handle_show(task_repo, tag_repo, id).await,
         TaskCommands::Add {
             title,
             description,
@@ -159,9 +159,10 @@ pub async fn handle_task_command(
 /// タスク一覧を表示
 async fn handle_list(
     task_repo: Arc<dyn TaskRepository>,
+    tag_repo: Arc<dyn TagRepository>,
     _filter: Option<Vec<Filter>>,
 ) -> Result<()> {
-    let use_case = ListTasksUseCase::new(task_repo);
+    let use_case = ListTasksUseCase::new(task_repo, tag_repo);
     let tasks = use_case.execute().await?;
 
     // TODO: フィルタ処理を実装
@@ -177,8 +178,12 @@ async fn handle_list(
 }
 
 /// タスクの詳細を表示
-async fn handle_show(task_repo: Arc<dyn TaskRepository>, id: i32) -> Result<()> {
-    let use_case = ShowTaskUseCase::new(task_repo);
+async fn handle_show(
+    task_repo: Arc<dyn TaskRepository>,
+    tag_repo: Arc<dyn TagRepository>,
+    id: i32,
+) -> Result<()> {
+    let use_case = ShowTaskUseCase::new(task_repo, tag_repo);
     let task = use_case.execute(id).await?;
 
     let table = create_task_detail_table(&task);
@@ -364,7 +369,7 @@ async fn handle_edit(
         final_clear_due_date,
     ) = if is_interactive {
         // 対話モード: 既存のタスク情報を取得
-        let use_case = ShowTaskUseCase::new(task_repo.clone());
+        let use_case = ShowTaskUseCase::new(task_repo.clone(), tag_repo.clone());
         let current_task = use_case.execute(id).await?;
 
         let table = create_task_detail_table(&current_task);
@@ -453,7 +458,7 @@ async fn handle_edit(
                     .collect();
 
                 // 既存のタグIDを取得
-                let current_tag_ids: Vec<i32> = current_task.tags.clone();
+                let current_tag_ids: Vec<i32> = current_task.tags.iter().map(|t| t.id).collect();
 
                 // デフォルト選択のインデックスを計算
                 let default_indices: Vec<usize> = tag_options

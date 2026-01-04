@@ -2,7 +2,7 @@ use crate::{
     application::dto::task_dto::TaskDTO,
     interface::cli::display::format::{
         format_date, format_local_time, format_optional_datetime, format_optional_text,
-        format_tag_ids, truncate_text,
+        format_tags, truncate_text,
     },
 };
 use comfy_table::{Table, presets::UTF8_FULL};
@@ -37,7 +37,7 @@ pub fn create_task_detail_table(task: &TaskDTO) -> Table {
     table.add_row(vec!["説明", &format_optional_text(&task.description)]);
     table.add_row(vec!["ステータス", &task.status]);
     table.add_row(vec!["優先度", &task.priority]);
-    table.add_row(vec!["タグ", &format_tag_ids(&task.tags, ", ")]);
+    table.add_row(vec!["タグ", &format_tags(&task.tags, ", ")]);
     table.add_row(vec!["期限", &format_date(&task.due_date)]);
     table.add_row(vec![
         "完了日時",
@@ -75,7 +75,7 @@ fn build_table_with_preset(headers: Vec<&str>, rows: Vec<Vec<String>>) -> Table 
 /// # 戻り値
 /// タスクの1行分のデータ（文字列のベクタ）
 fn create_task_row(task: &TaskDTO) -> Vec<String> {
-    let tags_str = format_tag_ids(&task.tags, ",");
+    let tags_str = format_tags(&task.tags, ",");
     let description = truncate_text(&format_optional_text(&task.description), 20);
     let due_date_str = format_date(&task.due_date);
     let completed_at_str = format_optional_datetime(&task.completed_at);

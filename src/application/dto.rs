@@ -4,4 +4,4 @@ pub mod task_dto;
 
 pub use stats_dto::StatsDTO;
 pub use tag_dto::{CreateTagDTO, TagDTO, UpdateTagDTO};
-pub use task_dto::{CreateTaskDTO, TaskDTO, UpdateTaskDTO};
+pub use task_dto::{CreateTaskDTO, TagInfo, TaskDTO, UpdateTaskDTO};

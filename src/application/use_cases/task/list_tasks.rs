@@ -1,18 +1,35 @@
-use crate::{application::dto::TaskDTO, domain::task::repository::TaskRepository};
+use crate::{
+    application::dto::task_dto::{TagInfo, TaskDTO},
+    domain::{
+        tag::repository::TagRepository,
+        task::{aggregate::TaskAggregate, repository::TaskRepository},
+    },
+};
 use anyhow::Result;
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 /// ListTasksUseCase - タスク一覧取得のユースケース
 ///
 /// 全タスクを取得してDTOに変換します。
+/// タグ情報はTagRepositoryから一括取得し、N+1問題を回避します。
 pub struct ListTasksUseCase {
     task_repository: Arc<dyn TaskRepository>,
+    tag_repository: Arc<dyn TagRepository>,
 }
 
 impl ListTasksUseCase {
     /// 新しいListTasksUseCaseを作成
-    pub fn new(task_repository: Arc<dyn TaskRepository>) -> Self {
-        Self { task_repository }
+    pub fn new(
+        task_repository: Arc<dyn TaskRepository>,
+        tag_repository: Arc<dyn TagRepository>,
+    ) -> Self {
+        Self {
+            task_repository,
+            tag_repository,
+        }
     }
 
     /// タスク一覧を取得する
@@ -21,8 +38,53 @@ impl ListTasksUseCase {
     /// * `Ok(Vec<TaskDTO>)` - タスクのリスト
     /// * `Err` - エラーが発生した場合
     pub async fn execute(&self) -> Result<Vec<TaskDTO>> {
+        // 1. 全タスクを取得
         let tasks = self.task_repository.find_all().await?;
-        Ok(tasks.into_iter().map(TaskDTO::from).collect())
+
+        // 2. 全タスクのタグIDを収集（重複排除）
+        let all_tag_ids: HashSet<_> = tasks
+            .iter()
+            .flat_map(|task| task.tags().iter().copied())
+            .collect();
+
+        // 3. タグ情報を一括取得（N+1問題の回避）
+        let tag_ids_vec: Vec<_> = all_tag_ids.into_iter().collect();
+        let tags = self.tag_repository.find_by_ids(&tag_ids_vec).await?;
+
+        // 4. TagId -> TagAggregateのマップを作成
+        let tag_map: HashMap<_, _> = tags.iter().map(|tag| (tag.id().value(), tag)).collect();
+
+        // 5. TaskDTOに変換（タグ詳細を含む）
+        let task_dtos = tasks
+            .into_iter()
+            .map(|task| self.to_dto_with_tags(&task, &tag_map))
+            .collect();
+
+        Ok(task_dtos)
+    }
+
+    /// TaskAggregateをTaskDTOに変換（タグ詳細を含む）
+    fn to_dto_with_tags(
+        &self,
+        task: &TaskAggregate,
+        tag_map: &HashMap<i32, &crate::domain::tag::aggregate::TagAggregate>,
+    ) -> TaskDTO {
+        // タグ情報を解決
+        let tag_details = task
+            .tags()
+            .iter()
+            .filter_map(|tag_id| {
+                tag_map.get(&tag_id.value()).map(|tag| TagInfo {
+                    id: tag.id().value(),
+                    name: tag.name().value().to_string(),
+                })
+            })
+            .collect();
+
+        // TaskDTOに変換
+        let mut dto = TaskDTO::from(task.clone());
+        dto.tags = tag_details;
+        dto
     }
 }
 
@@ -33,13 +95,14 @@ mod tests {
         aggregate::TaskAggregate,
         value_objects::{Priority, Status, TaskDescription, TaskTitle},
     };
-    use crate::interface::persistence::in_memory::InMemoryTaskRepository;
+    use crate::interface::persistence::in_memory::{InMemoryTagRepository, InMemoryTaskRepository};
 
     #[tokio::test]
     async fn test_list_tasks_empty() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
-        let use_case = ListTasksUseCase::new(task_repo);
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -54,6 +117,7 @@ mod tests {
     async fn test_list_tasks_single() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         let task = TaskAggregate::new(
             TaskTitle::new("タスク1").unwrap(),
@@ -65,7 +129,7 @@ mod tests {
         );
         task_repo.save(task).await.unwrap();
 
-        let use_case = ListTasksUseCase::new(task_repo);
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -84,6 +148,7 @@ mod tests {
     async fn test_list_tasks_multiple() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         let task1 = TaskAggregate::new(
             TaskTitle::new("タスク1").unwrap(),
@@ -116,7 +181,7 @@ mod tests {
         task_repo.save(task2).await.unwrap();
         task_repo.save(task3).await.unwrap();
 
-        let use_case = ListTasksUseCase::new(task_repo);
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;
@@ -137,6 +202,7 @@ mod tests {
     async fn test_list_tasks_with_different_statuses() {
         // Arrange
         let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
 
         let pending_task = TaskAggregate::new(
             TaskTitle::new("Pendingタスク").unwrap(),
@@ -169,7 +235,7 @@ mod tests {
         task_repo.save(in_progress_task).await.unwrap();
         task_repo.save(completed_task).await.unwrap();
 
-        let use_case = ListTasksUseCase::new(task_repo);
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
 
         // Act
         let result = use_case.execute().await;

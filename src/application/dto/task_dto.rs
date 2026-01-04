@@ -5,6 +5,16 @@ use crate::domain::task::{
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
+/// タグ参照情報を表すDTO
+///
+/// タスク表示時に必要な最小限のタグ情報（IDと名前のみ）を保持します。
+/// TagDTOとは異なり、description, created_at, updated_atは含みません。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TagInfo {
+    pub id: i32,
+    pub name: String,
+}
+
 /// タスクの読み取り専用表現（DTO）
 ///
 /// Use CaseからPresentation層への出力に使用されます。
@@ -16,7 +26,7 @@ pub struct TaskDTO {
     pub description: Option<String>,
     pub status: String,
     pub priority: String,
-    pub tags: Vec<i32>,
+    pub tags: Vec<TagInfo>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub due_date: Option<NaiveDate>,
@@ -50,6 +60,9 @@ pub struct UpdateTaskDTO {
 }
 
 // TaskAggregateからTaskDTOへの変換
+//
+// 注意: tagsフィールドは空のVecとして初期化されます。
+// タグ情報の解決はユースケース層で行います（TagRepositoryを使用）。
 impl From<TaskAggregate> for TaskDTO {
     fn from(task: TaskAggregate) -> Self {
         Self {
@@ -62,7 +75,7 @@ impl From<TaskAggregate> for TaskDTO {
             },
             status: status_to_string(task.status()),
             priority: priority_to_string(task.priority()),
-            tags: task.tags().iter().map(|tag_id| tag_id.value()).collect(),
+            tags: Vec::new(), // タグ情報はユースケース層で設定
             created_at: *task.created_at(),
             updated_at: *task.updated_at(),
             due_date: task.due_date().as_ref().map(|dd| dd.value()),
@@ -119,7 +132,7 @@ mod tests {
         assert_eq!(dto.description, Some("テスト説明".to_string()));
         assert_eq!(dto.status, "pending");
         assert_eq!(dto.priority, "high");
-        assert_eq!(dto.tags, Vec::<i32>::new());
+        assert_eq!(dto.tags, Vec::<TagInfo>::new()); // From実装では空
         assert_eq!(dto.due_date, None);
         assert_eq!(dto.completed_at, None);
         // created_at, updated_atは現在時刻なので、存在することだけを確認
@@ -140,7 +153,8 @@ mod tests {
 
         let dto = TaskDTO::from(task);
 
-        assert_eq!(dto.tags, vec![1, 2]);
+        // From実装ではタグ情報は空（ユースケース層で設定される）
+        assert_eq!(dto.tags, Vec::<TagInfo>::new());
         assert_eq!(dto.status, "in_progress");
         assert_eq!(dto.priority, "medium");
     }

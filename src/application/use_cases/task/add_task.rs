@@ -1,5 +1,5 @@
 use crate::{
-    application::dto::{CreateTaskDTO, TaskDTO},
+    application::dto::{CreateTaskDTO, TagInfo, TaskDTO},
     domain::{
         tag::repository::TagRepository,
         task::{
@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use anyhow::{Result, bail};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// AddTaskUseCase - タスク追加のユースケース
 ///
@@ -119,8 +119,33 @@ impl AddTaskUseCase {
         // リポジトリに保存
         let saved_task = self.task_repository.save(task).await?;
 
+        // タグ情報を取得（既に検証済みなので安全）
+        let tag_ids: Vec<_> = saved_task.tags().clone();
+        let tags = if !tag_ids.is_empty() {
+            self.tag_repository.find_by_ids(&tag_ids).await?
+        } else {
+            Vec::new()
+        };
+
+        // タグマップを作成
+        let tag_map: HashMap<_, _> = tags.iter().map(|tag| (tag.id().value(), tag)).collect();
+
+        // タグ詳細を解決
+        let tag_details = saved_task
+            .tags()
+            .iter()
+            .filter_map(|tag_id| {
+                tag_map.get(&tag_id.value()).map(|tag| TagInfo {
+                    id: tag.id().value(),
+                    name: tag.name().value().to_string(),
+                })
+            })
+            .collect();
+
         // DTOに変換して返す
-        Ok(TaskDTO::from(saved_task))
+        let mut dto = TaskDTO::from(saved_task);
+        dto.tags = tag_details;
+        Ok(dto)
     }
 }
 
@@ -200,7 +225,9 @@ mod tests {
         assert_eq!(task.description, Some("詳細な説明".to_string()));
         assert_eq!(task.status, "in_progress");
         assert_eq!(task.priority, "high");
-        assert_eq!(task.tags, vec![saved_tag.id().value()]);
+        assert_eq!(task.tags.len(), 1);
+        assert_eq!(task.tags[0].id, saved_tag.id().value());
+        assert_eq!(task.tags[0].name, saved_tag.name().value());
         assert!(task.due_date.is_some());
     }
 

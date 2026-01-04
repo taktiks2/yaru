@@ -1,3 +1,4 @@
+use crate::application::dto::task_dto::TagInfo;
 use chrono::{DateTime, Local, NaiveDate, Utc};
 
 /// UTC時間を現地時間に変換してフォーマット
@@ -50,22 +51,21 @@ pub fn format_optional_datetime(dt: &Option<DateTime<Utc>>) -> String {
         .unwrap_or_else(|| "-".to_string())
 }
 
-/// タグIDリストを表示用文字列に変換
+/// タグ情報リストを表示用文字列に変換
 ///
 /// # 引数
-/// - `tag_ids`: タグIDのスライス
-/// - `separator`: タグIDを結合する区切り文字
+/// - `tags`: タグ情報のスライス
+/// - `separator`: タグ名を結合する区切り文字
 ///
 /// # 戻り値
 /// - タグが空の場合: "-"
-/// - それ以外の場合: タグIDを区切り文字で結合した文字列
-pub fn format_tag_ids(tag_ids: &[i32], separator: &str) -> String {
-    if tag_ids.is_empty() {
+/// - それ以外の場合: タグ名を区切り文字で結合した文字列
+pub fn format_tags(tags: &[TagInfo], separator: &str) -> String {
+    if tags.is_empty() {
         "-".to_string()
     } else {
-        tag_ids
-            .iter()
-            .map(|id| id.to_string())
+        tags.iter()
+            .map(|tag| tag.name.clone())
             .collect::<Vec<_>>()
             .join(separator)
     }

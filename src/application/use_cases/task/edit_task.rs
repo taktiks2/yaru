@@ -1,15 +1,17 @@
 use crate::{
-    application::dto::{TaskDTO, UpdateTaskDTO},
+    application::dto::{TagInfo, TaskDTO, UpdateTaskDTO},
     domain::{
         tag::{repository::TagRepository, value_objects::TagId},
         task::{
             repository::TaskRepository,
-            value_objects::{DueDate, Priority, Status, TaskDescription, TaskId, TaskTitle},
+            value_objects::{
+                DueDate, Priority, Status, TaskDescription, TaskId as TaskIdVO, TaskTitle,
+            },
         },
     },
 };
 use anyhow::{Result, bail};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// EditTaskUseCase - タスク更新のユースケース
 ///
@@ -41,7 +43,7 @@ impl EditTaskUseCase {
     /// * `Ok(TaskDTO)` - 更新されたタスク
     /// * `Err` - エラーが発生した場合
     pub async fn execute(&self, id: i32, dto: UpdateTaskDTO) -> Result<TaskDTO> {
-        let task_id = TaskId::new(id)?;
+        let task_id = TaskIdVO::new(id)?;
 
         // タスクを取得
         let mut task = self
@@ -117,8 +119,33 @@ impl EditTaskUseCase {
         // リポジトリに保存
         let updated_task = self.task_repository.update(task).await?;
 
+        // タグ情報を取得
+        let tag_ids: Vec<_> = updated_task.tags().clone();
+        let tags = if !tag_ids.is_empty() {
+            self.tag_repository.find_by_ids(&tag_ids).await?
+        } else {
+            Vec::new()
+        };
+
+        // タグマップを作成
+        let tag_map: HashMap<_, _> = tags.iter().map(|tag| (tag.id().value(), tag)).collect();
+
+        // タグ詳細を解決
+        let tag_details = updated_task
+            .tags()
+            .iter()
+            .filter_map(|tag_id| {
+                tag_map.get(&tag_id.value()).map(|tag| TagInfo {
+                    id: tag.id().value(),
+                    name: tag.name().value().to_string(),
+                })
+            })
+            .collect();
+
         // DTOに変換して返す
-        Ok(TaskDTO::from(updated_task))
+        let mut dto = TaskDTO::from(updated_task);
+        dto.tags = tag_details;
+        Ok(dto)
     }
 }
 
@@ -441,8 +468,18 @@ mod tests {
         assert!(result.is_ok());
         let updated_task = result.unwrap();
         assert_eq!(updated_task.tags.len(), 2);
-        assert!(updated_task.tags.contains(&saved_tag1.id().value()));
-        assert!(updated_task.tags.contains(&saved_tag2.id().value()));
+        assert!(
+            updated_task
+                .tags
+                .iter()
+                .any(|t| t.id == saved_tag1.id().value())
+        );
+        assert!(
+            updated_task
+                .tags
+                .iter()
+                .any(|t| t.id == saved_tag2.id().value())
+        );
     }
 
     #[tokio::test]
