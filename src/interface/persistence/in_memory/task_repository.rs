@@ -1,24 +1,26 @@
-use anyhow::{Result, bail};
-use std::sync::{Arc, RwLock};
-
+#[cfg(test)]
 use crate::domain::task::{
     aggregate::TaskAggregate, repository::TaskRepository, specification::TaskSpecification,
     value_objects::TaskId,
 };
+#[cfg(test)]
+use anyhow::{Result, bail};
+#[cfg(test)]
+use std::sync::{Arc, RwLock};
 
 /// InMemoryTaskRepository - テスト用のタスクリポジトリ実装
 ///
 /// メモリ上にタスクを保持します。本番環境では使用しないでください。
 #[derive(Clone)]
-#[allow(dead_code)]
+#[cfg(test)]
 pub struct InMemoryTaskRepository {
     tasks: Arc<RwLock<Vec<TaskAggregate>>>,
     next_id: Arc<RwLock<i32>>,
 }
 
+#[cfg(test)]
 impl InMemoryTaskRepository {
     /// 新しいInMemoryTaskRepositoryを作成
-    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             tasks: Arc::new(RwLock::new(Vec::new())),
@@ -27,7 +29,6 @@ impl InMemoryTaskRepository {
     }
 
     /// 次のIDを生成
-    #[allow(dead_code)]
     fn generate_id(&self) -> Result<i32> {
         let mut next_id = self.next_id.write().unwrap();
         let id = *next_id;
@@ -36,6 +37,7 @@ impl InMemoryTaskRepository {
     }
 }
 
+#[cfg(test)]
 impl Default for InMemoryTaskRepository {
     fn default() -> Self {
         Self::new()
@@ -43,6 +45,7 @@ impl Default for InMemoryTaskRepository {
 }
 
 #[async_trait::async_trait]
+#[cfg(test)]
 impl TaskRepository for InMemoryTaskRepository {
     async fn find_by_id(&self, id: &TaskId) -> Result<Option<TaskAggregate>> {
         let tasks = self.tasks.read().unwrap();

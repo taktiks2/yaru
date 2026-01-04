@@ -1,23 +1,25 @@
-use anyhow::{Result, bail};
-use std::sync::{Arc, RwLock};
-
+#[cfg(test)]
 use crate::domain::tag::{
     aggregate::TagAggregate, repository::TagRepository, value_objects::TagId,
 };
+#[cfg(test)]
+use anyhow::{Result, bail};
+#[cfg(test)]
+use std::sync::{Arc, RwLock};
 
 /// InMemoryTagRepository - テスト用のタグリポジトリ実装
 ///
 /// メモリ上にタグを保持します。本番環境では使用しないでください。
 #[derive(Clone)]
-#[allow(dead_code)]
+#[cfg(test)]
 pub struct InMemoryTagRepository {
     tags: Arc<RwLock<Vec<TagAggregate>>>,
     next_id: Arc<RwLock<i32>>,
 }
 
+#[cfg(test)]
 impl InMemoryTagRepository {
     /// 新しいInMemoryTagRepositoryを作成
-    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             tags: Arc::new(RwLock::new(Vec::new())),
@@ -26,7 +28,6 @@ impl InMemoryTagRepository {
     }
 
     /// 次のIDを生成
-    #[allow(dead_code)]
     fn generate_id(&self) -> Result<i32> {
         let mut next_id = self.next_id.write().unwrap();
         let id = *next_id;
@@ -35,6 +36,7 @@ impl InMemoryTagRepository {
     }
 }
 
+#[cfg(test)]
 impl Default for InMemoryTagRepository {
     fn default() -> Self {
         Self::new()
@@ -42,6 +44,7 @@ impl Default for InMemoryTagRepository {
 }
 
 #[async_trait::async_trait]
+#[cfg(test)]
 impl TagRepository for InMemoryTagRepository {
     async fn find_by_id(&self, id: &TagId) -> Result<Option<TagAggregate>> {
         let tags = self.tags.read().unwrap();

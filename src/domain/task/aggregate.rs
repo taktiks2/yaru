@@ -7,6 +7,7 @@ use crate::domain::{
 };
 use anyhow::{Result, bail};
 use chrono::{DateTime, Utc};
+use std::any::Any;
 
 /// TaskAggregate の再構築用パラメータ
 ///
@@ -41,7 +42,7 @@ pub struct TaskAggregate {
     due_date: Option<DueDate>,
     completed_at: Option<DateTime<Utc>>,
     // Domain Events
-    domain_events: Vec<Box<dyn std::any::Any + Send + Sync>>,
+    domain_events: Vec<Box<dyn Any + Send + Sync>>,
 }
 
 impl Clone for TaskAggregate {
@@ -319,7 +320,7 @@ impl TaskAggregate {
 
     /// ドメインイベントを取得します
     #[allow(dead_code)]
-    pub fn domain_events(&self) -> &Vec<Box<dyn std::any::Any + Send + Sync>> {
+    pub fn domain_events(&self) -> &Vec<Box<dyn Any + Send + Sync>> {
         &self.domain_events
     }
 
