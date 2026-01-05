@@ -496,4 +496,252 @@ mod tests {
         // Act & Assert
         assert!(complex_spec.is_satisfied_by(&task));
     }
+
+    // TaskByKeyword のテストケース
+
+    #[test]
+    fn test_task_by_keyword_single_keyword_title_match() {
+        // Arrange: タイトルに「買い物」を含むタスク
+        let title = TaskTitle::new("買い物リスト").unwrap();
+        let description = TaskDescription::new("牛乳を買う").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec!["買い物".to_string()], SearchField::All);
+
+        // Act & Assert: タイトルに含まれるのでマッチするはず
+        assert!(spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_single_keyword_title_case_insensitive() {
+        // Arrange: 大文字小文字を無視
+        let title = TaskTitle::new("Bug Report").unwrap();
+        let description = TaskDescription::new("").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec!["bug".to_string()], SearchField::All);
+
+        // Act & Assert: 大文字小文字を無視してマッチするはず
+        assert!(spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_single_keyword_description_match() {
+        // Arrange: 説明に「レポート」を含むタスク
+        let title = TaskTitle::new("週次作業").unwrap();
+        let description = TaskDescription::new("週次レポートを作成する").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec!["レポート".to_string()], SearchField::All);
+
+        // Act & Assert: 説明に含まれるのでマッチするはず
+        assert!(spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_field_title_only() {
+        // Arrange: タイトルのみ検索対象
+        let title = TaskTitle::new("買い物リスト").unwrap();
+        let description = TaskDescription::new("牛乳を買う").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act & Assert: タイトルに「買い物」があるのでマッチ
+        let spec_title = TaskByKeyword::new(vec!["買い物".to_string()], SearchField::Title);
+        assert!(spec_title.is_satisfied_by(&task));
+
+        // 説明の「牛乳」はタイトルにないのでマッチしない
+        let spec_milk = TaskByKeyword::new(vec!["牛乳".to_string()], SearchField::Title);
+        assert!(!spec_milk.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_field_description_only() {
+        // Arrange: 説明のみ検索対象
+        let title = TaskTitle::new("買い物リスト").unwrap();
+        let description = TaskDescription::new("牛乳を買う").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act & Assert: 説明に「牛乳」があるのでマッチ
+        let spec_milk = TaskByKeyword::new(vec!["牛乳".to_string()], SearchField::Description);
+        assert!(spec_milk.is_satisfied_by(&task));
+
+        // タイトルの「買い物」は説明にないのでマッチしない
+        let spec_shopping = TaskByKeyword::new(vec!["買い物".to_string()], SearchField::Description);
+        assert!(!spec_shopping.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_field_all() {
+        // Arrange: タイトルと説明の両方が検索対象
+        let title = TaskTitle::new("買い物リスト").unwrap();
+        let description = TaskDescription::new("牛乳を買う").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        // Act & Assert: タイトルに「買い物」があるのでマッチ
+        let spec_shopping = TaskByKeyword::new(vec!["買い物".to_string()], SearchField::All);
+        assert!(spec_shopping.is_satisfied_by(&task));
+
+        // 説明に「牛乳」があるのでマッチ
+        let spec_milk = TaskByKeyword::new(vec!["牛乳".to_string()], SearchField::All);
+        assert!(spec_milk.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_multiple_keywords_all_match() {
+        // Arrange: 複数キーワード（AND条件）
+        let title = TaskTitle::new("レポート作成").unwrap();
+        let description = TaskDescription::new("月次レポートを作成する").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(
+            vec!["レポート".to_string(), "作成".to_string()],
+            SearchField::All,
+        );
+
+        // Act & Assert: 両方のキーワードが含まれるのでマッチするはず
+        assert!(spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_multiple_keywords_partial_match() {
+        // Arrange: 複数キーワードのうち一部のみ含む
+        let title = TaskTitle::new("レポート作成").unwrap();
+        let description = TaskDescription::new("月次レポートを作成する").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(
+            vec!["レポート".to_string(), "提出".to_string()],
+            SearchField::All,
+        );
+
+        // Act & Assert: 「レポート」はあるが「提出」がないのでマッチしない
+        assert!(!spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_empty_keywords() {
+        // Arrange: 空のキーワードリスト
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("説明").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec![], SearchField::All);
+
+        // Act & Assert: 空のキーワードリストは全タスクにマッチ
+        assert!(spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_no_match() {
+        // Arrange: マッチしないキーワード
+        let title = TaskTitle::new("買い物リスト").unwrap();
+        let description = TaskDescription::new("牛乳を買う").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec!["会議".to_string()], SearchField::All);
+
+        // Act & Assert: 「会議」は含まれないのでマッチしない
+        assert!(!spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_japanese_keywords() {
+        // Arrange: 日本語キーワード
+        let title = TaskTitle::new("プロジェクト会議").unwrap();
+        let description = TaskDescription::new("次回のプロジェクト会議の議題を確認").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec!["プロジェクト".to_string()], SearchField::All);
+
+        // Act & Assert: 日本語キーワードが正しく動作する
+        assert!(spec.is_satisfied_by(&task));
+    }
+
+    #[test]
+    fn test_task_by_keyword_whitespace_keywords() {
+        // Arrange: 空白文字のみのキーワードは無視される
+        let title = TaskTitle::new("タスク").unwrap();
+        let description = TaskDescription::new("説明").unwrap();
+        let task = TaskAggregate::new(
+            title,
+            description,
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+        let spec = TaskByKeyword::new(vec!["  ".to_string(), "".to_string()], SearchField::All);
+
+        // Act & Assert: 空白のみのキーワードは除外され、空のキーワードリストとして扱われる
+        assert!(spec.is_satisfied_by(&task));
+    }
 }
