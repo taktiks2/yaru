@@ -45,8 +45,57 @@ impl SearchTasksUseCase {
     /// * `Ok(Vec<TaskDTO>)` - 検索結果のタスクリスト
     /// * `Err` - エラーが発生した場合
     pub async fn execute(&self, keywords: &str, field: SearchField) -> Result<Vec<TaskDTO>> {
-        // TODO: 実装予定
-        Ok(vec![])
+        // 1. キーワードを分割してSpecificationを作成
+        let keyword_vec: Vec<String> = keywords.split_whitespace().map(|s| s.to_string()).collect();
+        let spec = Box::new(TaskByKeyword::new(keyword_vec, field));
+
+        // 2. Specificationに基づいてタスクを検索
+        let tasks = self.task_repository.find_by_specification(spec).await?;
+
+        // 3. 全タスクのタグIDを収集（重複排除）
+        let all_tag_ids: HashSet<_> = tasks
+            .iter()
+            .flat_map(|task| task.tags().iter().copied())
+            .collect();
+
+        // 4. タグ情報を一括取得（N+1問題の回避）
+        let tag_ids_vec: Vec<_> = all_tag_ids.into_iter().collect();
+        let tags = self.tag_repository.find_by_ids(&tag_ids_vec).await?;
+
+        // 5. TagId -> TagAggregateのマップを作成
+        let tag_map: HashMap<_, _> = tags.iter().map(|tag| (tag.id().value(), tag)).collect();
+
+        // 6. TaskDTOに変換（タグ詳細を含む）
+        let task_dtos = tasks
+            .into_iter()
+            .map(|task| self.to_dto_with_tags(&task, &tag_map))
+            .collect();
+
+        Ok(task_dtos)
+    }
+
+    /// TaskAggregateをTaskDTOに変換（タグ詳細を含む）
+    fn to_dto_with_tags(
+        &self,
+        task: &crate::domain::task::aggregate::TaskAggregate,
+        tag_map: &HashMap<i32, &crate::domain::tag::aggregate::TagAggregate>,
+    ) -> TaskDTO {
+        // タグ情報を解決
+        let tag_details = task
+            .tags()
+            .iter()
+            .filter_map(|tag_id| {
+                tag_map.get(&tag_id.value()).map(|tag| TagInfo {
+                    id: tag.id().value(),
+                    name: tag.name().value().to_string(),
+                })
+            })
+            .collect();
+
+        // TaskDTOに変換
+        let mut dto = TaskDTO::from(task.clone());
+        dto.tags = tag_details;
+        dto
     }
 }
 
