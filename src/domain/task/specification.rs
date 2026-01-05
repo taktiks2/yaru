@@ -219,6 +219,86 @@ impl TaskSpecification for TaskOverdue {
     }
 }
 
+/// 検索対象フィールド
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SearchField {
+    /// タイトルのみ
+    Title,
+    /// 説明のみ
+    Description,
+    /// タイトルと説明の両方（デフォルト）
+    All,
+}
+
+/// キーワードでフィルタリング
+///
+/// # 使用シーン
+/// - タスクのタイトルや説明からキーワードで検索
+/// - 複数キーワードのAND検索（すべてのキーワードを含む）
+/// - 大文字小文字を区別しない検索
+///
+/// # 例
+/// ```rust,ignore
+/// // 「買い物」をタイトルと説明から検索
+/// let spec = TaskByKeyword::new(vec!["買い物".to_string()], SearchField::All);
+///
+/// // 「レポート」と「作成」の両方を含むタスクを検索（AND条件）
+/// let spec = TaskByKeyword::new(
+///     vec!["レポート".to_string(), "作成".to_string()],
+///     SearchField::All
+/// );
+/// ```
+#[derive(Debug, Clone)]
+pub struct TaskByKeyword {
+    keywords: Vec<String>,
+    field: SearchField,
+}
+
+impl TaskByKeyword {
+    pub fn new(keywords: Vec<String>, field: SearchField) -> Self {
+        // キーワードを小文字に正規化（大文字小文字を無視するため）
+        // 空白のみのキーワードは除外
+        let normalized_keywords: Vec<String> = keywords
+            .into_iter()
+            .map(|k| k.to_lowercase().trim().to_string())
+            .filter(|k| !k.is_empty())
+            .collect();
+
+        Self {
+            keywords: normalized_keywords,
+            field,
+        }
+    }
+
+    /// タスクのテキストを検索対象として取得
+    fn get_searchable_text(&self, task: &TaskAggregate) -> String {
+        let title = task.title().value();
+        let description = task.description().value();
+
+        match self.field {
+            SearchField::Title => title.to_lowercase(),
+            SearchField::Description => description.to_lowercase(),
+            SearchField::All => format!("{} {}", title, description).to_lowercase(),
+        }
+    }
+}
+
+impl TaskSpecification for TaskByKeyword {
+    fn is_satisfied_by(&self, task: &TaskAggregate) -> bool {
+        // キーワードが空の場合は全てマッチ
+        if self.keywords.is_empty() {
+            return true;
+        }
+
+        let searchable_text = self.get_searchable_text(task);
+
+        // すべてのキーワードが含まれているか（AND条件）
+        self.keywords
+            .iter()
+            .all(|keyword| searchable_text.contains(keyword))
+    }
+}
+
 /// IDでフィルタリング
 ///
 /// # 使用シーン
