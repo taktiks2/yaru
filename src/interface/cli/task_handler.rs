@@ -3,7 +3,8 @@ use crate::{
         dto::task_dto::{CreateTaskDTO, UpdateTaskDTO},
         use_cases::task::{
             add_task::AddTaskUseCase, delete_task::DeleteTaskUseCase, edit_task::EditTaskUseCase,
-            list_tasks::ListTasksUseCase, show_stats::ShowStatsUseCase, show_task::ShowTaskUseCase,
+            list_tasks::ListTasksUseCase, search_tasks::SearchTasksUseCase,
+            show_stats::ShowStatsUseCase, show_task::ShowTaskUseCase,
         },
     },
     domain::{
@@ -14,7 +15,7 @@ use crate::{
         },
     },
     interface::{
-        cli::args::{Filter, TaskCommands},
+        cli::args::{Filter, SearchFieldArg, TaskCommands},
         presentation::Presenter,
     },
 };
@@ -154,6 +155,9 @@ pub async fn handle_task_command(
             handle_edit(task_repo, tag_repo, presenter, id, params).await
         }
         TaskCommands::Stats => handle_stats(task_repo, tag_repo, presenter).await,
+        TaskCommands::Search { keywords, field } => {
+            handle_search(task_repo, tag_repo, presenter, keywords, field).await
+        }
     }
 }
 
@@ -573,6 +577,47 @@ async fn handle_stats(
     let stats = use_case.execute().await?;
 
     presenter.present_stats(&stats)?;
+
+    Ok(())
+}
+
+/// タスクをキーワードで検索
+async fn handle_search(
+    task_repo: Arc<dyn TaskRepository>,
+    tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
+    keywords: Option<String>,
+    field: SearchFieldArg,
+) -> Result<()> {
+    // 対話モード: キーワードが未指定の場合
+    let keywords = match keywords {
+        Some(kw) => kw,
+        None => {
+            inquire::Text::new("検索キーワード:")
+                .with_help_message("空白区切りで複数指定可能（AND条件）")
+                .prompt()
+                .context("キーワード入力がキャンセルされました")?
+        }
+    };
+
+    // キーワードが空の場合はエラー
+    if keywords.trim().is_empty() {
+        anyhow::bail!("検索キーワードを入力してください");
+    }
+
+    let search_field = field.into();
+    let use_case = SearchTasksUseCase::new(task_repo, tag_repo);
+    let tasks = use_case.execute(&keywords, search_field).await?;
+
+    if tasks.is_empty() {
+        println!(
+            "検索キーワード「{}」に一致するタスクが見つかりませんでした",
+            keywords
+        );
+    } else {
+        println!("検索結果 ({}件):", tasks.len());
+        presenter.present_task_list(&tasks)?;
+    }
 
     Ok(())
 }
