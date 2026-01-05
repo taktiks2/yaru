@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use std::str::FromStr;
 
 use crate::domain::task::value_objects::{Priority, Status};
+use crate::domain::task::specification::SearchField;
 
 /// フィルタ条件を表す構造体
 #[derive(Debug, Clone)]
@@ -123,6 +124,27 @@ pub enum Commands {
     },
 }
 
+/// 検索対象フィールド（CLI引数用）
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum SearchFieldArg {
+    /// タイトルのみ
+    Title,
+    /// 説明のみ
+    Description,
+    /// タイトルと説明の両方
+    All,
+}
+
+impl From<SearchFieldArg> for SearchField {
+    fn from(arg: SearchFieldArg) -> Self {
+        match arg {
+            SearchFieldArg::Title => Self::Title,
+            SearchFieldArg::Description => Self::Description,
+            SearchFieldArg::All => Self::All,
+        }
+    }
+}
+
 /// タスク管理用のサブコマンド
 #[derive(Subcommand, Debug)]
 pub enum TaskCommands {
@@ -194,6 +216,16 @@ pub enum TaskCommands {
     },
     /// タスクの統計情報を表示
     Stats,
+    /// キーワードでタスクを検索
+    Search {
+        /// 検索キーワード（空白区切りで複数指定可能、AND条件）
+        /// 省略時は対話モードで入力
+        keywords: Option<String>,
+
+        /// 検索対象フィールド（title, description, all）
+        #[arg(short, long, default_value = "all")]
+        field: SearchFieldArg,
+    },
 }
 
 /// タグ管理用のサブコマンド
@@ -256,5 +288,76 @@ mod tests {
         assert!(args.is_ok());
         let args = args.unwrap();
         assert!(args.command.is_some());
+    }
+
+    // SearchCommand のテストケース
+
+    #[test]
+    fn test_task_search_basic() {
+        // 基本的な検索のパース
+        let args = Args::try_parse_from(vec!["yaru", "task", "search", "買い物"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        if let Some(Commands::Task {
+            command: TaskCommands::Search { keywords, field },
+        }) = args.command
+        {
+            assert_eq!(keywords, Some("買い物".to_string()));
+            assert_eq!(field, SearchFieldArg::All); // デフォルト
+        } else {
+            panic!("Expected Task::Search command");
+        }
+    }
+
+    #[test]
+    fn test_task_search_multiple_keywords() {
+        // 複数キーワードのパース
+        let args = Args::try_parse_from(vec!["yaru", "task", "search", "レポート 作成"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        if let Some(Commands::Task {
+            command: TaskCommands::Search { keywords, field },
+        }) = args.command
+        {
+            assert_eq!(keywords, Some("レポート 作成".to_string()));
+            assert_eq!(field, SearchFieldArg::All);
+        } else {
+            panic!("Expected Task::Search command");
+        }
+    }
+
+    #[test]
+    fn test_task_search_field_title() {
+        // フィールドオプション付きのパース
+        let args =
+            Args::try_parse_from(vec!["yaru", "task", "search", "買い物", "--field", "title"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        if let Some(Commands::Task {
+            command: TaskCommands::Search { keywords, field },
+        }) = args.command
+        {
+            assert_eq!(keywords, Some("買い物".to_string()));
+            assert_eq!(field, SearchFieldArg::Title);
+        } else {
+            panic!("Expected Task::Search command");
+        }
+    }
+
+    #[test]
+    fn test_task_search_no_keywords() {
+        // キーワード省略時（対話モード）のパース
+        let args = Args::try_parse_from(vec!["yaru", "task", "search"]);
+        assert!(args.is_ok());
+        let args = args.unwrap();
+        if let Some(Commands::Task {
+            command: TaskCommands::Search { keywords, field },
+        }) = args.command
+        {
+            assert_eq!(keywords, None); // キーワードなし
+            assert_eq!(field, SearchFieldArg::All);
+        } else {
+            panic!("Expected Task::Search command");
+        }
     }
 }
