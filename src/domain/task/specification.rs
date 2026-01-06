@@ -678,7 +678,8 @@ mod tests {
         assert!(spec_milk.is_satisfied_by(&task));
 
         // タイトルの「買い物」は説明にないのでマッチしない
-        let spec_shopping = TaskByKeyword::new(vec!["買い物".to_string()], SearchField::Description);
+        let spec_shopping =
+            TaskByKeyword::new(vec!["買い物".to_string()], SearchField::Description);
         assert!(!spec_shopping.is_satisfied_by(&task));
     }
 

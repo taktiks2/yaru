@@ -2,8 +2,8 @@ use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
 use std::str::FromStr;
 
-use crate::domain::task::value_objects::{Priority, Status};
 use crate::domain::task::specification::SearchField;
+use crate::domain::task::value_objects::{Priority, Status};
 
 /// フィルタ条件を表す構造体
 #[derive(Debug, Clone)]

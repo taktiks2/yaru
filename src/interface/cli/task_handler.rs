@@ -592,12 +592,10 @@ async fn handle_search(
     // 対話モード: キーワードが未指定の場合
     let keywords = match keywords {
         Some(kw) => kw,
-        None => {
-            inquire::Text::new("検索キーワード:")
-                .with_help_message("空白区切りで複数指定可能（AND条件）")
-                .prompt()
-                .context("キーワード入力がキャンセルされました")?
-        }
+        None => inquire::Text::new("検索キーワード:")
+            .with_help_message("空白区切りで複数指定可能（AND条件）")
+            .prompt()
+            .context("キーワード入力がキャンセルされました")?,
     };
 
     // キーワードが空の場合はエラー

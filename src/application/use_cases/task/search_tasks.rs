@@ -102,13 +102,13 @@ impl SearchTasksUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::task::{
-        aggregate::TaskAggregate,
-        value_objects::{Priority, Status, TaskDescription, TaskTitle},
-    };
     use crate::domain::tag::{
         aggregate::TagAggregate,
         value_objects::{TagDescription, TagName},
+    };
+    use crate::domain::task::{
+        aggregate::TaskAggregate,
+        value_objects::{Priority, Status, TaskDescription, TaskTitle},
     };
     use crate::interface::persistence::in_memory::{InMemoryTagRepository, InMemoryTaskRepository};
 
