@@ -68,7 +68,7 @@ impl SearchTasksUseCase {
         // 6. TaskDTOに変換（タグ詳細を含む）
         let task_dtos = tasks
             .into_iter()
-            .map(|task| self.to_dto_with_tags(&task, &tag_map))
+            .map(|task| self.to_dto_with_tags(task, &tag_map))
             .collect();
 
         Ok(task_dtos)
@@ -77,7 +77,7 @@ impl SearchTasksUseCase {
     /// TaskAggregateをTaskDTOに変換（タグ詳細を含む）
     fn to_dto_with_tags(
         &self,
-        task: &crate::domain::task::aggregate::TaskAggregate,
+        task: crate::domain::task::aggregate::TaskAggregate,
         tag_map: &HashMap<i32, &crate::domain::tag::aggregate::TagAggregate>,
     ) -> TaskDTO {
         // タグ情報を解決
@@ -93,7 +93,7 @@ impl SearchTasksUseCase {
             .collect();
 
         // TaskDTOに変換
-        let mut dto = TaskDTO::from(task.clone());
+        let mut dto = TaskDTO::from(task);
         dto.tags = tag_details;
         dto
     }

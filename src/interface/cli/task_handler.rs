@@ -594,14 +594,18 @@ async fn handle_search(
         Some(kw) => kw,
         None => inquire::Text::new("検索キーワード:")
             .with_help_message("空白区切りで複数指定可能（AND条件）")
+            .with_validator(|input: &str| {
+                if input.trim().is_empty() {
+                    Ok(validator::Validation::Invalid(
+                        "キーワードを1文字以上入力してください。".into(),
+                    ))
+                } else {
+                    Ok(validator::Validation::Valid)
+                }
+            })
             .prompt()
             .context("キーワード入力がキャンセルされました")?,
     };
-
-    // キーワードが空の場合はエラー
-    if keywords.trim().is_empty() {
-        anyhow::bail!("検索キーワードを入力してください");
-    }
 
     let search_field = field.into();
     let use_case = SearchTasksUseCase::new(task_repo, tag_repo);
