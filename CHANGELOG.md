@@ -2,6 +2,28 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.11.0](https://github.com/taktiks2/yaru/compare/03d66ea62e6e082aebc80ff654dd75858b73c239..0.11.0) - 2026-01-10
+#### Features
+- task searchコマンドとハンドラを実装 - ([e2b5258](https://github.com/taktiks2/yaru/commit/e2b5258c9b81c78f6d2be7b593b80db9a070334f)) - taktiks2
+- SearchTasksUseCaseを実装 - ([aee3944](https://github.com/taktiks2/yaru/commit/aee39447637fec96e814df4e254af2dafba9a16b)) - taktiks2
+- TaskByKeywordSpecificationを実装 - ([36ed60f](https://github.com/taktiks2/yaru/commit/36ed60fb1506720b6f796fe3091fad8b761fca3a)) - taktiks2
+#### Tests
+- SearchCommandのパーステストを追加 - ([c137bad](https://github.com/taktiks2/yaru/commit/c137bad28f544bf6a9fa758edd52180ea2ddc145)) - taktiks2
+- SearchTasksUseCaseのテストを追加 - ([9922973](https://github.com/taktiks2/yaru/commit/9922973b6e3088f625344a39b5886c739c95f557)) - taktiks2
+- TaskByKeywordSpecificationのテストを追加 - ([03d66ea](https://github.com/taktiks2/yaru/commit/03d66ea62e6e082aebc80ff654dd75858b73c239)) - taktiks2
+#### Refactoring
+- コード品質とSAFETYコメントを追加 - ([2384cd0](https://github.com/taktiks2/yaru/commit/2384cd0d916760699cfc95db773e1f2210e9b0a6)) - taktiks2
+- タグ解決ロジックをTaskDTOに共通化 - ([1ac2585](https://github.com/taktiks2/yaru/commit/1ac2585ee16687bfe74a24ac0b543a9b4a4a73dd)) - taktiks2
+- レビュー指摘への対応 - ([41e09d6](https://github.com/taktiks2/yaru/commit/41e09d6f3cf3819208ff9568826b29e77e98d58c)) - taktiks2
+#### Miscellaneous Chores
+- (**deps**) bump lru from 0.16.2 to 0.16.3 (#52) - ([a175c1f](https://github.com/taktiks2/yaru/commit/a175c1f02565a8f4e78e6f3e59df84144b12f1fc)) - dependabot[bot]
+- (**deps**) bump clap from 4.5.53 to 4.5.54 (#48) - ([9e146cf](https://github.com/taktiks2/yaru/commit/9e146cfc11a3d6b8f5fddae8f7747c075ff2a925)) - dependabot[bot]
+- (**deps**) bump rsa from 0.9.9 to 0.9.10 (#49) - ([a96032e](https://github.com/taktiks2/yaru/commit/a96032e39256cf0126966cb5674699dc89db0fe6)) - dependabot[bot]
+- (**deps**) bump tokio from 1.48.0 to 1.49.0 (#47) - ([ae75f90](https://github.com/taktiks2/yaru/commit/ae75f9051b6a3805ccb731fd21719bf85a5ae162)) - dependabot[bot]
+- cargo fmtによるフォーマット適用 - ([944a4f1](https://github.com/taktiks2/yaru/commit/944a4f1230c88704ff867f474cc8c89651f366bd)) - taktiks2
+
+- - -
+
 ## [0.10.0](https://github.com/taktiks2/yaru/compare/c81ecdc7574572bb97274b7deb15da5ff541f4b6..0.10.0) - 2026-01-04
 #### Features
 - タスク一覧・詳細でタグ名を表示 - ([e6d154e](https://github.com/taktiks2/yaru/commit/e6d154e43ef30819ce65a37dd1fe265527baeed5)) - taktiks2
