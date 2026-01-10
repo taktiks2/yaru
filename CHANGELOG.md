@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.12.0](https://github.com/taktiks2/yaru/compare/8c022365978d36a88ae56946a9f1b119108e2e72..0.12.0) - 2026-01-10
+#### Features
+- プレゼンター・TUI・インフラ層を英語化 - ([aa0a003](https://github.com/taktiks2/yaru/commit/aa0a003fc2e4b6b510dcb57772a57a24f46fa591)) - taktiks2
+- CLI引数とヘルプメッセージを英語化 - ([146019e](https://github.com/taktiks2/yaru/commit/146019eebb018b21de7b8093286abc554889f5fb)) - taktiks2
+- CLI表示層のメッセージを英語化 - ([989d1dd](https://github.com/taktiks2/yaru/commit/989d1dda4d1a16592f68248e1a42958fd8d03c77)) - taktiks2
+- ドメイン層のメッセージを英語化 - ([8c02236](https://github.com/taktiks2/yaru/commit/8c022365978d36a88ae56946a9f1b119108e2e72)) - taktiks2
+#### Tests
+- アプリケーション層テストの期待値を英語化 - ([24aea53](https://github.com/taktiks2/yaru/commit/24aea533dc313c58bb5b83a0e130521f2d72e123)) - taktiks2
+#### Refactoring
+- インターフェースメッセージを英語化 - ([3f65527](https://github.com/taktiks2/yaru/commit/3f65527a99486363eaad0564655202159aff6143)) - taktiks2
+#### Styling
+- フォーマット - ([b53077a](https://github.com/taktiks2/yaru/commit/b53077a6b63037398f125e93a1ba838c41e6e055)) - taktiks2
+
+- - -
+
 ## [0.11.0](https://github.com/taktiks2/yaru/compare/03d66ea62e6e082aebc80ff654dd75858b73c239..0.11.0) - 2026-01-10
 #### Features
 - task searchコマンドとハンドラを実装 - ([e2b5258](https://github.com/taktiks2/yaru/commit/e2b5258c9b81c78f6d2be7b593b80db9a070334f)) - taktiks2
