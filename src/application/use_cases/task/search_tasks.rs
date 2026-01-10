@@ -1,5 +1,5 @@
 use crate::{
-    application::dto::task_dto::{TagInfo, TaskDTO},
+    application::dto::task_dto::TaskDTO,
     domain::{
         tag::repository::TagRepository,
         task::{
@@ -68,35 +68,12 @@ impl SearchTasksUseCase {
         // 6. TaskDTOに変換（タグ詳細を含む）
         let task_dtos = tasks
             .into_iter()
-            .map(|task| self.to_dto_with_tags(task, &tag_map))
+            .map(|task| TaskDTO::from_aggregate_with_tags(task, &tag_map))
             .collect();
 
         Ok(task_dtos)
     }
 
-    /// TaskAggregateをTaskDTOに変換（タグ詳細を含む）
-    fn to_dto_with_tags(
-        &self,
-        task: crate::domain::task::aggregate::TaskAggregate,
-        tag_map: &HashMap<i32, &crate::domain::tag::aggregate::TagAggregate>,
-    ) -> TaskDTO {
-        // タグ情報を解決
-        let tag_details = task
-            .tags()
-            .iter()
-            .filter_map(|tag_id| {
-                tag_map.get(&tag_id.value()).map(|tag| TagInfo {
-                    id: tag.id().value(),
-                    name: tag.name().value().to_string(),
-                })
-            })
-            .collect();
-
-        // TaskDTOに変換
-        let mut dto = TaskDTO::from(task);
-        dto.tags = tag_details;
-        dto
-    }
 }
 
 #[cfg(test)]
