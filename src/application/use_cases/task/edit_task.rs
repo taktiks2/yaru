@@ -418,7 +418,7 @@ mod tests {
 
         // Assert
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("無効な優先度"));
+        assert!(result.unwrap_err().to_string().contains("Invalid priority"));
     }
 
     #[tokio::test]

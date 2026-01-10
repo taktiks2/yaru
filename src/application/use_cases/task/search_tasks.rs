@@ -73,7 +73,6 @@ impl SearchTasksUseCase {
 
         Ok(task_dtos)
     }
-
 }
 
 #[cfg(test)]

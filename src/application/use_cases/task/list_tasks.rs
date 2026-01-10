@@ -1,9 +1,6 @@
 use crate::{
     application::dto::task_dto::TaskDTO,
-    domain::{
-        tag::repository::TagRepository,
-        task::repository::TaskRepository,
-    },
+    domain::{tag::repository::TagRepository, task::repository::TaskRepository},
 };
 use anyhow::Result;
 use std::{
@@ -62,7 +59,6 @@ impl ListTasksUseCase {
 
         Ok(task_dtos)
     }
-
 }
 
 #[cfg(test)]

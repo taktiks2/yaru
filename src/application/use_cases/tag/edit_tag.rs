@@ -38,7 +38,7 @@ impl EditTagUseCase {
             .tag_repository
             .find_by_id(&tag_id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("タグID {}は存在しません", id))?;
+            .ok_or_else(|| anyhow::anyhow!("Tag ID {} does not exist", id))?;
 
         // 名前の更新
         if let Some(name_str) = dto.name {
@@ -169,7 +169,7 @@ mod tests {
 
         // Assert
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("存在しません"));
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
 
     #[tokio::test]
