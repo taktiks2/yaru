@@ -15,7 +15,7 @@ use crate::{
         },
     },
     interface::{
-        cli::args::{Filter, SearchFieldArg, TaskCommands},
+        cli::args::{Filter, FilterKey, SearchFieldArg, TaskCommands},
         presentation::Presenter,
     },
 };
@@ -118,7 +118,9 @@ pub async fn handle_task_command(
     presenter: Arc<dyn Presenter>,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter } => handle_list(task_repo, tag_repo, presenter, filter).await,
+        TaskCommands::List { filter, sort, order } => {
+            handle_list(task_repo, tag_repo, presenter, filter, sort, order).await
+        }
         TaskCommands::Show { id } => handle_show(task_repo, tag_repo, presenter, id).await,
         TaskCommands::Add {
             title,
@@ -173,12 +175,35 @@ async fn handle_list(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
     presenter: Arc<dyn Presenter>,
-    _filter: Option<Vec<Filter>>,
+    filter: Option<Vec<Filter>>,
+    sort: Option<crate::interface::cli::args::SortKey>,
+    order: Option<crate::interface::cli::args::Order>,
 ) -> Result<()> {
     let use_case = ListTasksUseCase::new(task_repo, tag_repo);
-    let tasks = use_case.execute().await?;
+    let mut tasks = use_case.execute().await?;
 
-    // TODO: フィルタ処理を実装
+    // フィルタ処理
+    if let Some(filters) = filter {
+        for f in filters {
+            tasks.retain(|task| match &f.key {
+                FilterKey::Status => task.status == f.value,
+                FilterKey::Priority => task.priority == f.value,
+                FilterKey::Tag => task
+                    .tags
+                    .iter()
+                    .any(|tag| tag.name == f.value || tag.id.to_string() == f.value),
+            });
+        }
+    }
+
+    // ソート処理
+    if let Some(sort_key) = sort {
+        let sort_order = order.unwrap_or(crate::interface::cli::args::Order::Asc);
+        tasks = use_case
+            .sort_tasks(tasks, sort_key, sort_order)
+            .context("ソート処理に失敗しました")?;
+    }
+
     presenter.present_task_list(&tasks)?;
 
     Ok(())
