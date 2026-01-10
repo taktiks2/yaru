@@ -35,7 +35,6 @@ pub trait TaskRepository: Send + Sync {
     /// # Returns
     /// * `Ok(Vec<TaskAggregate>)` - 条件を満たすタスクのリスト
     /// * `Err` - エラーが発生した場合
-    #[allow(dead_code)]
     async fn find_by_specification(
         &self,
         spec: Box<dyn TaskSpecification>,

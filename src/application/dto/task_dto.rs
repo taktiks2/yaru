@@ -1,9 +1,13 @@
-use crate::domain::task::{
-    aggregate::TaskAggregate,
-    value_objects::{Priority, Status},
+use crate::domain::{
+    tag::aggregate::TagAggregate,
+    task::{
+        aggregate::TaskAggregate,
+        value_objects::{Priority, Status},
+    },
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// タグ参照情報を表すDTO
 ///
@@ -81,6 +85,38 @@ impl From<TaskAggregate> for TaskDTO {
             due_date: task.due_date().as_ref().map(|dd| dd.value()),
             completed_at: *task.completed_at(),
         }
+    }
+}
+
+impl TaskDTO {
+    /// TaskAggregateをTaskDTOに変換（タグ詳細を含む）
+    ///
+    /// # Arguments
+    /// * `task` - 変換元のTaskAggregate
+    /// * `tag_map` - TagId -> TagAggregateのマップ（タグ情報解決用）
+    ///
+    /// # Returns
+    /// タグ情報が解決されたTaskDTO
+    pub fn from_aggregate_with_tags(
+        task: TaskAggregate,
+        tag_map: &HashMap<i32, &TagAggregate>,
+    ) -> Self {
+        // タグ情報を解決
+        let tag_details = task
+            .tags()
+            .iter()
+            .filter_map(|tag_id| {
+                tag_map.get(&tag_id.value()).map(|tag| TagInfo {
+                    id: tag.id().value(),
+                    name: tag.name().value().to_string(),
+                })
+            })
+            .collect();
+
+        // TaskDTOに変換（既存のFrom実装を活用）
+        let mut dto = TaskDTO::from(task);
+        dto.tags = tag_details;
+        dto
     }
 }
 
@@ -239,5 +275,104 @@ mod tests {
         assert_eq!(dto.status, Some("completed".to_string()));
         assert_eq!(dto.description, None);
         assert_eq!(dto.priority, None);
+    }
+
+    #[test]
+    fn test_from_aggregate_with_tags_empty_tag_map() {
+        use crate::domain::tag::value_objects::TagId;
+        use std::collections::HashMap;
+
+        // タグIDを持つタスクを作成
+        let task = TaskAggregate::new(
+            TaskTitle::new("タスク").unwrap(),
+            TaskDescription::new("説明").unwrap(),
+            Status::Pending,
+            Priority::Medium,
+            vec![TagId::new(1).unwrap(), TagId::new(2).unwrap()],
+            None,
+        );
+
+        // 空のタグマップ
+        let tag_map: HashMap<i32, &crate::domain::tag::aggregate::TagAggregate> = HashMap::new();
+
+        // 変換実行
+        let dto = TaskDTO::from_aggregate_with_tags(task, &tag_map);
+
+        // タグマップが空なので、tagsも空
+        assert_eq!(dto.tags, Vec::<TagInfo>::new());
+    }
+
+    #[test]
+    fn test_from_aggregate_with_tags_with_tags() {
+        use crate::domain::tag::aggregate::TagAggregate;
+        use crate::domain::tag::value_objects::{TagDescription, TagId, TagName};
+        use std::collections::HashMap;
+
+        // タグを作成
+        let tag1 = TagAggregate::new(
+            TagName::new("仕事").unwrap(),
+            TagDescription::new("仕事関連").unwrap(),
+        );
+        let tag2 = TagAggregate::new(
+            TagName::new("緊急").unwrap(),
+            TagDescription::new("緊急対応").unwrap(),
+        );
+
+        // タスクを作成（タグIDは1と2）
+        let task = TaskAggregate::new(
+            TaskTitle::new("タスク").unwrap(),
+            TaskDescription::new("説明").unwrap(),
+            Status::Pending,
+            Priority::High,
+            vec![TagId::new(1).unwrap(), TagId::new(2).unwrap()],
+            None,
+        );
+
+        // タグマップを作成
+        let mut tag_map: HashMap<i32, &TagAggregate> = HashMap::new();
+        tag_map.insert(1, &tag1);
+        tag_map.insert(2, &tag2);
+
+        // 変換実行
+        let dto = TaskDTO::from_aggregate_with_tags(task, &tag_map);
+
+        // タグ情報が含まれていることを確認
+        assert_eq!(dto.tags.len(), 2);
+        assert!(dto.tags.iter().any(|t| t.name == "仕事"));
+        assert!(dto.tags.iter().any(|t| t.name == "緊急"));
+    }
+
+    #[test]
+    fn test_from_aggregate_with_tags_partial_tag_map() {
+        use crate::domain::tag::aggregate::TagAggregate;
+        use crate::domain::tag::value_objects::{TagDescription, TagId, TagName};
+        use std::collections::HashMap;
+
+        // タグを1つだけ作成
+        let tag1 = TagAggregate::new(
+            TagName::new("仕事").unwrap(),
+            TagDescription::new("仕事関連").unwrap(),
+        );
+
+        // タスクを作成（タグIDは1と2だが、タグマップには1のみ）
+        let task = TaskAggregate::new(
+            TaskTitle::new("タスク").unwrap(),
+            TaskDescription::new("説明").unwrap(),
+            Status::Pending,
+            Priority::Medium,
+            vec![TagId::new(1).unwrap(), TagId::new(2).unwrap()],
+            None,
+        );
+
+        // タグマップには1のみ登録
+        let mut tag_map: HashMap<i32, &TagAggregate> = HashMap::new();
+        tag_map.insert(1, &tag1);
+
+        // 変換実行
+        let dto = TaskDTO::from_aggregate_with_tags(task, &tag_map);
+
+        // タグマップに存在するタグのみが含まれる
+        assert_eq!(dto.tags.len(), 1);
+        assert_eq!(dto.tags[0].name, "仕事");
     }
 }

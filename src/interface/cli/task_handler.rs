@@ -3,7 +3,8 @@ use crate::{
         dto::task_dto::{CreateTaskDTO, UpdateTaskDTO},
         use_cases::task::{
             add_task::AddTaskUseCase, delete_task::DeleteTaskUseCase, edit_task::EditTaskUseCase,
-            list_tasks::ListTasksUseCase, show_stats::ShowStatsUseCase, show_task::ShowTaskUseCase,
+            list_tasks::ListTasksUseCase, search_tasks::SearchTasksUseCase,
+            show_stats::ShowStatsUseCase, show_task::ShowTaskUseCase,
         },
     },
     domain::{
@@ -14,7 +15,7 @@ use crate::{
         },
     },
     interface::{
-        cli::args::{Filter, TaskCommands},
+        cli::args::{Filter, SearchFieldArg, TaskCommands},
         presentation::Presenter,
     },
 };
@@ -43,6 +44,12 @@ struct EditTaskParams {
     tags: Option<Vec<i32>>,
     due_date: Option<NaiveDate>,
     clear_due_date: bool,
+}
+
+/// タスク検索のパラメータ
+struct SearchParams {
+    keywords: Option<String>,
+    field: SearchFieldArg,
 }
 
 /// タグ選択用のラッパー型
@@ -154,6 +161,10 @@ pub async fn handle_task_command(
             handle_edit(task_repo, tag_repo, presenter, id, params).await
         }
         TaskCommands::Stats => handle_stats(task_repo, tag_repo, presenter).await,
+        TaskCommands::Search { keywords, field } => {
+            let params = SearchParams { keywords, field };
+            handle_search(task_repo, tag_repo, presenter, params).await
+        }
     }
 }
 
@@ -284,6 +295,7 @@ async fn handle_add(
         } else {
             // 引数モード
             (
+                // SAFETY: is_interactive=falseの場合、params.titleはSomeであることが保証されている
                 params.title.unwrap(),
                 params.description.unwrap_or_default(),
                 params.status.unwrap_or(Status::Pending),
@@ -498,6 +510,7 @@ async fn handle_edit(
                 if choice == "期限をクリア" {
                     (None, true)
                 } else {
+                    // SAFETY: このブロックに入るのはcurrent_task.due_date.is_some()の時のみ
                     let new_date = DateSelect::new("期限を選択してください")
                         .with_default(current_task.due_date.unwrap())
                         .prompt()
@@ -573,6 +586,54 @@ async fn handle_stats(
     let stats = use_case.execute().await?;
 
     presenter.present_stats(&stats)?;
+
+    Ok(())
+}
+
+/// タスクをキーワードで検索
+async fn handle_search(
+    task_repo: Arc<dyn TaskRepository>,
+    tag_repo: Arc<dyn TagRepository>,
+    presenter: Arc<dyn Presenter>,
+    params: SearchParams,
+) -> Result<()> {
+    // 引数モードか対話モードか判定
+    let is_interactive = params.keywords.is_none();
+
+    let final_keywords = if is_interactive {
+        // 対話モード: キーワードを入力
+        inquire::Text::new("検索キーワード:")
+            .with_help_message("空白区切りで複数指定可能（AND条件）")
+            .with_validator(|input: &str| {
+                if input.trim().is_empty() {
+                    Ok(validator::Validation::Invalid(
+                        "キーワードを1文字以上入力してください。".into(),
+                    ))
+                } else {
+                    Ok(validator::Validation::Valid)
+                }
+            })
+            .prompt()
+            .context("キーワード入力がキャンセルされました")?
+    } else {
+        // 引数モード
+        // SAFETY: is_interactive=falseの場合、params.keywordsはSomeであることが保証されている
+        params.keywords.unwrap()
+    };
+
+    let search_field = params.field.into();
+    let use_case = SearchTasksUseCase::new(task_repo, tag_repo);
+    let tasks = use_case.execute(&final_keywords, search_field).await?;
+
+    if tasks.is_empty() {
+        println!(
+            "検索キーワード「{}」に一致するタスクが見つかりませんでした",
+            final_keywords
+        );
+    } else {
+        println!("検索結果 ({}件):", tasks.len());
+        presenter.present_task_list(&tasks)?;
+    }
 
     Ok(())
 }

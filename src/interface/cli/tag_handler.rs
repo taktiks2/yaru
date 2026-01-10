@@ -102,6 +102,7 @@ async fn handle_add(
         (n, d)
     } else {
         // 引数モード
+        // SAFETY: is_interactive=falseの場合、params.nameはSomeであることが保証されている
         (params.name.unwrap(), params.description.unwrap_or_default())
     };
 
