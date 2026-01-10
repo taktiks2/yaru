@@ -268,7 +268,7 @@ impl TaskAggregate {
     #[allow(dead_code)]
     pub fn add_tag(&mut self, tag_id: TagId) -> Result<()> {
         if self.tags.contains(&tag_id) {
-            bail!("タグID {} は既に追加されています", tag_id.value());
+            bail!("Tag ID {} is already added", tag_id.value());
         }
         self.tags.push(tag_id);
         self.updated_at = Utc::now();
@@ -289,7 +289,7 @@ impl TaskAggregate {
         self.tags.retain(|t| t != tag_id);
 
         if self.tags.len() == original_len {
-            bail!("タグID {} は存在しません", tag_id.value());
+            bail!("Tag ID {} does not exist", tag_id.value());
         }
 
         self.updated_at = Utc::now();

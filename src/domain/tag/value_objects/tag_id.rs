@@ -10,7 +10,7 @@ impl TagId {
     /// 新しいTagIdを作成
     pub fn new(value: i32) -> Result<Self> {
         if value < 0 {
-            anyhow::bail!("タグIDは0以上である必要があります");
+            anyhow::bail!("Tag ID must be 0 or greater");
         }
         Ok(Self(value))
     }

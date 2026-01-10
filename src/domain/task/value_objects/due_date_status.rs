@@ -14,14 +14,14 @@ pub enum DueDateStatus {
 }
 
 impl DueDateStatus {
-    /// 表示用の日本語名を取得
+    /// Get display name
     #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
-            DueDateStatus::Overdue => "期限切れ",
-            DueDateStatus::DueToday => "今日期限",
-            DueDateStatus::DueThisWeek => "今週期限",
-            DueDateStatus::NoDueDate => "期限なし",
+            DueDateStatus::Overdue => "Overdue",
+            DueDateStatus::DueToday => "Due Today",
+            DueDateStatus::DueThisWeek => "Due This Week",
+            DueDateStatus::NoDueDate => "No Due Date",
         }
     }
 }
@@ -58,9 +58,9 @@ mod tests {
 
     #[test]
     fn test_due_date_status_display() {
-        assert_eq!(DueDateStatus::Overdue.display_name(), "期限切れ");
-        assert_eq!(DueDateStatus::DueToday.display_name(), "今日期限");
-        assert_eq!(DueDateStatus::DueThisWeek.display_name(), "今週期限");
-        assert_eq!(DueDateStatus::NoDueDate.display_name(), "期限なし");
+        assert_eq!(DueDateStatus::Overdue.display_name(), "Overdue");
+        assert_eq!(DueDateStatus::DueToday.display_name(), "Due Today");
+        assert_eq!(DueDateStatus::DueThisWeek.display_name(), "Due This Week");
+        assert_eq!(DueDateStatus::NoDueDate.display_name(), "No Due Date");
     }
 }

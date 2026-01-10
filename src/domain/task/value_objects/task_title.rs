@@ -12,11 +12,11 @@ impl TaskTitle {
         let value = value.into();
 
         if value.trim().is_empty() {
-            anyhow::bail!("タイトルは空にできません");
+            anyhow::bail!("Title cannot be empty");
         }
 
         if value.len() > 100 {
-            anyhow::bail!("タイトルは100文字以内にしてください");
+            anyhow::bail!("Title must be 100 characters or less");
         }
 
         Ok(Self(value))
@@ -56,14 +56,14 @@ mod tests {
     fn test_task_title_empty() {
         let result = TaskTitle::new("");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("空"));
+        assert!(result.unwrap_err().to_string().contains("empty"));
     }
 
     #[test]
     fn test_task_title_whitespace_only() {
         let result = TaskTitle::new("   ");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("空"));
+        assert!(result.unwrap_err().to_string().contains("empty"));
     }
 
     #[test]
@@ -71,7 +71,7 @@ mod tests {
         let too_long = "a".repeat(101);
         let result = TaskTitle::new(&too_long);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("100文字"));
+        assert!(result.unwrap_err().to_string().contains("100 characters"));
     }
 
     #[test]

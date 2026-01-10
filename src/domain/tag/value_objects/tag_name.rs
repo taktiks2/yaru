@@ -11,10 +11,10 @@ impl TagName {
     pub fn new(value: impl Into<String>) -> Result<Self> {
         let value = value.into();
         if value.trim().is_empty() {
-            anyhow::bail!("タグ名は空にできません");
+            anyhow::bail!("Tag name cannot be empty");
         }
         if value.len() > 50 {
-            anyhow::bail!("タグ名は50文字以内にしてください");
+            anyhow::bail!("Tag name must be 50 characters or less");
         }
         Ok(Self(value))
     }
