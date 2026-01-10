@@ -88,13 +88,13 @@ async fn handle_add(
 
     let (final_name, final_description) = if is_interactive {
         // 対話モード
-        let n = Text::new("タグの名前を入力してください")
+        let n = Text::new("Enter tag name")
             .with_validator(validator::MinLengthValidator::new(1))
             .prompt()
-            .context("タグの名前の入力に失敗しました")?;
+            .context("Failed to input tag name")?;
 
         let d = params.description.unwrap_or_else(|| {
-            Editor::new("タグの説明を入力してください")
+            Editor::new("Enter tag description")
                 .prompt()
                 .unwrap_or_default()
         });
@@ -121,7 +121,7 @@ async fn handle_add(
     let created_tag = use_case.execute(dto).await?;
 
     presenter.present_success(&format!(
-        "タグを追加しました: [{}] {}",
+        "Tag added: [{}] {}",
         created_tag.id, created_tag.name
     ))?;
 
@@ -135,17 +135,17 @@ async fn handle_delete(
     id: i32,
 ) -> Result<()> {
     // 確認
-    let confirm = presenter.confirm(&format!("タグID {}を削除しますか？", id), false)?;
+    let confirm = presenter.confirm(&format!("Delete tag ID {}?", id), false)?;
 
     if !confirm {
-        presenter.present_success("削除をキャンセルしました")?;
+        presenter.present_success("Deletion cancelled")?;
         return Ok(());
     }
 
     let use_case = DeleteTagUseCase::new(tag_repo);
     use_case.execute(id).await?;
 
-    presenter.present_success(&format!("タグID {}を削除しました", id))?;
+    presenter.present_success(&format!("Tag ID {} deleted", id))?;
 
     Ok(())
 }
@@ -168,10 +168,10 @@ async fn handle_edit(
         println!(); // 空行を追加
 
         // 編集するフィールドを選択
-        let field_options = vec!["名前", "説明"];
+        let field_options = vec!["Name", "Description"];
 
         let selected_fields = MultiSelect::new(
-            "編集するフィールドを選択してください（スペースで選択、Enterで確定）",
+            "Select fields to edit (Space to select, Enter to confirm)",
             field_options,
         )
         .with_vim_mode(true)
@@ -179,21 +179,21 @@ async fn handle_edit(
         .unwrap_or_default();
 
         // 選択されたフィールドのみ編集
-        let new_name = if selected_fields.contains(&"名前") {
+        let new_name = if selected_fields.contains(&"Name") {
             Some(
-                Text::new("名前:")
+                Text::new("Name:")
                     .with_default(&current_tag.name)
                     .with_validator(validator::MinLengthValidator::new(1))
                     .prompt()
-                    .context("名前の入力に失敗しました")?,
+                    .context("Failed to input name")?,
             )
         } else {
             None
         };
 
-        let new_description = if selected_fields.contains(&"説明") {
+        let new_description = if selected_fields.contains(&"Description") {
             Some(
-                Editor::new("説明を入力してください")
+                Editor::new("Enter description")
                     .with_predefined_text(current_tag.description.as_deref().unwrap_or(""))
                     .prompt()
                     .unwrap_or_default(),
@@ -219,7 +219,7 @@ async fn handle_edit(
     let updated_tag = use_case.execute(id, dto).await?;
 
     presenter.present_success(&format!(
-        "タグを更新しました: [{}] {}",
+        "Tag updated: [{}] {}",
         updated_tag.id, updated_tag.name
     ))?;
 

@@ -50,7 +50,7 @@ impl EditTaskUseCase {
             .task_repository
             .find_by_id(&task_id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("タスクID {}は存在しません", id))?;
+            .ok_or_else(|| anyhow::anyhow!("Task ID {} does not exist", id))?;
 
         // タイトルの更新
         if let Some(title_str) = dto.title {
@@ -96,7 +96,7 @@ impl EditTaskUseCase {
 
                     for tag_id in &tag_ids {
                         if !found_ids.contains(tag_id) {
-                            bail!("タグID {}は存在しません", tag_id);
+                            bail!("Tag ID {} does not exist", tag_id);
                         }
                     }
                 }
@@ -210,7 +210,7 @@ mod tests {
 
         // Assert
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("存在しません"));
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
 
     #[tokio::test]
@@ -514,7 +514,7 @@ mod tests {
             result
                 .unwrap_err()
                 .to_string()
-                .contains("タグID 999は存在しません")
+                .contains("Tag ID 999 does not exist")
         );
     }
 

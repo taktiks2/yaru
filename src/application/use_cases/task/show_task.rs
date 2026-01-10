@@ -44,7 +44,7 @@ impl ShowTaskUseCase {
             .task_repository
             .find_by_id(&task_id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("タスクID {}は存在しません", id))?;
+            .ok_or_else(|| anyhow::anyhow!("Task ID {} does not exist", id))?;
 
         // タグ情報を取得
         let tag_ids: Vec<_> = task.tags().clone();
@@ -126,7 +126,7 @@ mod tests {
 
         // Assert
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("存在しません"));
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
 
     #[tokio::test]

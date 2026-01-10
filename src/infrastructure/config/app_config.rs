@@ -26,7 +26,7 @@ impl Default for StorageConfig {
 
 /// yaruの設定ディレクトリパスを取得
 fn get_yaru_dir() -> Result<PathBuf> {
-    let home = std::env::var("HOME").context("HOME環境変数が設定されていません")?;
+    let home = std::env::var("HOME").context("HOME environment variable is not set")?;
     Ok(PathBuf::from(home).join(".config").join("yaru"))
 }
 

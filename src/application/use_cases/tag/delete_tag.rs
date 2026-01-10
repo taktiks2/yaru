@@ -30,7 +30,7 @@ impl DeleteTagUseCase {
         let deleted = self.tag_repository.delete(&tag_id).await?;
 
         if !deleted {
-            anyhow::bail!("タグID {}は存在しません", id);
+            anyhow::bail!("Tag ID {} does not exist", id);
         }
 
         Ok(())
@@ -81,7 +81,7 @@ mod tests {
 
         // Assert
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("存在しません"));
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
 
     #[tokio::test]

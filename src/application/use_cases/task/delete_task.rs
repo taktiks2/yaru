@@ -30,7 +30,7 @@ impl DeleteTaskUseCase {
         let deleted = self.task_repository.delete(&task_id).await?;
 
         if !deleted {
-            bail!("タスクID {}は存在しません", id);
+            bail!("Task ID {} does not exist", id);
         }
 
         Ok(())
@@ -85,7 +85,7 @@ mod tests {
 
         // Assert
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("存在しません"));
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
 
     #[tokio::test]
