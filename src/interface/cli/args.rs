@@ -16,7 +16,12 @@ pub struct Filter {
 /// フィルタキーの種類
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterKey {
+    /// ステータスフィルタ
     Status,
+    /// 優先度フィルタ
+    Priority,
+    /// タグフィルタ
+    Tag,
 }
 
 impl FromStr for Filter {
@@ -33,6 +38,8 @@ impl FromStr for Filter {
 
         let key = match parts[0].to_lowercase().as_str() {
             "status" => FilterKey::Status,
+            "priority" => FilterKey::Priority,
+            "tag" => FilterKey::Tag,
             _ => return Err(format!("Unknown filter key: '{}'", parts[0])),
         };
 
@@ -40,6 +47,51 @@ impl FromStr for Filter {
             key,
             value: parts[1].to_string(),
         })
+    }
+}
+
+/// ソートキーの種類
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortKey {
+    /// 優先度でソート
+    Priority,
+    /// 期限日でソート
+    DueDate,
+    /// 作成日でソート
+    CreatedAt,
+}
+
+impl FromStr for SortKey {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "priority" => Ok(Self::Priority),
+            "due_date" => Ok(Self::DueDate),
+            "created_at" => Ok(Self::CreatedAt),
+            _ => Err(format!("Unknown sort key: '{}'", s)),
+        }
+    }
+}
+
+/// ソート順序
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Order {
+    /// 昇順
+    Asc,
+    /// 降順
+    Desc,
+}
+
+impl FromStr for Order {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "asc" => Ok(Self::Asc),
+            "desc" => Ok(Self::Desc),
+            _ => Err(format!("Unknown order: '{}'", s)),
+        }
     }
 }
 
@@ -149,6 +201,12 @@ pub enum TaskCommands {
         /// Filter conditions (e.g., status:done, status:pending)
         #[arg(short, long, value_parser = clap::value_parser!(Filter))]
         filter: Option<Vec<Filter>>,
+        /// Sort key (priority, due_date, created_at)
+        #[arg(short, long)]
+        sort: Option<SortKey>,
+        /// Sort order (asc, desc)
+        #[arg(short, long)]
+        order: Option<Order>,
     },
     /// Show task details
     Show {
@@ -355,5 +413,136 @@ mod tests {
         } else {
             panic!("Expected Task::Search command");
         }
+    }
+
+    // Filter のテストケース
+
+    #[test]
+    fn test_filter_parse_status() {
+        // ステータスフィルタのパース
+        let filter = Filter::from_str("status:pending");
+        assert!(filter.is_ok());
+        let filter = filter.unwrap();
+        assert_eq!(filter.key, FilterKey::Status);
+        assert_eq!(filter.value, "pending");
+    }
+
+    #[test]
+    fn test_filter_parse_priority() {
+        // 優先度フィルタのパース
+        let filter = Filter::from_str("priority:high");
+        assert!(filter.is_ok());
+        let filter = filter.unwrap();
+        assert_eq!(filter.key, FilterKey::Priority);
+        assert_eq!(filter.value, "high");
+    }
+
+    #[test]
+    fn test_filter_parse_tag() {
+        // タグフィルタのパース
+        let filter = Filter::from_str("tag:仕事");
+        assert!(filter.is_ok());
+        let filter = filter.unwrap();
+        assert_eq!(filter.key, FilterKey::Tag);
+        assert_eq!(filter.value, "仕事");
+    }
+
+    #[test]
+    fn test_filter_parse_invalid_format() {
+        // 無効なフォーマット
+        let filter = Filter::from_str("invalid");
+        assert!(filter.is_err());
+        assert!(filter.unwrap_err().contains("Invalid filter format"));
+    }
+
+    #[test]
+    fn test_filter_parse_unknown_key() {
+        // 未知のフィルタキー
+        let filter = Filter::from_str("unknown:value");
+        assert!(filter.is_err());
+        assert!(filter.unwrap_err().contains("Unknown filter key"));
+    }
+
+    #[test]
+    fn test_filter_parse_case_insensitive() {
+        // 大文字小文字を無視
+        let filter = Filter::from_str("STATUS:pending");
+        assert!(filter.is_ok());
+        let filter = filter.unwrap();
+        assert_eq!(filter.key, FilterKey::Status);
+    }
+
+    // SortKey のテストケース
+
+    #[test]
+    fn test_sort_key_parse_priority() {
+        // 優先度でソート
+        let sort_key = SortKey::from_str("priority");
+        assert!(sort_key.is_ok());
+        assert_eq!(sort_key.unwrap(), SortKey::Priority);
+    }
+
+    #[test]
+    fn test_sort_key_parse_due_date() {
+        // 期限日でソート
+        let sort_key = SortKey::from_str("due_date");
+        assert!(sort_key.is_ok());
+        assert_eq!(sort_key.unwrap(), SortKey::DueDate);
+    }
+
+    #[test]
+    fn test_sort_key_parse_created_at() {
+        // 作成日でソート
+        let sort_key = SortKey::from_str("created_at");
+        assert!(sort_key.is_ok());
+        assert_eq!(sort_key.unwrap(), SortKey::CreatedAt);
+    }
+
+    #[test]
+    fn test_sort_key_parse_case_insensitive() {
+        // 大文字小文字を無視
+        let sort_key = SortKey::from_str("PRIORITY");
+        assert!(sort_key.is_ok());
+        assert_eq!(sort_key.unwrap(), SortKey::Priority);
+    }
+
+    #[test]
+    fn test_sort_key_parse_invalid() {
+        // 無効なソートキー
+        let sort_key = SortKey::from_str("invalid");
+        assert!(sort_key.is_err());
+    }
+
+    // Order のテストケース
+
+    #[test]
+    fn test_order_parse_asc() {
+        // 昇順
+        let order = Order::from_str("asc");
+        assert!(order.is_ok());
+        assert_eq!(order.unwrap(), Order::Asc);
+    }
+
+    #[test]
+    fn test_order_parse_desc() {
+        // 降順
+        let order = Order::from_str("desc");
+        assert!(order.is_ok());
+        assert_eq!(order.unwrap(), Order::Desc);
+    }
+
+    #[test]
+    fn test_order_parse_case_insensitive() {
+        // 大文字小文字を無視
+        let order = Order::from_str("DESC");
+        assert!(order.is_ok());
+        assert_eq!(order.unwrap(), Order::Desc);
+    }
+
+    #[test]
+    fn test_order_parse_invalid() {
+        // 無効なオーダー
+        let order = Order::from_str("invalid");
+        assert!(order.is_err());
     }
 }

@@ -1,9 +1,11 @@
 use crate::{
     application::dto::task_dto::TaskDTO,
     domain::{tag::repository::TagRepository, task::repository::TaskRepository},
+    interface::cli::args::{Order, SortKey},
 };
 use anyhow::Result;
 use std::{
+    cmp::Ordering,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
@@ -58,6 +60,59 @@ impl ListTasksUseCase {
             .collect();
 
         Ok(task_dtos)
+    }
+
+    /// タスクをソートする
+    ///
+    /// # Arguments
+    /// * `tasks` - ソート対象のタスクリスト
+    /// * `sort_key` - ソートキー
+    /// * `order` - ソート順序
+    ///
+    /// # Returns
+    /// * `Ok(Vec<TaskDTO>)` - ソート済みのタスクリスト
+    /// * `Err` - エラーが発生した場合
+    pub fn sort_tasks(
+        &self,
+        mut tasks: Vec<TaskDTO>,
+        sort_key: SortKey,
+        order: Order,
+    ) -> Result<Vec<TaskDTO>> {
+        tasks.sort_by(|a, b| {
+            let cmp = match sort_key {
+                SortKey::Priority => {
+                    // 優先度の順序: Low < Medium < High
+                    let priority_order = |p: &str| match p {
+                        "low" => 0,
+                        "medium" => 1,
+                        "high" => 2,
+                        _ => 1, // デフォルトはmedium
+                    };
+                    priority_order(&a.priority).cmp(&priority_order(&b.priority))
+                }
+                SortKey::DueDate => {
+                    // 期限日でソート（None は最後）
+                    match (&a.due_date, &b.due_date) {
+                        (Some(a_date), Some(b_date)) => a_date.cmp(b_date),
+                        (Some(_), None) => Ordering::Less,
+                        (None, Some(_)) => Ordering::Greater,
+                        (None, None) => Ordering::Equal,
+                    }
+                }
+                SortKey::CreatedAt => {
+                    // 作成日時でソート
+                    a.created_at.cmp(&b.created_at)
+                }
+            };
+
+            // 降順の場合は比較結果を反転
+            match order {
+                Order::Asc => cmp,
+                Order::Desc => cmp.reverse(),
+            }
+        });
+
+        Ok(tasks)
     }
 }
 
@@ -223,5 +278,156 @@ mod tests {
         assert!(statuses.contains(&"pending".to_string()));
         assert!(statuses.contains(&"in_progress".to_string()));
         assert!(statuses.contains(&"completed".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_list_tasks_sorted_by_priority_asc() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+
+        let high_task = TaskAggregate::new(
+            TaskTitle::new("高優先度").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::High,
+            vec![],
+            None,
+        );
+
+        let low_task = TaskAggregate::new(
+            TaskTitle::new("低優先度").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::Low,
+            vec![],
+            None,
+        );
+
+        let medium_task = TaskAggregate::new(
+            TaskTitle::new("中優先度").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        task_repo.save(high_task).await.unwrap();
+        task_repo.save(low_task).await.unwrap();
+        task_repo.save(medium_task).await.unwrap();
+
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
+
+        // Act
+        let tasks = use_case.execute().await.unwrap();
+        let result = use_case.sort_tasks(tasks, SortKey::Priority, Order::Asc);
+
+        // Assert
+        assert!(result.is_ok());
+        let tasks = result.unwrap();
+        assert_eq!(tasks.len(), 3);
+
+        // 優先度の昇順でソートされていることを確認（Low < Medium < High）
+        assert_eq!(tasks[0].priority, "low");
+        assert_eq!(tasks[1].priority, "medium");
+        assert_eq!(tasks[2].priority, "high");
+    }
+
+    #[tokio::test]
+    async fn test_list_tasks_sorted_by_priority_desc() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+
+        let high_task = TaskAggregate::new(
+            TaskTitle::new("高優先度").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::High,
+            vec![],
+            None,
+        );
+
+        let low_task = TaskAggregate::new(
+            TaskTitle::new("低優先度").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::Low,
+            vec![],
+            None,
+        );
+
+        let medium_task = TaskAggregate::new(
+            TaskTitle::new("中優先度").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        task_repo.save(high_task).await.unwrap();
+        task_repo.save(low_task).await.unwrap();
+        task_repo.save(medium_task).await.unwrap();
+
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
+
+        // Act
+        let tasks = use_case.execute().await.unwrap();
+        let result = use_case.sort_tasks(tasks, SortKey::Priority, Order::Desc);
+
+        // Assert
+        assert!(result.is_ok());
+        let tasks = result.unwrap();
+        assert_eq!(tasks.len(), 3);
+
+        // 優先度の降順でソートされていることを確認（High > Medium > Low）
+        assert_eq!(tasks[0].priority, "high");
+        assert_eq!(tasks[1].priority, "medium");
+        assert_eq!(tasks[2].priority, "low");
+    }
+
+    #[tokio::test]
+    async fn test_list_tasks_sorted_by_created_at() {
+        // Arrange
+        let task_repo = Arc::new(InMemoryTaskRepository::new());
+        let tag_repo = Arc::new(InMemoryTagRepository::new());
+
+        let task1 = TaskAggregate::new(
+            TaskTitle::new("タスク1").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        let task2 = TaskAggregate::new(
+            TaskTitle::new("タスク2").unwrap(),
+            TaskDescription::new("").unwrap(),
+            Status::Pending,
+            Priority::Medium,
+            vec![],
+            None,
+        );
+
+        task_repo.save(task1).await.unwrap();
+        task_repo.save(task2).await.unwrap();
+
+        let use_case = ListTasksUseCase::new(task_repo, tag_repo);
+
+        // Act
+        let tasks = use_case.execute().await.unwrap();
+        let result = use_case.sort_tasks(tasks, SortKey::CreatedAt, Order::Asc);
+
+        // Assert
+        assert!(result.is_ok());
+        let tasks = result.unwrap();
+        assert_eq!(tasks.len(), 2);
+
+        // 作成日時の昇順でソートされていることを確認
+        assert_eq!(tasks[0].title, "タスク1");
+        assert_eq!(tasks[1].title, "タスク2");
     }
 }
