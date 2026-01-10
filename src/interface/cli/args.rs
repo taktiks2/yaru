@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::str::FromStr;
 
 use crate::domain::task::specification::SearchField;
@@ -125,7 +125,7 @@ pub enum Commands {
 }
 
 /// 検索対象フィールド（CLI引数用）
-#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum SearchFieldArg {
     /// タイトルのみ
     Title,

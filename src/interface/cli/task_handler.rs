@@ -46,6 +46,12 @@ struct EditTaskParams {
     clear_due_date: bool,
 }
 
+/// タスク検索のパラメータ
+struct SearchParams {
+    keywords: Option<String>,
+    field: SearchFieldArg,
+}
+
 /// タグ選択用のラッパー型
 ///
 /// `inquire::MultiSelect`で使用するために、タグIDと表示文字列をペアで保持します。
@@ -156,7 +162,8 @@ pub async fn handle_task_command(
         }
         TaskCommands::Stats => handle_stats(task_repo, tag_repo, presenter).await,
         TaskCommands::Search { keywords, field } => {
-            handle_search(task_repo, tag_repo, presenter, keywords, field).await
+            let params = SearchParams { keywords, field };
+            handle_search(task_repo, tag_repo, presenter, params).await
         }
     }
 }
@@ -288,6 +295,7 @@ async fn handle_add(
         } else {
             // 引数モード
             (
+                // SAFETY: is_interactive=falseの場合、params.titleはSomeであることが保証されている
                 params.title.unwrap(),
                 params.description.unwrap_or_default(),
                 params.status.unwrap_or(Status::Pending),
@@ -502,6 +510,7 @@ async fn handle_edit(
                 if choice == "期限をクリア" {
                     (None, true)
                 } else {
+                    // SAFETY: このブロックに入るのはcurrent_task.due_date.is_some()の時のみ
                     let new_date = DateSelect::new("期限を選択してください")
                         .with_default(current_task.due_date.unwrap())
                         .prompt()
@@ -586,13 +595,14 @@ async fn handle_search(
     task_repo: Arc<dyn TaskRepository>,
     tag_repo: Arc<dyn TagRepository>,
     presenter: Arc<dyn Presenter>,
-    keywords: Option<String>,
-    field: SearchFieldArg,
+    params: SearchParams,
 ) -> Result<()> {
-    // 対話モード: キーワードが未指定の場合
-    let keywords = match keywords {
-        Some(kw) => kw,
-        None => inquire::Text::new("検索キーワード:")
+    // 引数モードか対話モードか判定
+    let is_interactive = params.keywords.is_none();
+
+    let final_keywords = if is_interactive {
+        // 対話モード: キーワードを入力
+        inquire::Text::new("検索キーワード:")
             .with_help_message("空白区切りで複数指定可能（AND条件）")
             .with_validator(|input: &str| {
                 if input.trim().is_empty() {
@@ -604,17 +614,21 @@ async fn handle_search(
                 }
             })
             .prompt()
-            .context("キーワード入力がキャンセルされました")?,
+            .context("キーワード入力がキャンセルされました")?
+    } else {
+        // 引数モード
+        // SAFETY: is_interactive=falseの場合、params.keywordsはSomeであることが保証されている
+        params.keywords.unwrap()
     };
 
-    let search_field = field.into();
+    let search_field = params.field.into();
     let use_case = SearchTasksUseCase::new(task_repo, tag_repo);
-    let tasks = use_case.execute(&keywords, search_field).await?;
+    let tasks = use_case.execute(&final_keywords, search_field).await?;
 
     if tasks.is_empty() {
         println!(
             "検索キーワード「{}」に一致するタスクが見つかりませんでした",
-            keywords
+            final_keywords
         );
     } else {
         println!("検索結果 ({}件):", tasks.len());
