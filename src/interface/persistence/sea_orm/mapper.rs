@@ -27,7 +27,7 @@ impl TaskMapper {
             "Pending" => Status::Pending,
             "InProgress" => Status::InProgress,
             "Completed" => Status::Completed,
-            _ => anyhow::bail!("不明なステータス: {}", task_model.status),
+            _ => anyhow::bail!("Unknown status: {}", task_model.status),
         };
 
         // Priority変換
@@ -36,7 +36,7 @@ impl TaskMapper {
             "Medium" => Priority::Medium,
             "High" => Priority::High,
             "Critical" => Priority::Critical,
-            _ => anyhow::bail!("不明な優先度: {}", task_model.priority),
+            _ => anyhow::bail!("Unknown priority: {}", task_model.priority),
         };
 
         // TagId変換

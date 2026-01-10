@@ -52,12 +52,8 @@ impl FromStr for Filter {
 /// - `Ok(NaiveDate)`: パースに成功した場合
 /// - `Err(String)`: パースに失敗した場合、エラーメッセージを返す
 fn parse_date(s: &str) -> Result<NaiveDate, String> {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d").map_err(|e| {
-        format!(
-            "日付のパースに失敗しました: {}。YYYY-MM-DD形式で入力してください",
-            e
-        )
-    })
+    NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|e| format!("Failed to parse date: {}. Please use YYYY-MM-DD format", e))
 }
 
 /// 自然数（正の整数）をパースする関数
@@ -71,10 +67,10 @@ fn parse_date(s: &str) -> Result<NaiveDate, String> {
 fn parse_positive_id(s: &str) -> Result<i32, String> {
     let id: i32 = s
         .parse()
-        .map_err(|_| format!("IDは整数である必要があります: {}", s))?;
+        .map_err(|_| format!("ID must be an integer: {}", s))?;
 
     if id <= 0 {
-        return Err(format!("IDは1以上の自然数である必要があります: {}", id));
+        return Err(format!("ID must be a positive integer (>= 1): {}", id));
     }
 
     Ok(id)
@@ -91,7 +87,7 @@ fn parse_positive_id(s: &str) -> Result<i32, String> {
 fn parse_non_empty_string(s: &str) -> Result<String, String> {
     let trimmed = s.trim();
     if trimmed.is_empty() {
-        return Err("空文字列は指定できません".to_string());
+        return Err("Empty string is not allowed".to_string());
     }
     Ok(s.to_string())
 }
@@ -101,8 +97,8 @@ fn parse_non_empty_string(s: &str) -> Result<String, String> {
 #[command(
     name = "yaru",
     version,
-    about = "シンプルなタスク管理CLI",
-    long_about = "yaru は軽量で使いやすいコマンドラインタスク管理ツールです。\nタスクの追加、一覧表示、削除が簡単に行えます。"
+    about = "Simple task management CLI",
+    long_about = "yaru is a lightweight and easy-to-use command-line task management tool.\nYou can easily add, list, and delete tasks."
 )]
 pub struct Args {
     #[command(subcommand)]
@@ -112,12 +108,12 @@ pub struct Args {
 /// 実行可能なコマンド
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// タスク管理コマンド
+    /// Task management commands
     Task {
         #[command(subcommand)]
         command: TaskCommands,
     },
-    /// タグ管理コマンド
+    /// Tag management commands
     Tag {
         #[command(subcommand)]
         command: TagCommands,
@@ -148,81 +144,81 @@ impl From<SearchFieldArg> for SearchField {
 /// タスク管理用のサブコマンド
 #[derive(Subcommand, Debug)]
 pub enum TaskCommands {
-    /// タスク一覧を表示
+    /// List all tasks
     List {
-        /// フィルタ条件（例: status:done, status:pending）
+        /// Filter conditions (e.g., status:done, status:pending)
         #[arg(short, long, value_parser = clap::value_parser!(Filter))]
         filter: Option<Vec<Filter>>,
     },
-    /// タスクの詳細を表示
+    /// Show task details
     Show {
-        /// 詳細表示するタスクのID
+        /// Task ID to show
         #[arg(value_parser = parse_positive_id)]
         id: i32,
     },
-    /// 新しいタスクを追加
+    /// Add a new task
     Add {
-        /// タスクのタイトル
+        /// Task title
         #[arg(value_parser = parse_non_empty_string)]
         title: Option<String>,
-        /// タスクの説明
+        /// Task description
         #[arg(short, long, value_parser = parse_non_empty_string)]
         description: Option<String>,
-        /// タスクの状態
+        /// Task status
         #[arg(short, long)]
         status: Option<Status>,
-        /// タスクの優先度
+        /// Task priority
         #[arg(short, long)]
         priority: Option<Priority>,
-        /// タスクに紐づけるタグのID（カンマ区切り）
+        /// Tag IDs to attach (comma-separated)
         #[arg(long, value_delimiter = ',')]
         tags: Option<Vec<i32>>,
-        /// タスクの期限（YYYY-MM-DD形式）
+        /// Task due date (YYYY-MM-DD format)
         #[arg(long, value_parser = parse_date)]
         due_date: Option<NaiveDate>,
     },
-    /// 指定されたIDのタスクを削除
+    /// Delete a task by ID
     Delete {
-        /// 削除するタスクのID
+        /// Task ID to delete
         #[arg(value_parser = parse_positive_id)]
         id: i32,
     },
-    /// タスクを編集
+    /// Edit a task
     Edit {
-        /// 編集するタスクのID
+        /// Task ID to edit
         #[arg(value_parser = parse_positive_id)]
         id: i32,
-        /// タスクのタイトル
+        /// Task title
         #[arg(short, long, value_parser = parse_non_empty_string)]
         title: Option<String>,
-        /// タスクの説明
+        /// Task description
         #[arg(short, long, value_parser = parse_non_empty_string)]
         description: Option<String>,
-        /// タスクの状態
+        /// Task status
         #[arg(short, long)]
         status: Option<Status>,
-        /// タスクの優先度
+        /// Task priority
         #[arg(short, long)]
         priority: Option<Priority>,
-        /// タスクに紐づけるタグのID（カンマ区切り、完全置換）
+        /// Tag IDs to attach (comma-separated, replaces existing)
         #[arg(long, value_delimiter = ',')]
         tags: Option<Vec<i32>>,
-        /// タスクの期限（YYYY-MM-DD形式）
+        /// Task due date (YYYY-MM-DD format)
         #[arg(long, value_parser = parse_date)]
         due_date: Option<NaiveDate>,
-        /// 期限をクリア
+        /// Clear due date
         #[arg(long, conflicts_with = "due_date")]
         clear_due_date: bool,
     },
-    /// タスクの統計情報を表示
+    /// Show task statistics
     Stats,
-    /// キーワードでタスクを検索
+    /// Search tasks by keyword
     Search {
-        /// 検索キーワード（空白区切りで複数指定可能、AND条件）
-        /// 省略時は対話モードで入力
+        /// Search keywords (space-separated for AND condition)
+        /// Will prompt in interactive mode if omitted
         keywords: Option<String>,
 
-        /// 検索対象フィールド（title, description, all）
+        /// Search target field (title, description, all)
         #[arg(short, long, default_value = "all")]
         field: SearchFieldArg,
     },
@@ -231,38 +227,38 @@ pub enum TaskCommands {
 /// タグ管理用のサブコマンド
 #[derive(Subcommand, Debug)]
 pub enum TagCommands {
-    /// タグ一覧を表示
+    /// List all tags
     List,
-    /// タグの詳細を表示
+    /// Show tag details
     Show {
-        /// 詳細表示するタグのID
+        /// Tag ID to show
         #[arg(value_parser = parse_positive_id)]
         id: i32,
     },
-    /// 新しいタグを追加
+    /// Add a new tag
     Add {
-        /// タグの名前
+        /// Tag name
         #[arg(value_parser = parse_non_empty_string)]
         name: Option<String>,
-        /// タグの説明
+        /// Tag description
         #[arg(short, long, value_parser = parse_non_empty_string)]
         description: Option<String>,
     },
-    /// 指定されたIDのタグを削除
+    /// Delete a tag by ID
     Delete {
-        /// 削除するタグのID
+        /// Tag ID to delete
         #[arg(value_parser = parse_positive_id)]
         id: i32,
     },
-    /// タグを編集
+    /// Edit a tag
     Edit {
-        /// 編集するタグのID
+        /// Tag ID to edit
         #[arg(value_parser = parse_positive_id)]
         id: i32,
-        /// タグの名前
+        /// Tag name
         #[arg(short, long, value_parser = parse_non_empty_string)]
         name: Option<String>,
-        /// タグの説明
+        /// Tag description
         #[arg(short, long, value_parser = parse_non_empty_string)]
         description: Option<String>,
     },

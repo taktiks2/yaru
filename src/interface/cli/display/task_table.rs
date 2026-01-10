@@ -11,15 +11,15 @@ use comfy_table::{Table, presets::UTF8_FULL};
 pub fn create_task_table(tasks: &[TaskDTO]) -> Table {
     let headers = vec![
         "ID",
-        "タイトル",
-        "説明",
-        "ステータス",
-        "優先度",
-        "タグ",
-        "期限",
-        "完了日時",
-        "作成日",
-        "更新日",
+        "Title",
+        "Description",
+        "Status",
+        "Priority",
+        "Tags",
+        "Due Date",
+        "Completed At",
+        "Created At",
+        "Updated At",
     ];
 
     let rows: Vec<Vec<String>> = tasks.iter().map(create_task_row).collect();
@@ -33,18 +33,21 @@ pub fn create_task_detail_table(task: &TaskDTO) -> Table {
     table.load_preset(UTF8_FULL);
 
     table.add_row(vec!["ID", &task.id.to_string()]);
-    table.add_row(vec!["タイトル", &task.title]);
-    table.add_row(vec!["説明", &format_optional_text(&task.description)]);
-    table.add_row(vec!["ステータス", &task.status]);
-    table.add_row(vec!["優先度", &task.priority]);
-    table.add_row(vec!["タグ", &format_tags(&task.tags, ", ")]);
-    table.add_row(vec!["期限", &format_date(&task.due_date)]);
+    table.add_row(vec!["Title", &task.title]);
     table.add_row(vec![
-        "完了日時",
+        "Description",
+        &format_optional_text(&task.description),
+    ]);
+    table.add_row(vec!["Status", &task.status]);
+    table.add_row(vec!["Priority", &task.priority]);
+    table.add_row(vec!["Tags", &format_tags(&task.tags, ", ")]);
+    table.add_row(vec!["Due Date", &format_date(&task.due_date)]);
+    table.add_row(vec![
+        "Completed At",
         &format_optional_datetime(&task.completed_at),
     ]);
-    table.add_row(vec!["作成日", &format_local_time(&task.created_at)]);
-    table.add_row(vec!["更新日", &format_local_time(&task.updated_at)]);
+    table.add_row(vec!["Created At", &format_local_time(&task.created_at)]);
+    table.add_row(vec!["Updated At", &format_local_time(&task.updated_at)]);
 
     table
 }

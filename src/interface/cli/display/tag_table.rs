@@ -12,7 +12,7 @@ use comfy_table::{Table, presets::UTF8_FULL};
 /// # 戻り値
 /// フォーマットされたテーブル
 pub fn create_tag_table(tags: &[TagDTO]) -> Table {
-    let headers = vec!["ID", "名前", "説明", "作成日", "更新日"];
+    let headers = vec!["ID", "Name", "Description", "Created At", "Updated At"];
 
     let rows: Vec<Vec<String>> = tags.iter().map(create_tag_row).collect();
 
@@ -25,10 +25,10 @@ pub fn create_tag_detail_table(tag: &TagDTO) -> Table {
     table.load_preset(UTF8_FULL);
 
     table.add_row(vec!["ID", &tag.id.to_string()]);
-    table.add_row(vec!["名前", &tag.name]);
-    table.add_row(vec!["説明", &format_optional_text(&tag.description)]);
-    table.add_row(vec!["作成日", &format_local_time(&tag.created_at)]);
-    table.add_row(vec!["更新日", &format_local_time(&tag.updated_at)]);
+    table.add_row(vec!["Name", &tag.name]);
+    table.add_row(vec!["Description", &format_optional_text(&tag.description)]);
+    table.add_row(vec!["Created At", &format_local_time(&tag.created_at)]);
+    table.add_row(vec!["Updated At", &format_local_time(&tag.updated_at)]);
 
     table
 }

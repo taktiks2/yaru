@@ -38,7 +38,7 @@ impl Priority {
     #[allow(dead_code)]
     pub fn from_str_anyhow(s: &str) -> Result<Self> {
         s.parse()
-            .map_err(|_| anyhow::anyhow!("無効な優先度: {}", s))
+            .map_err(|_| anyhow::anyhow!("Invalid priority: {}", s))
     }
 
     /// 文字列表現を取得
@@ -52,14 +52,14 @@ impl Priority {
         }
     }
 
-    /// 日本語表示名を取得
+    /// 表示名を取得
     #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
-            Priority::Low => "低",
-            Priority::Medium => "中",
-            Priority::High => "高",
-            Priority::Critical => "重大",
+            Priority::Low => "Low",
+            Priority::Medium => "Medium",
+            Priority::High => "High",
+            Priority::Critical => "Critical",
         }
     }
 }
@@ -109,10 +109,10 @@ mod tests {
 
     #[test]
     fn test_priority_display() {
-        assert_eq!(Priority::Low.display_name(), "低");
-        assert_eq!(Priority::Medium.display_name(), "中");
-        assert_eq!(Priority::High.display_name(), "高");
-        assert_eq!(Priority::Critical.display_name(), "重大");
+        assert_eq!(Priority::Low.display_name(), "Low");
+        assert_eq!(Priority::Medium.display_name(), "Medium");
+        assert_eq!(Priority::High.display_name(), "High");
+        assert_eq!(Priority::Critical.display_name(), "Critical");
     }
 
     #[test]

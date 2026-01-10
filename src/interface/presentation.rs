@@ -55,9 +55,9 @@ impl Default for CliPresenter {
 impl Presenter for CliPresenter {
     fn present_task_list(&self, tasks: &[TaskDTO]) -> Result<()> {
         if tasks.is_empty() {
-            println!("タスクがありません");
+            println!("No tasks found");
         } else {
-            println!("タスク一覧 ({}件):", tasks.len());
+            println!("Task list ({} tasks):", tasks.len());
             let table = create_task_table(tasks);
             println!("{}", table);
         }
@@ -74,9 +74,9 @@ impl Presenter for CliPresenter {
 
     fn present_tag_list(&self, tags: &[TagDTO]) -> Result<()> {
         if tags.is_empty() {
-            println!("タグがありません");
+            println!("No tags found");
         } else {
-            println!("タグ一覧 ({}件):", tags.len());
+            println!("Tag list ({} tags):", tags.len());
             let table = create_tag_table(tags);
             println!("{}", table);
         }

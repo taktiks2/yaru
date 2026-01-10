@@ -73,7 +73,7 @@ impl StatsDTO {
         let mut tag_stats = HashMap::new();
         for (tag_id_opt, count) in stats.tag_stats() {
             let tag_name = match tag_id_opt {
-                None => "(タグなし)".to_string(),
+                None => "(No tags)".to_string(),
                 Some(tag_id) => tag_names
                     .get(tag_id)
                     .cloned()

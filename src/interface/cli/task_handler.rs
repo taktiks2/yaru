@@ -103,7 +103,7 @@ async fn validate_tag_ids(tag_repo: &Arc<dyn TagRepository>, tag_ids: &[i32]) ->
     // 存在しないIDを検出
     for id in tag_ids {
         if !found_ids.contains(id) {
-            anyhow::bail!("存在しないタグID: {}", id);
+            anyhow::bail!("Tag ID does not exist: {}", id);
         }
     }
 
@@ -217,35 +217,29 @@ async fn handle_add(
     let (final_title, final_description, final_status, final_priority, final_tags, final_due_date) =
         if is_interactive {
             // 対話モード
-            let t = Text::new("タスクのタイトルを入力してください")
+            let t = Text::new("Enter task title")
                 .with_validator(validator::MinLengthValidator::new(1))
                 .prompt()
-                .context("タスクのタイトルの入力に失敗しました")?;
+                .context("Failed to input task title")?;
 
             let d = params.description.unwrap_or_else(|| {
-                Editor::new("タスクの説明を入力してください")
+                Editor::new("Enter task description")
                     .prompt()
                     .unwrap_or_default()
             });
 
             let s = params.status.unwrap_or_else(|| {
-                Select::new(
-                    "ステータスを選択してください",
-                    Status::iter().collect::<Vec<_>>(),
-                )
-                .with_vim_mode(true)
-                .prompt()
-                .unwrap_or(Status::Pending)
+                Select::new("Select status", Status::iter().collect::<Vec<_>>())
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or(Status::Pending)
             });
 
             let p = params.priority.unwrap_or_else(|| {
-                Select::new(
-                    "優先度を選択してください",
-                    Priority::iter().collect::<Vec<_>>(),
-                )
-                .with_vim_mode(true)
-                .prompt()
-                .unwrap_or(Priority::Medium)
+                Select::new("Select priority", Priority::iter().collect::<Vec<_>>())
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or(Priority::Medium)
             });
 
             // タグ選択（対話モード）
@@ -264,7 +258,7 @@ async fn handle_add(
                         .collect();
 
                     let selected = MultiSelect::new(
-                        "タグを選択してください（スペースで選択、Enterで確定）",
+                        "Select tags (Space to select, Enter to confirm)",
                         tag_options,
                     )
                     .with_vim_mode(true)
@@ -280,12 +274,12 @@ async fn handle_add(
 
             // 期限選択
             let dd = params.due_date.or_else(|| {
-                if inquire::Confirm::new("期限を設定しますか？")
+                if inquire::Confirm::new("Set due date?")
                     .with_default(false)
                     .prompt()
                     .unwrap_or(false)
                 {
-                    DateSelect::new("期限を選択してください").prompt().ok()
+                    DateSelect::new("Select due date").prompt().ok()
                 } else {
                     None
                 }
@@ -320,7 +314,7 @@ async fn handle_add(
     let created_task = use_case.execute(dto).await?;
 
     presenter.present_success(&format!(
-        "タスクを追加しました: [{}] {}",
+        "Task added: [{}] {}",
         created_task.id, created_task.title
     ))?;
 
@@ -334,17 +328,17 @@ async fn handle_delete(
     id: i32,
 ) -> Result<()> {
     // 確認
-    let confirm = presenter.confirm(&format!("タスクID {}を削除しますか？", id), false)?;
+    let confirm = presenter.confirm(&format!("Delete task ID {}?", id), false)?;
 
     if !confirm {
-        presenter.present_success("削除をキャンセルしました")?;
+        presenter.present_success("Deletion cancelled")?;
         return Ok(());
     }
 
     let use_case = DeleteTaskUseCase::new(task_repo);
     use_case.execute(id).await?;
 
-    presenter.present_success(&format!("タスクID {id}を削除しました"))?;
+    presenter.present_success(&format!("Task ID {id} deleted"))?;
 
     Ok(())
 }
@@ -387,10 +381,17 @@ async fn handle_edit(
         println!(); // 空行を追加
 
         // 編集するフィールドを選択
-        let field_options = vec!["タイトル", "説明", "ステータス", "優先度", "タグ", "期限"];
+        let field_options = vec![
+            "Title",
+            "Description",
+            "Status",
+            "Priority",
+            "Tags",
+            "Due Date",
+        ];
 
         let selected_fields = MultiSelect::new(
-            "編集するフィールドを選択してください（スペースで選択、Enterで確定）",
+            "Select fields to edit (Space to select, Enter to confirm)",
             field_options,
         )
         .with_vim_mode(true)
@@ -398,21 +399,21 @@ async fn handle_edit(
         .unwrap_or_default();
 
         // 選択されたフィールドのみ編集
-        let new_title = if selected_fields.contains(&"タイトル") {
+        let new_title = if selected_fields.contains(&"Title") {
             Some(
-                Text::new("タイトル:")
+                Text::new("Title:")
                     .with_default(&current_task.title)
                     .with_validator(validator::MinLengthValidator::new(1))
                     .prompt()
-                    .context("タイトルの入力に失敗しました")?,
+                    .context("Failed to input title")?,
             )
         } else {
             None
         };
 
-        let new_description = if selected_fields.contains(&"説明") {
+        let new_description = if selected_fields.contains(&"Description") {
             Some(
-                Editor::new("説明を入力してください")
+                Editor::new("Enter description")
                     .with_predefined_text(current_task.description.as_deref().unwrap_or(""))
                     .prompt()
                     .unwrap_or_default(),
@@ -421,11 +422,11 @@ async fn handle_edit(
             None
         };
 
-        let new_status = if selected_fields.contains(&"ステータス") {
+        let new_status = if selected_fields.contains(&"Status") {
             let current_status =
                 Status::try_from(current_task.status.as_str()).unwrap_or(Status::Pending);
             Some(
-                Select::new("ステータス:", Status::iter().collect::<Vec<_>>())
+                Select::new("Status:", Status::iter().collect::<Vec<_>>())
                     .with_starting_cursor(
                         Status::iter()
                             .position(|s| s == current_status)
@@ -439,11 +440,11 @@ async fn handle_edit(
             None
         };
 
-        let new_priority = if selected_fields.contains(&"優先度") {
+        let new_priority = if selected_fields.contains(&"Priority") {
             let current_priority =
                 Priority::try_from(current_task.priority.as_str()).unwrap_or(Priority::Medium);
             Some(
-                Select::new("優先度:", Priority::iter().collect::<Vec<_>>())
+                Select::new("Priority:", Priority::iter().collect::<Vec<_>>())
                     .with_starting_cursor(
                         Priority::iter()
                             .position(|p| p == current_priority)
@@ -457,7 +458,7 @@ async fn handle_edit(
             None
         };
 
-        let new_tags = if selected_fields.contains(&"タグ") {
+        let new_tags = if selected_fields.contains(&"Tags") {
             let available_tags = tag_repo.find_all().await?;
             if !available_tags.is_empty() {
                 let tag_options: Vec<TagOption> = available_tags
@@ -480,7 +481,7 @@ async fn handle_edit(
                     .collect();
 
                 let selected = MultiSelect::new(
-                    "タグを選択してください（スペースで選択、Enterで確定）",
+                    "Select tags (Space to select, Enter to confirm)",
                     tag_options,
                 )
                 .with_default(&default_indices)
@@ -497,21 +498,21 @@ async fn handle_edit(
             None
         };
 
-        let (new_due_date, clear_due_date) = if selected_fields.contains(&"期限") {
+        let (new_due_date, clear_due_date) = if selected_fields.contains(&"Due Date") {
             if current_task.due_date.is_some() {
                 // 既存の期限がある場合、クリアするか新しい値を設定するか選択
-                let options = vec!["期限をクリア", "新しい期限を設定"];
-                let choice = Select::new("期限:", options)
+                let options = vec!["Clear due date", "Set new due date"];
+                let choice = Select::new("Due date:", options)
                     .with_starting_cursor(1) // デフォルトは「新しい期限を設定」
                     .with_vim_mode(true)
                     .prompt()
-                    .unwrap_or("新しい期限を設定");
+                    .unwrap_or("Set new due date");
 
-                if choice == "期限をクリア" {
+                if choice == "Clear due date" {
                     (None, true)
                 } else {
                     // SAFETY: このブロックに入るのはcurrent_task.due_date.is_some()の時のみ
-                    let new_date = DateSelect::new("期限を選択してください")
+                    let new_date = DateSelect::new("Select due date")
                         .with_default(current_task.due_date.unwrap())
                         .prompt()
                         .ok();
@@ -519,7 +520,7 @@ async fn handle_edit(
                 }
             } else {
                 // 既存の期限がない場合、新しく設定
-                let new_date = DateSelect::new("期限を選択してください").prompt().ok();
+                let new_date = DateSelect::new("Select due date").prompt().ok();
                 (new_date, false)
             }
         } else {
@@ -569,7 +570,7 @@ async fn handle_edit(
     let updated_task = use_case.execute(id, dto).await?;
 
     presenter.present_success(&format!(
-        "タスクを更新しました: [{}] {}",
+        "Task updated: [{}] {}",
         updated_task.id, updated_task.title
     ))?;
 
@@ -602,19 +603,21 @@ async fn handle_search(
 
     let final_keywords = if is_interactive {
         // 対話モード: キーワードを入力
-        inquire::Text::new("検索キーワード:")
-            .with_help_message("空白区切りで複数指定可能（AND条件）")
+        inquire::Text::new("Search keyword:")
+            .with_help_message(
+                "Multiple keywords can be specified separated by spaces (AND condition)",
+            )
             .with_validator(|input: &str| {
                 if input.trim().is_empty() {
                     Ok(validator::Validation::Invalid(
-                        "キーワードを1文字以上入力してください。".into(),
+                        "Please enter at least one character.".into(),
                     ))
                 } else {
                     Ok(validator::Validation::Valid)
                 }
             })
             .prompt()
-            .context("キーワード入力がキャンセルされました")?
+            .context("Keyword input was cancelled")?
     } else {
         // 引数モード
         // SAFETY: is_interactive=falseの場合、params.keywordsはSomeであることが保証されている
@@ -627,11 +630,11 @@ async fn handle_search(
 
     if tasks.is_empty() {
         println!(
-            "検索キーワード「{}」に一致するタスクが見つかりませんでした",
+            "No tasks found matching search keyword \"{}\"",
             final_keywords
         );
     } else {
-        println!("検索結果 ({}件):", tasks.len());
+        println!("Search results ({} items):", tasks.len());
         presenter.present_task_list(&tasks)?;
     }
 

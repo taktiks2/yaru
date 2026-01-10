@@ -40,12 +40,12 @@ async fn run_cli_with_command(command: Commands) -> Result<()> {
     // データベース接続を確立
     let db = DatabaseConnectionManager::connect_from_config(&config)
         .await
-        .context("データベース接続に失敗しました")?;
+        .context("Failed to connect to database")?;
 
     // マイグレーション実行
     Migrator::up(&db, None)
         .await
-        .context("マイグレーション実行に失敗しました")?;
+        .context("Failed to run migrations")?;
 
     // リポジトリを初期化
     let task_repo = Arc::new(SeaOrmTaskRepository::new(db.clone()));

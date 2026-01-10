@@ -27,7 +27,7 @@ impl DatabaseConnectionManager {
 
         Database::connect(opt)
             .await
-            .context("データベースへの接続に失敗しました")
+            .context("Failed to connect to database")
     }
 
     /// 設定からデータベース接続を作成

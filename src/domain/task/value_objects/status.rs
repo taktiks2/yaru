@@ -26,7 +26,7 @@ impl Status {
     /// 文字列から変換（anyhow::Result版）
     pub fn from_str_anyhow(s: &str) -> Result<Self> {
         s.parse()
-            .map_err(|_| anyhow::anyhow!("無効なステータス: {}", s))
+            .map_err(|_| anyhow::anyhow!("Invalid status: {}", s))
     }
 
     /// フィルタ値から変換
@@ -35,7 +35,7 @@ impl Status {
             "pending" | "todo" => Ok(Status::Pending),
             "in_progress" | "progress" => Ok(Status::InProgress),
             "completed" | "done" => Ok(Status::Completed),
-            _ => anyhow::bail!("無効なフィルタ値: {}", s),
+            _ => anyhow::bail!("Invalid filter value: {}", s),
         }
     }
 
@@ -49,13 +49,13 @@ impl Status {
         }
     }
 
-    /// 日本語表示名を取得
+    /// 表示名を取得
     #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
-            Status::Pending => "保留中",
-            Status::InProgress => "進行中",
-            Status::Completed => "完了",
+            Status::Pending => "Pending",
+            Status::InProgress => "In Progress",
+            Status::Completed => "Completed",
         }
     }
 }
@@ -134,9 +134,9 @@ mod tests {
 
     #[test]
     fn test_status_display() {
-        assert_eq!(Status::Pending.display_name(), "保留中");
-        assert_eq!(Status::InProgress.display_name(), "進行中");
-        assert_eq!(Status::Completed.display_name(), "完了");
+        assert_eq!(Status::Pending.display_name(), "Pending");
+        assert_eq!(Status::InProgress.display_name(), "In Progress");
+        assert_eq!(Status::Completed.display_name(), "Completed");
     }
 
     #[test]

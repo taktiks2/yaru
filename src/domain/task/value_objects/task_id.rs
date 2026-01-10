@@ -10,7 +10,7 @@ impl TaskId {
     /// 新しいTaskIdを作成
     pub fn new(value: i32) -> Result<Self> {
         if value < 0 {
-            anyhow::bail!("タスクIDは0以上である必要があります");
+            anyhow::bail!("Task ID must be 0 or greater");
         }
         Ok(Self(value))
     }
@@ -42,7 +42,12 @@ mod tests {
     fn test_task_id_negative() {
         let result = TaskId::new(-1);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("タスクIDは0以上"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Task ID must be 0 or greater")
+        );
     }
 
     #[test]
