@@ -40,7 +40,7 @@ fn create_due_date_summary(stats: &StatsDTO) -> String {
         .unwrap_or(0);
 
     format!(
-        "期限超過: {}件, 今日まで: {}件, 今週まで: {}件",
+        "Overdue: {} tasks, Due today: {} tasks, Due this week: {} tasks",
         overdue, due_today, due_this_week
     )
 }
@@ -57,19 +57,19 @@ fn create_status_detail_table(stats: &StatsDTO) -> Table {
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
     table.set_header(vec![
-        Cell::new("ステータス").add_attribute(Attribute::Bold),
-        Cell::new("件数")
+        Cell::new("Status").add_attribute(Attribute::Bold),
+        Cell::new("Count")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Right),
-        Cell::new("割合(%)")
+        Cell::new("Percentage (%)")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Right),
-        Cell::new("プログレス").add_attribute(Attribute::Bold),
+        Cell::new("Progress").add_attribute(Attribute::Bold),
     ]);
 
     // 定義済みの順序でステータスを表示
     let status_order = ["pending", "in_progress", "completed"];
-    let status_labels = ["保留中", "進行中", "完了"];
+    let status_labels = ["Pending", "In Progress", "Completed"];
 
     for (i, status_key) in status_order.iter().enumerate() {
         if let Some(&count) = stats.status_stats.get(*status_key) {
@@ -103,23 +103,23 @@ fn create_priority_status_matrix_table(stats: &StatsDTO) -> Table {
     // ヘッダー行（ステータス）
     table.set_header(vec![
         Cell::new("").add_attribute(Attribute::Bold),
-        Cell::new("保留中")
+        Cell::new("Pending")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Center),
-        Cell::new("進行中")
+        Cell::new("In Progress")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Center),
-        Cell::new("完了")
+        Cell::new("Completed")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Center),
-        Cell::new("合計")
+        Cell::new("Total")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Center),
     ]);
 
     // 優先度の順序と表示ラベル
     let priority_order = ["critical", "high", "medium", "low"];
-    let priority_labels = ["重大", "高", "中", "低"];
+    let priority_labels = ["Critical", "High", "Medium", "Low"];
     let status_order = ["pending", "in_progress", "completed"];
 
     let mut col_totals = vec![0, 0, 0]; // 各ステータスの合計
@@ -151,7 +151,7 @@ fn create_priority_status_matrix_table(stats: &StatsDTO) -> Table {
     }
 
     // 合計行を追加
-    let mut total_row = vec![Cell::new("合計").add_attribute(Attribute::Bold)];
+    let mut total_row = vec![Cell::new("Total").add_attribute(Attribute::Bold)];
     for total in &col_totals {
         total_row.push(
             Cell::new(total.to_string())
@@ -180,8 +180,8 @@ fn create_top_tags_table(stats: &StatsDTO, limit: usize) -> Table {
     let mut table = Table::new();
     table.load_preset(UTF8_FULL);
     table.set_header(vec![
-        Cell::new("タグ名").add_attribute(Attribute::Bold),
-        Cell::new("件数")
+        Cell::new("Tag Name").add_attribute(Attribute::Bold),
+        Cell::new("Count")
             .add_attribute(Attribute::Bold)
             .set_alignment(CellAlignment::Right),
     ]);
@@ -215,17 +215,17 @@ pub fn create_rich_stats_display(stats: &StatsDTO) -> String {
     let mut output = String::new();
 
     // タイトル
-    output.push_str(&create_title("タスク統計サマリー"));
+    output.push_str(&create_title("Task Statistics Summary"));
     output.push('\n');
     output.push('\n');
 
     // サマリーセクション
-    output.push_str(&format!("全タスク数: {}\n", stats.total_count));
+    output.push_str(&format!("Total tasks: {}\n", stats.total_count));
     output.push('\n');
 
     // ステータス別詳細テーブル（パーセンテージとプログレスバー付き）
     if !stats.status_stats.is_empty() {
-        output.push_str("【ステータス別】\n");
+        output.push_str("[By Status]\n");
         output.push_str(&create_status_detail_table(stats).to_string());
         output.push('\n');
         output.push('\n');
@@ -233,7 +233,7 @@ pub fn create_rich_stats_display(stats: &StatsDTO) -> String {
 
     // 優先度×ステータス マトリックステーブル
     if has_priority_status_data(stats) {
-        output.push_str("【優先度×ステータス マトリックス】\n");
+        output.push_str("[Priority × Status Matrix]\n");
         output.push_str(&create_priority_status_matrix_table(stats).to_string());
         output.push('\n');
         output.push('\n');
@@ -241,7 +241,7 @@ pub fn create_rich_stats_display(stats: &StatsDTO) -> String {
 
     // 期限関連（コンパクト表示）
     if !stats.due_date_stats.is_empty() {
-        output.push_str("【期限関連】\n");
+        output.push_str("[Due Dates]\n");
         output.push_str(&create_due_date_summary(stats));
         output.push('\n');
         output.push('\n');
@@ -249,7 +249,7 @@ pub fn create_rich_stats_display(stats: &StatsDTO) -> String {
 
     // トップタグ
     if !stats.tag_stats.is_empty() {
-        output.push_str("【トップタグ（上位5件）】\n");
+        output.push_str("[Top Tags (Top 5)]\n");
         output.push_str(&create_top_tags_table(stats, 5).to_string());
         output.push('\n');
     }
@@ -306,7 +306,10 @@ mod tests {
         };
 
         let summary = create_due_date_summary(&stats);
-        assert_eq!(summary, "期限超過: 5件, 今日まで: 2件, 今週まで: 8件");
+        assert_eq!(
+            summary,
+            "Overdue: 5 tasks, Due today: 2 tasks, Due this week: 8 tasks"
+        );
     }
 
     #[test]
@@ -321,7 +324,10 @@ mod tests {
         };
 
         let summary = create_due_date_summary(&stats);
-        assert_eq!(summary, "期限超過: 0件, 今日まで: 0件, 今週まで: 0件");
+        assert_eq!(
+            summary,
+            "Overdue: 0 tasks, Due today: 0 tasks, Due this week: 0 tasks"
+        );
     }
 
     #[test]
@@ -377,10 +383,10 @@ mod tests {
         let output = table.to_string();
 
         // ヘッダーが含まれることを確認
-        assert!(output.contains("ステータス"));
-        assert!(output.contains("件数"));
-        assert!(output.contains("割合"));
-        assert!(output.contains("プログレス"));
+        assert!(output.contains("Status"));
+        assert!(output.contains("Count"));
+        assert!(output.contains("Percentage"));
+        assert!(output.contains("Progress"));
 
         // データが含まれることを確認
         assert!(output.contains("15"));
@@ -408,7 +414,7 @@ mod tests {
         let output = table.to_string();
 
         // ヘッダーは存在するはず
-        assert!(output.contains("ステータス"));
+        assert!(output.contains("Status"));
     }
 
     #[test]
@@ -434,14 +440,14 @@ mod tests {
         let output = table.to_string();
 
         // ヘッダーが含まれることを確認
-        assert!(output.contains("保留中"));
-        assert!(output.contains("進行中"));
-        assert!(output.contains("完了"));
-        assert!(output.contains("合計"));
+        assert!(output.contains("Pending"));
+        assert!(output.contains("In Progress"));
+        assert!(output.contains("Completed"));
+        assert!(output.contains("Total"));
 
         // 優先度ラベルが含まれることを確認
-        assert!(output.contains("重大"));
-        assert!(output.contains("高"));
+        assert!(output.contains("Critical"));
+        assert!(output.contains("High"));
 
         // データが含まれることを確認
         assert!(output.contains("3"));
@@ -469,8 +475,8 @@ mod tests {
         let output = table.to_string();
 
         // ヘッダーと合計行が含まれることを確認
-        assert!(output.contains("保留中"));
-        assert!(output.contains("合計"));
+        assert!(output.contains("Pending"));
+        assert!(output.contains("Total"));
     }
 
     #[test]
@@ -560,14 +566,14 @@ mod tests {
         let display = create_rich_stats_display(&stats);
 
         // タイトルが含まれることを確認
-        assert!(display.contains("タスク統計サマリー"));
+        assert!(display.contains("Task Statistics Summary"));
 
         // 各セクションが含まれることを確認
-        assert!(display.contains("全タスク数: 42"));
-        assert!(display.contains("【ステータス別】"));
-        assert!(display.contains("【優先度×ステータス マトリックス】"));
-        assert!(display.contains("【期限関連】"));
-        assert!(display.contains("【トップタグ（上位5件）】"));
+        assert!(display.contains("Total tasks: 42"));
+        assert!(display.contains("[By Status]"));
+        assert!(display.contains("[Priority × Status Matrix]"));
+        assert!(display.contains("[Due Dates]"));
+        assert!(display.contains("[Top Tags (Top 5)]"));
 
         // プログレスバーが含まれることを確認
         assert!(display.contains("█"));
@@ -588,7 +594,7 @@ mod tests {
         let display = create_rich_stats_display(&stats);
 
         // 最小限のセクションが含まれることを確認
-        assert!(display.contains("タスク統計サマリー"));
-        assert!(display.contains("全タスク数: 0"));
+        assert!(display.contains("Task Statistics Summary"));
+        assert!(display.contains("Total tasks: 0"));
     }
 }
