@@ -38,10 +38,10 @@ pub fn render(frame: &mut Frame) {
         .split(chunks[1]);
 
     let message = Paragraph::new(vec![
-        Line::from("準備中"),
+        Line::from("Under Construction"),
         Line::from(""),
         Line::from(Span::styled(
-            "q: 終了 | Ctrl+C: 終了",
+            "q: Quit | Ctrl+C: Quit",
             Style::default().fg(Color::DarkGray),
         )),
     ])

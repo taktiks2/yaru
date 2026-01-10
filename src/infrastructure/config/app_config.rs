@@ -57,8 +57,8 @@ pub fn load_config() -> Result<Config> {
 /// 指定されたパスから設定ファイルを読み込む
 pub fn load_config_from_file(path: &Path) -> Result<Config> {
     let content = fs::read_to_string(path)
-        .with_context(|| format!("設定ファイルの読み込みに失敗しました: {}", path.display()))?;
-    toml::from_str(&content).context("設定ファイルのパースに失敗しました")
+        .with_context(|| format!("Failed to load config file: {}", path.display()))?;
+    toml::from_str(&content).context("Failed to parse config file")
 }
 
 #[cfg(test)]
