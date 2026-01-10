@@ -42,7 +42,12 @@ mod tests {
     fn test_task_id_negative() {
         let result = TaskId::new(-1);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Task ID must be 0 or greater"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Task ID must be 0 or greater")
+        );
     }
 
     #[test]

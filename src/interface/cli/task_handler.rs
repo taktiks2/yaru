@@ -229,23 +229,17 @@ async fn handle_add(
             });
 
             let s = params.status.unwrap_or_else(|| {
-                Select::new(
-                    "Select status",
-                    Status::iter().collect::<Vec<_>>(),
-                )
-                .with_vim_mode(true)
-                .prompt()
-                .unwrap_or(Status::Pending)
+                Select::new("Select status", Status::iter().collect::<Vec<_>>())
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or(Status::Pending)
             });
 
             let p = params.priority.unwrap_or_else(|| {
-                Select::new(
-                    "Select priority",
-                    Priority::iter().collect::<Vec<_>>(),
-                )
-                .with_vim_mode(true)
-                .prompt()
-                .unwrap_or(Priority::Medium)
+                Select::new("Select priority", Priority::iter().collect::<Vec<_>>())
+                    .with_vim_mode(true)
+                    .prompt()
+                    .unwrap_or(Priority::Medium)
             });
 
             // タグ選択（対話モード）
@@ -387,7 +381,14 @@ async fn handle_edit(
         println!(); // 空行を追加
 
         // 編集するフィールドを選択
-        let field_options = vec!["Title", "Description", "Status", "Priority", "Tags", "Due Date"];
+        let field_options = vec![
+            "Title",
+            "Description",
+            "Status",
+            "Priority",
+            "Tags",
+            "Due Date",
+        ];
 
         let selected_fields = MultiSelect::new(
             "Select fields to edit (Space to select, Enter to confirm)",
@@ -603,7 +604,9 @@ async fn handle_search(
     let final_keywords = if is_interactive {
         // 対話モード: キーワードを入力
         inquire::Text::new("Search keyword:")
-            .with_help_message("Multiple keywords can be specified separated by spaces (AND condition)")
+            .with_help_message(
+                "Multiple keywords can be specified separated by spaces (AND condition)",
+            )
             .with_validator(|input: &str| {
                 if input.trim().is_empty() {
                     Ok(validator::Validation::Invalid(
