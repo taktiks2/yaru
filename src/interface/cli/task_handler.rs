@@ -118,9 +118,11 @@ pub async fn handle_task_command(
     presenter: Arc<dyn Presenter>,
 ) -> Result<()> {
     match command {
-        TaskCommands::List { filter, sort, order } => {
-            handle_list(task_repo, tag_repo, presenter, filter, sort, order).await
-        }
+        TaskCommands::List {
+            filter,
+            sort,
+            order,
+        } => handle_list(task_repo, tag_repo, presenter, filter, sort, order).await,
         TaskCommands::Show { id } => handle_show(task_repo, tag_repo, presenter, id).await,
         TaskCommands::Add {
             title,
